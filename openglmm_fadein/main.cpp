@@ -39,6 +39,151 @@
 #include <libopenglmm/cWindow.h>
 
 
+#include <spitfire/math/geometry.h>
+
+#ifdef __WIN__
+typedef HWND windowhandle_t;
+typedef HWND controlhandle_t;
+#elif defined(__LINUX__)
+//typedef GtkWidget* windowhandle_t;
+//typedef GtkWidget* controlhandle_t;
+#elif defined(__APPLE__)
+typedef WindowRef windowhandle_t;
+typedef HIViewRef controlhandle_t;
+#endif
+
+class cScreen
+{
+public:
+  size_t GetMonitorCount() const;
+
+  size_t GetMonitorContainingCursor() const;
+  //size_t GetMonitorContainingWindow(windowhandle_t handle) const;
+
+  bool GetMonitorProperties(size_t monitor, spitfire::math::cRectangle& rect, size_t& colorDepthBits) const;
+
+  bool GetScreenShotOfMonitor(size_t monitor, opengl::cImage& image) const;
+};
+
+size_t cScreen::GetMonitorCount() const
+{
+  Display* pDisplay = XOpenDisplay(NULL);
+  if (pDisplay == nullptr) {
+    std::cout<<"cScreen::GetMonitorCount XOpenDisplay FAILED, returning 0"<<std::endl;
+    return 0;
+  }
+
+  int iScreenCount = XScreenCount(pDisplay);
+
+  XCloseDisplay(pDisplay);
+  pDisplay = nullptr;
+
+  assert(iScreenCount >= 0);
+  return size_t(iScreenCount);
+}
+
+size_t cScreen::GetMonitorContainingCursor() const
+{
+  return 0;
+}
+
+bool cScreen::GetMonitorProperties(size_t monitor, spitfire::math::cRectangle& rect, size_t& colorDepthBits) const
+{
+  Display* pDisplay = XOpenDisplay(NULL);
+  if (pDisplay == nullptr) {
+    std::cout<<"cScreen::GetMonitorProperties XOpenDisplay FAILED, returning false"<<std::endl;
+    return false;
+  }
+
+  int screen = monitor;
+
+  //Window XRootWindow(pDisplay, monitor);
+
+  //rect.x = DisplayX(pDisplay, screen);
+  //rect.y = DisplayY(pDisplay, screen);
+  rect.x = 0;
+  rect.y = 0;
+  rect.width = DisplayWidth(pDisplay, screen);
+  rect.height = DisplayHeight(pDisplay, screen);
+
+  colorDepthBits = DefaultDepth(pDisplay, screen);
+
+  XCloseDisplay(pDisplay);
+  pDisplay = nullptr;
+
+  return true;
+}
+
+bool cScreen::GetScreenShotOfMonitor(size_t monitor, opengl::cImage& image) const
+{
+  Display* pDisplay = XOpenDisplay(NULL);
+  if (pDisplay == nullptr) {
+    std::cout<<"cScreen::GetScreenShotOfMonitor XOpenDisplay FAILED, returning false"<<std::endl;
+    return false;
+  }
+
+  //int screen = DefaultScreen(pDisplay);
+  int screen = monitor;
+
+  //const size_t x = DisplayX(pDisplay, screen);
+  //const size_t y = DisplayY(pDisplay, screen);
+  const size_t x = 0;
+  const size_t y = 0;
+  const size_t width = DisplayWidth(pDisplay, screen);
+  const size_t height = DisplayHeight(pDisplay, screen);
+
+  //const size_t colorDepthBits = DefaultDepth(pDisplay, screen);
+
+  XImage* pImage = XGetImage(
+    pDisplay, RootWindow(pDisplay, screen),
+    x, y, width, height,
+    AllPlanes, ZPixmap
+  );
+  if (pImage == nullptr) {
+    std::cout<<"cScreen::GetScreenShotOfMonitor XGetImage FAILED, returning false"<<std::endl;
+    return false;
+  }
+
+  std::vector<uint8_t> buffer;
+  buffer.resize(width * height * 4, 0);
+
+  for (size_t i = 0; (i < height); i++) {
+    for (size_t j = 0; (j < width); j++) {
+      int index = ((i * width) + j) * 4;
+
+      bool bIsFlip = !(
+        (i > height / 4 - 1) && (i < 3 * height / 4) &&
+        (j > width / 4 - 1)  && (j < 3 * width / 4)
+      );
+
+      size_t pixel = XGetPixel(pImage, j, i);
+      uint8_t red = (pixel & pImage->red_mask) >> 16;
+      uint8_t green = (pixel & pImage->green_mask) >> 8;
+      uint8_t blue = (pixel & pImage->blue_mask) >> 0;
+
+      buffer[index] = bIsFlip ? red : 255 - red;
+      buffer[index + 1] = bIsFlip ? green : 255 - green;
+      buffer[index + 2] = bIsFlip ? blue : 255 - blue;
+      buffer[index + 3] = 255;
+    }
+  }
+
+  XDestroyImage(pImage);
+  pImage = nullptr;
+
+  XCloseDisplay(pDisplay);
+  pDisplay = nullptr;
+
+  assert(width == image.GetWidth());
+  assert(height == image.GetHeight());
+  assert(opengl::PIXELFORMAT::R8G8B8A8 == image.GetPixelFormat());
+  image.CreateFromBuffer(buffer.data(), width, height, opengl::PIXELFORMAT::R8G8B8A8);
+
+  std::cout<<"cScreen::GetScreenShotOfMonitor XGetImage returning true"<<std::endl;
+  return true;
+}
+
+
 class cHeightmapData
 {
 public:
@@ -661,6 +806,25 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
 
 bool cApplication::Create()
 {
+  opengl::cImage image;
+
+  {
+    cScreen screen;
+    size_t monitor = screen.GetMonitorContainingCursor();
+
+    spitfire::math::cRectangle rect;
+    size_t colorDepthBits = 32;
+    screen.GetMonitorProperties(monitor, rect, colorDepthBits);
+
+    const size_t width = rect.GetWidth();
+    const size_t height = rect.GetHeight();
+    std::vector<uint8_t> buffer;
+    buffer.resize(width * height * 4, 0);
+    image.CreateFromBuffer(buffer.data(), width, height, opengl::PIXELFORMAT::R8G8B8A8);
+
+    screen.GetScreenShotOfMonitor(monitor, image);
+  }
+
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
 
   opengl::cResolution resolution = capabilities.GetCurrentResolution();
@@ -686,7 +850,7 @@ bool cApplication::Create()
     return false;
   }
 
-  pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
+  //pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
   pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
 
   pShaderHeightmap = pContext->CreateShader(TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
@@ -716,6 +880,35 @@ bool cApplication::Create()
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
   pWindow->SetInputEventListener(*this);
+
+
+  const size_t imageWidth = image.GetWidth();
+  const size_t imageHeight = image.GetHeight();
+  const size_t width = 1024;
+  const size_t height = 1024;
+  std::vector<uint8_t> buffer;
+  buffer.resize(width * height * 4, 0);
+
+  const uint8_t* pData = image.GetPointerToData();
+  for (size_t y = 0; y < height; y++) {
+    for (size_t x = 0; x < width; x++) {
+      const size_t src = ((y * imageWidth) + x) * 4;
+      const size_t dest = ((y * imageHeight) + x) * 4;
+      buffer[dest] = pData[src];
+      buffer[dest + 1] = pData[src + 1];
+      buffer[dest + 2] = pData[src + 2];
+      buffer[dest + 3] = pData[src + 3];
+    }
+  }
+
+  opengl::cImage imagePowerOfTwo;
+  imagePowerOfTwo.CreateFromBuffer(buffer.data(), width, height, opengl::PIXELFORMAT::R8G8B8A8);
+
+  pTextureDiffuse = pContext->CreateTextureFromImage(imagePowerOfTwo);
+  if (pTextureDiffuse == nullptr) {
+    std::cout<<"cApplication::Create CreateTextureFromImage FAILED to create texture from desktop image, returning false"<<std::endl;
+    return false;
+  }
 
   return true;
 }
