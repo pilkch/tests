@@ -179,7 +179,9 @@ bool cScreen::GetScreenShotOfMonitor(size_t monitor, opengl::cImage& image) cons
   assert(opengl::PIXELFORMAT::R8G8B8A8 == image.GetPixelFormat());
   image.CreateFromBuffer(buffer.data(), width, height, opengl::PIXELFORMAT::R8G8B8A8);
 
-  std::cout<<"cScreen::GetScreenShotOfMonitor XGetImage returning true"<<std::endl;
+  image.FlipDataVertically();
+
+  std::cout<<"cScreen::GetScreenShotOfMonitor returning true"<<std::endl;
   return true;
 }
 
@@ -830,7 +832,7 @@ void cApplication::CreateScreenQuadVBO()
   const spitfire::math::cVec2 vMin(-fHalfSize, -fHalfSize);
   const spitfire::math::cVec2 vMax(fHalfSize, fHalfSize);
 
-  opengl::cGeometryBuilder_v2_t2 builder(vertices, textureCoordinates);
+  opengl::cGeometryBuilder_v2_t2_t2 builder(vertices, textureCoordinates);
 
   // Front facing quad
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
@@ -891,7 +893,7 @@ bool cApplication::Create()
     return false;
   }
 
-  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(512, 512, opengl::PIXELFORMAT::R8G8B8A8);
+  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(1024, 1024, opengl::PIXELFORMAT::R8G8B8A8);
   assert(pTextureFrameBufferObject != nullptr);
 
   pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
@@ -925,6 +927,7 @@ bool cApplication::Create()
   pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/blend.vert"), TEXT("shaders/blend.frag"));
   assert(pShaderScreenQuad != nullptr);
   pShaderScreenQuad->bTexUnit0 = true;
+  pShaderScreenQuad->bTexUnit1 = true;
 
   pStaticVertexBufferObjectScreenQuad = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObjectScreenQuad != nullptr);
@@ -1193,7 +1196,7 @@ void cApplication::Run()
   pWindow->WarpCursorToMiddleOfScreen();
 
 
-  uint32_t duration = (10 * 1000); // End in 10 seconds time
+  uint32_t duration = (8 * 1000); // End in 8 seconds time
 
   uint32_t startTime = SDL_GetTicks();
   uint32_t endTime = startTime + duration;
@@ -1206,8 +1209,8 @@ void cApplication::Run()
     previousTime = currentTime;
     currentTime = SDL_GetTicks();
 
-    const float fBlend0 = (float(currentTime) - float(startTime)) / float(duration);
-    const float fBlend1 = 1.0f - fBlend0;
+    const float fBlend0 = 1.0f - ((float(currentTime) - float(startTime)) / float(duration));
+    const float fBlend1 = (float(currentTime) - float(startTime)) / float(duration);
 
     matRotation.SetRotation(rotationZ * rotationX);
 
@@ -1215,7 +1218,7 @@ void cApplication::Run()
 
     {
       // Render the scene into the frame buffer object
-      const spitfire::math::cColour clearColour(0.0f, 1.0f, 0.0f);
+      const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
       pContext->SetClearColour(clearColour);
 
       pContext->BeginRenderToTexture(*pTextureFrameBufferObject);
@@ -1257,7 +1260,7 @@ void cApplication::Run()
 
     {
       // Render the scene with the new texture
-      const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
+      const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
       pContext->SetClearColour(clearColour);
 
       pContext->BeginRendering();
