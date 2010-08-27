@@ -646,6 +646,8 @@ private:
   void CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
   void CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
 
+  void CreateScreenQuadVBO();
+
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
   void _OnKeyboardEvent(const opengl::cKeyboardEvent& event);
@@ -669,14 +671,20 @@ private:
 
   opengl::cContext* pContext;
 
+  opengl::cTextureFrameBufferObject* pTextureFrameBufferObject;
+
+  opengl::cTexture* pTextureScreenShot;
   opengl::cTexture* pTextureDiffuse;
   opengl::cTexture* pTextureLightMap;
   opengl::cTexture* pTextureDetail;
 
   opengl::cShader* pShaderHeightmap;
+  opengl::cShader* pShaderScreenQuad;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuads;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuadsIndexed;
+
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenQuad;
 };
 
 cApplication::cApplication() :
@@ -692,14 +700,20 @@ cApplication::cApplication() :
   pWindow(nullptr),
   pContext(nullptr),
 
+  pTextureFrameBufferObject(nullptr),
+
+  pTextureScreenShot(nullptr),
   pTextureDiffuse(nullptr),
   pTextureLightMap(nullptr),
   pTextureDetail(nullptr),
 
   pShaderHeightmap(nullptr),
+  pShaderScreenQuad(nullptr),
 
   pStaticVertexBufferObjectHeightmapQuads(nullptr),
-  pStaticVertexBufferObjectHeightmapQuadsIndexed(nullptr)
+  pStaticVertexBufferObjectHeightmapQuadsIndexed(nullptr),
+
+  pStaticVertexBufferObjectScreenQuad(nullptr)
 {
 }
 
@@ -804,6 +818,33 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
 
 //void cApplication::CreateHeightmapTriangleStrips();
 
+void cApplication::CreateScreenQuadVBO()
+{
+  assert(pStaticVertexBufferObjectScreenQuad != nullptr);
+
+  std::vector<float> vertices;
+  std::vector<float> textureCoordinates;
+  //std::vector<uint16_t> indices;
+
+  const float_t fHalfSize = 0.5f;
+  const spitfire::math::cVec2 vMin(-fHalfSize, -fHalfSize);
+  const spitfire::math::cVec2 vMax(fHalfSize, fHalfSize);
+
+  opengl::cGeometryBuilder_v2_t2 builder(vertices, textureCoordinates);
+
+  // Front facing quad
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMax.y), spitfire::math::cVec2(1.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, 1.0f));
+
+  pStaticVertexBufferObjectScreenQuad->SetVertices(vertices);
+  pStaticVertexBufferObjectScreenQuad->SetTextureCoordinates(textureCoordinates);
+  //pStaticVertexBufferObjectScreenQuad->SetIndices(indices);
+
+  pStaticVertexBufferObjectScreenQuad->Compile2D(system);
+}
+
 bool cApplication::Create()
 {
   opengl::cImage image;
@@ -850,7 +891,10 @@ bool cApplication::Create()
     return false;
   }
 
-  //pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
+  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(512, 512, opengl::PIXELFORMAT::R8G8B8A8);
+  assert(pTextureFrameBufferObject != nullptr);
+
+  pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
   pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
 
   pShaderHeightmap = pContext->CreateShader(TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
@@ -876,6 +920,16 @@ bool cApplication::Create()
 
   pStaticVertexBufferObjectHeightmapQuadsIndexed = pContext->CreateStaticVertexBufferObject();
   CreateHeightmapQuadsIndexed(pStaticVertexBufferObjectHeightmapQuadsIndexed, data, scale);
+
+
+  pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/blend.vert"), TEXT("shaders/blend.frag"));
+  assert(pShaderScreenQuad != nullptr);
+  pShaderScreenQuad->bTexUnit0 = true;
+
+  pStaticVertexBufferObjectScreenQuad = pContext->CreateStaticVertexBufferObject();
+  assert(pStaticVertexBufferObjectScreenQuad != nullptr);
+  CreateScreenQuadVBO();
+
 
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
@@ -904,8 +958,8 @@ bool cApplication::Create()
   opengl::cImage imagePowerOfTwo;
   imagePowerOfTwo.CreateFromBuffer(buffer.data(), width, height, opengl::PIXELFORMAT::R8G8B8A8);
 
-  pTextureDiffuse = pContext->CreateTextureFromImage(imagePowerOfTwo);
-  if (pTextureDiffuse == nullptr) {
+  pTextureScreenShot = pContext->CreateTextureFromImage(imagePowerOfTwo);
+  if (pTextureScreenShot == nullptr) {
     std::cout<<"cApplication::Create CreateTextureFromImage FAILED to create texture from desktop image, returning false"<<std::endl;
     return false;
   }
@@ -915,6 +969,21 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
+  if (pStaticVertexBufferObjectScreenQuad != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectScreenQuad);
+    pStaticVertexBufferObjectScreenQuad = nullptr;
+  }
+
+  if (pShaderScreenQuad != nullptr) {
+    pContext->DestroyShader(pShaderScreenQuad);
+    pShaderScreenQuad = nullptr;
+  }
+  if (pTextureScreenShot != nullptr) {
+    pContext->DestroyTexture(pTextureScreenShot);
+    pTextureScreenShot = nullptr;
+  }
+
+
   if (pStaticVertexBufferObjectHeightmapQuadsIndexed != nullptr) {
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectHeightmapQuadsIndexed);
     pStaticVertexBufferObjectHeightmapQuadsIndexed = nullptr;
@@ -940,6 +1009,11 @@ void cApplication::Destroy()
   if (pTextureDiffuse != nullptr) {
     pContext->DestroyTexture(pTextureDiffuse);
     pTextureDiffuse = nullptr;
+  }
+
+  if (pTextureFrameBufferObject != nullptr) {
+    pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObject);
+    pTextureFrameBufferObject = nullptr;
   }
 
   pContext = nullptr;
@@ -1043,6 +1117,8 @@ void cApplication::Run()
 {
   assert(pContext != nullptr);
   assert(pContext->IsValid());
+  assert(pTextureScreenShot != nullptr);
+  assert(pTextureScreenShot->IsValid());  
   assert(pTextureDiffuse != nullptr);
   assert(pTextureDiffuse->IsValid());
   assert(pTextureLightMap != nullptr);
@@ -1056,6 +1132,11 @@ void cApplication::Run()
   assert(pStaticVertexBufferObjectHeightmapQuads->IsCompiled());
   assert(pStaticVertexBufferObjectHeightmapQuadsIndexed != nullptr);
   assert(pStaticVertexBufferObjectHeightmapQuadsIndexed->IsCompiled());
+
+  assert(pShaderScreenQuad != nullptr);
+  assert(pShaderScreenQuad->IsCompiledProgram());
+  assert(pStaticVertexBufferObjectScreenQuad != nullptr);
+  assert(pStaticVertexBufferObjectScreenQuad->IsCompiled());
 
   const spitfire::math::cColour sunColour(0.2, 0.2, 0.0);
 
@@ -1110,6 +1191,125 @@ void cApplication::Run()
   // Setup mouse
   pWindow->ShowCursor(false);
   pWindow->WarpCursorToMiddleOfScreen();
+
+
+  uint32_t duration = (10 * 1000); // End in 10 seconds time
+
+  uint32_t startTime = SDL_GetTicks();
+  uint32_t endTime = startTime + duration;
+
+  while (!bIsDone && (currentTime < endTime)) {
+    // Update window events
+    pWindow->UpdateEvents();
+
+    // Update state
+    previousTime = currentTime;
+    currentTime = SDL_GetTicks();
+
+    const float fBlend0 = (float(currentTime) - float(startTime)) / float(duration);
+    const float fBlend1 = 1.0f - fBlend0;
+
+    matRotation.SetRotation(rotationZ * rotationX);
+
+
+
+    {
+      // Render the scene into the frame buffer object
+      const spitfire::math::cColour clearColour(0.0f, 1.0f, 0.0f);
+      pContext->SetClearColour(clearColour);
+
+      pContext->BeginRenderToTexture(*pTextureFrameBufferObject);
+
+      const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
+      const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
+
+      const spitfire::math::cVec3 target(0.0f, 0.0f, 0.0f);
+      const spitfire::math::cVec3 eye(target + offset);
+      spitfire::math::cMat4 matModelView;
+      matModelView.LookAt(eye, target, up);
+
+      pContext->BindTexture(0, *pTextureDiffuse);
+      pContext->BindTexture(1, *pTextureLightMap);
+      pContext->BindTexture(2, *pTextureDetail);
+
+      pContext->BindShader(*pShaderHeightmap);
+
+      if (!bUseQuadsIndexed) {
+        pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
+          pContext->SetModelViewMatrix(matModelView * matTranslation);
+          pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuads);
+        pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
+      } else {
+        pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
+          pContext->SetModelViewMatrix(matModelView * matTranslation);
+          pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
+        pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
+      }
+
+      pContext->UnBindShader(*pShaderHeightmap);
+
+      pContext->UnBindTexture(2, *pTextureDetail);
+      pContext->UnBindTexture(1, *pTextureLightMap);
+      pContext->UnBindTexture(0, *pTextureDiffuse);
+
+      pContext->EndRenderToTexture(*pTextureFrameBufferObject);
+    }
+
+    {
+      // Render the scene with the new texture
+      const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
+      pContext->SetClearColour(clearColour);
+
+      pContext->BeginRendering();
+
+      // Now draw an overlay of our rendered texture
+      pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
+
+      // Move the quad into the bottom right hand corner of the screen
+      spitfire::math::cMat4 matModelView2D;
+      matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
+
+      pContext->BindTexture(0, *pTextureScreenShot);
+      pContext->BindTexture(1, *pTextureFrameBufferObject);
+
+      pContext->BindShader(*pShaderScreenQuad);
+
+      pContext->SetShaderConstant("fBlend0", fBlend0);
+      pContext->SetShaderConstant("fBlend1", fBlend1);
+
+      pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
+
+      {
+        pContext->SetModelViewMatrix(matModelView2D);
+
+        pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenQuad);
+      }
+
+      pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
+
+      pContext->UnBindShader(*pShaderScreenQuad);
+
+      pContext->UnBindTexture(1, *pTextureFrameBufferObject);
+      pContext->UnBindTexture(0, *pTextureScreenShot);
+
+      pContext->EndRenderMode2D();
+
+      pContext->EndRendering();
+    }
+
+    // Gather our frames per second
+    Frames++;
+    {
+      uint32_t t = SDL_GetTicks();
+      if (t - T0 >= 5000) {
+        float seconds = (t - T0) / 1000.0;
+        float fps = Frames / seconds;
+        std::cout<<Frames<<" frames in "<<seconds<<" seconds = "<<fps<<" FPS"<<std::endl;
+        T0 = t;
+        Frames = 0;
+      }
+    }
+  };
 
   while (!bIsDone) {
     // Update window events
