@@ -648,6 +648,7 @@ private:
   void CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
   void CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
 
+  void CreateScreenBlendQuadVBO();
   void CreateScreenQuadVBO();
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
@@ -681,11 +682,13 @@ private:
   opengl::cTexture* pTextureDetail;
 
   opengl::cShader* pShaderHeightmap;
+  opengl::cShader* pShaderScreenBlendQuad;
   opengl::cShader* pShaderScreenQuad;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuads;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuadsIndexed;
 
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenBlendQuad;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenQuad;
 };
 
@@ -710,11 +713,13 @@ cApplication::cApplication() :
   pTextureDetail(nullptr),
 
   pShaderHeightmap(nullptr),
+  pShaderScreenBlendQuad(nullptr),
   pShaderScreenQuad(nullptr),
 
   pStaticVertexBufferObjectHeightmapQuads(nullptr),
   pStaticVertexBufferObjectHeightmapQuadsIndexed(nullptr),
 
+  pStaticVertexBufferObjectScreenBlendQuad(nullptr),
   pStaticVertexBufferObjectScreenQuad(nullptr)
 {
 }
@@ -820,6 +825,33 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
 
 //void cApplication::CreateHeightmapTriangleStrips();
 
+void cApplication::CreateScreenBlendQuadVBO()
+{
+  assert(pStaticVertexBufferObjectScreenBlendQuad != nullptr);
+
+  std::vector<float> vertices;
+  std::vector<float> textureCoordinates;
+  //std::vector<uint16_t> indices;
+
+  const float_t fHalfSize = 0.5f;
+  const spitfire::math::cVec2 vMin(-fHalfSize, -fHalfSize);
+  const spitfire::math::cVec2 vMax(fHalfSize, fHalfSize);
+
+  opengl::cGeometryBuilder_v2_t2_t2 builder(vertices, textureCoordinates);
+
+  // Front facing quad
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMax.y), spitfire::math::cVec2(1.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, 1.0f));
+
+  pStaticVertexBufferObjectScreenBlendQuad->SetVertices(vertices);
+  pStaticVertexBufferObjectScreenBlendQuad->SetTextureCoordinates(textureCoordinates);
+  //pStaticVertexBufferObjectScreenBlendQuad->SetIndices(indices);
+
+  pStaticVertexBufferObjectScreenBlendQuad->Compile2D(system);
+}
+
 void cApplication::CreateScreenQuadVBO()
 {
   assert(pStaticVertexBufferObjectScreenQuad != nullptr);
@@ -832,7 +864,7 @@ void cApplication::CreateScreenQuadVBO()
   const spitfire::math::cVec2 vMin(-fHalfSize, -fHalfSize);
   const spitfire::math::cVec2 vMax(fHalfSize, fHalfSize);
 
-  opengl::cGeometryBuilder_v2_t2_t2 builder(vertices, textureCoordinates);
+  opengl::cGeometryBuilder_v2_t2 builder(vertices, textureCoordinates);
 
   // Front facing quad
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
@@ -924,10 +956,18 @@ bool cApplication::Create()
   CreateHeightmapQuadsIndexed(pStaticVertexBufferObjectHeightmapQuadsIndexed, data, scale);
 
 
-  pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/blend.vert"), TEXT("shaders/blend.frag"));
+  pShaderScreenBlendQuad = pContext->CreateShader(TEXT("shaders/blend.vert"), TEXT("shaders/blend.frag"));
+  assert(pShaderScreenBlendQuad != nullptr);
+  pShaderScreenBlendQuad->bTexUnit0 = true;
+  pShaderScreenBlendQuad->bTexUnit1 = true;
+
+  pStaticVertexBufferObjectScreenBlendQuad = pContext->CreateStaticVertexBufferObject();
+  assert(pStaticVertexBufferObjectScreenBlendQuad != nullptr);
+  CreateScreenBlendQuadVBO();
+
+  pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderScreenQuad != nullptr);
   pShaderScreenQuad->bTexUnit0 = true;
-  pShaderScreenQuad->bTexUnit1 = true;
 
   pStaticVertexBufferObjectScreenQuad = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObjectScreenQuad != nullptr);
@@ -976,10 +1016,18 @@ void cApplication::Destroy()
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectScreenQuad);
     pStaticVertexBufferObjectScreenQuad = nullptr;
   }
+  if (pStaticVertexBufferObjectScreenBlendQuad != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectScreenBlendQuad);
+    pStaticVertexBufferObjectScreenBlendQuad = nullptr;
+  }
 
   if (pShaderScreenQuad != nullptr) {
     pContext->DestroyShader(pShaderScreenQuad);
     pShaderScreenQuad = nullptr;
+  }
+  if (pShaderScreenBlendQuad != nullptr) {
+    pContext->DestroyShader(pShaderScreenBlendQuad);
+    pShaderScreenBlendQuad = nullptr;
   }
   if (pTextureScreenShot != nullptr) {
     pContext->DestroyTexture(pTextureScreenShot);
@@ -1136,6 +1184,11 @@ void cApplication::Run()
   assert(pStaticVertexBufferObjectHeightmapQuadsIndexed != nullptr);
   assert(pStaticVertexBufferObjectHeightmapQuadsIndexed->IsCompiled());
 
+  assert(pShaderScreenBlendQuad != nullptr);
+  assert(pShaderScreenBlendQuad->IsCompiledProgram());
+  assert(pStaticVertexBufferObjectScreenBlendQuad != nullptr);
+  assert(pStaticVertexBufferObjectScreenBlendQuad->IsCompiled());
+
   assert(pShaderScreenQuad != nullptr);
   assert(pShaderScreenQuad->IsCompiledProgram());
   assert(pStaticVertexBufferObjectScreenQuad != nullptr);
@@ -1275,22 +1328,22 @@ void cApplication::Run()
       pContext->BindTexture(0, *pTextureScreenShot);
       pContext->BindTexture(1, *pTextureFrameBufferObject);
 
-      pContext->BindShader(*pShaderScreenQuad);
+      pContext->BindShader(*pShaderScreenBlendQuad);
 
       pContext->SetShaderConstant("fBlend0", fBlend0);
       pContext->SetShaderConstant("fBlend1", fBlend1);
 
-      pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
+      pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenBlendQuad);
 
       {
         pContext->SetModelViewMatrix(matModelView2D);
 
-        pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenQuad);
+        pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenBlendQuad);
       }
 
-      pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
+      pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenBlendQuad);
 
-      pContext->UnBindShader(*pShaderScreenQuad);
+      pContext->UnBindShader(*pShaderScreenBlendQuad);
 
       pContext->UnBindTexture(1, *pTextureFrameBufferObject);
       pContext->UnBindTexture(0, *pTextureScreenShot);
@@ -1327,48 +1380,85 @@ void cApplication::Run()
 
     matRotation.SetRotation(rotationZ * rotationX);
 
+    
+    {
+      // Render the scene into the frame buffer object
+      const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
+      pContext->SetClearColour(clearColour);
 
-    // Render the scene
-    const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
-    pContext->SetClearColour(clearColour);
+      pContext->BeginRenderToTexture(*pTextureFrameBufferObject);
 
-    pContext->BeginRendering();
+      const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
+      const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
 
-    if (bIsWireframe) pContext->EnableWireframe();
+      const spitfire::math::cVec3 target(0.0f, 0.0f, 0.0f);
+      const spitfire::math::cVec3 eye(target + offset);
+      spitfire::math::cMat4 matModelView;
+      matModelView.LookAt(eye, target, up);
 
-    const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
-    const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
+      pContext->BindTexture(0, *pTextureDiffuse);
+      pContext->BindTexture(1, *pTextureLightMap);
+      pContext->BindTexture(2, *pTextureDetail);
 
-    const spitfire::math::cVec3 target(0.0f, 0.0f, 0.0f);
-    const spitfire::math::cVec3 eye(target + offset);
-    spitfire::math::cMat4 matModelView;
-    matModelView.LookAt(eye, target, up);
+      pContext->BindShader(*pShaderHeightmap);
 
-    pContext->BindTexture(0, *pTextureDiffuse);
-    pContext->BindTexture(1, *pTextureLightMap);
-    pContext->BindTexture(2, *pTextureDetail);
+      if (!bUseQuadsIndexed) {
+        pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
+          pContext->SetModelViewMatrix(matModelView * matTranslation);
+          pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuads);
+        pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
+      } else {
+        pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
+          pContext->SetModelViewMatrix(matModelView * matTranslation);
+          pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
+        pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
+      }
 
-    pContext->BindShader(*pShaderHeightmap);
+      pContext->UnBindShader(*pShaderHeightmap);
 
-    if (!bUseQuadsIndexed) {
-      pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
-        pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuads);
-      pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
-    } else {
-      pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
-        pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
-      pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
+      pContext->UnBindTexture(2, *pTextureDetail);
+      pContext->UnBindTexture(1, *pTextureLightMap);
+      pContext->UnBindTexture(0, *pTextureDiffuse);
+
+      pContext->EndRenderToTexture(*pTextureFrameBufferObject);
     }
 
-    pContext->UnBindShader(*pShaderHeightmap);
+    {
+      // Render the scene with the new texture
+      const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
+      pContext->SetClearColour(clearColour);
 
-    pContext->UnBindTexture(2, *pTextureDetail);
-    pContext->UnBindTexture(1, *pTextureLightMap);
-    pContext->UnBindTexture(0, *pTextureDiffuse);
+      pContext->BeginRendering();
 
-    pContext->EndRendering();
+      // Now draw an overlay of our rendered texture
+      pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
+
+      // Move the quad into the bottom right hand corner of the screen
+      spitfire::math::cMat4 matModelView2D;
+      matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
+
+      pContext->BindTexture(0, *pTextureFrameBufferObject);
+
+      pContext->BindShader(*pShaderScreenQuad);
+
+      pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
+
+      {
+        pContext->SetModelViewMatrix(matModelView2D);
+
+        pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenQuad);
+      }
+
+      pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
+
+      pContext->UnBindShader(*pShaderScreenQuad);
+
+      pContext->UnBindTexture(0, *pTextureFrameBufferObject);
+
+      pContext->EndRenderMode2D();
+
+      pContext->EndRendering();
+    }
 
     // Gather our frames per second
     Frames++;
