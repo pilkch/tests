@@ -648,7 +648,7 @@ private:
   void CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
   void CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
 
-  void CreateScreenBlendQuadVBO();
+  void CreateScreenBlendQuadVBO(float fRatioOfTextureWidthToScreenShotWidth, float fRatioOfTextureHeightToScreenShotHeight);
   void CreateScreenQuadVBO();
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
@@ -825,7 +825,7 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
 
 //void cApplication::CreateHeightmapTriangleStrips();
 
-void cApplication::CreateScreenBlendQuadVBO()
+void cApplication::CreateScreenBlendQuadVBO(float fRatioOfTextureWidthToScreenShotWidth, float fRatioOfTextureHeightToScreenShotHeight)
 {
   assert(pStaticVertexBufferObjectScreenBlendQuad != nullptr);
 
@@ -840,10 +840,10 @@ void cApplication::CreateScreenBlendQuadVBO()
   opengl::cGeometryBuilder_v2_t2_t2 builder(vertices, textureCoordinates);
 
   // Front facing quad
-  builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
-  builder.PushBack(spitfire::math::cVec2(vMax.x, vMax.y), spitfire::math::cVec2(1.0f, 0.0f));
-  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
-  builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, 1.0f));
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMax.y), spitfire::math::cVec2(fRatioOfTextureWidthToScreenShotWidth, 0.0f), spitfire::math::cVec2(1.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(fRatioOfTextureWidthToScreenShotWidth, fRatioOfTextureHeightToScreenShotHeight), spitfire::math::cVec2(1.0f, 1.0f));
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, fRatioOfTextureHeightToScreenShotHeight), spitfire::math::cVec2(0.0f, 1.0f));
 
   pStaticVertexBufferObjectScreenBlendQuad->SetVertices(vertices);
   pStaticVertexBufferObjectScreenBlendQuad->SetTextureCoordinates(textureCoordinates);
@@ -956,15 +956,6 @@ bool cApplication::Create()
   CreateHeightmapQuadsIndexed(pStaticVertexBufferObjectHeightmapQuadsIndexed, data, scale);
 
 
-  pShaderScreenBlendQuad = pContext->CreateShader(TEXT("shaders/blend.vert"), TEXT("shaders/blend.frag"));
-  assert(pShaderScreenBlendQuad != nullptr);
-  pShaderScreenBlendQuad->bTexUnit0 = true;
-  pShaderScreenBlendQuad->bTexUnit1 = true;
-
-  pStaticVertexBufferObjectScreenBlendQuad = pContext->CreateStaticVertexBufferObject();
-  assert(pStaticVertexBufferObjectScreenBlendQuad != nullptr);
-  CreateScreenBlendQuadVBO();
-
   pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderScreenQuad != nullptr);
   pShaderScreenQuad->bTexUnit0 = true;
@@ -974,23 +965,21 @@ bool cApplication::Create()
   CreateScreenQuadVBO();
 
 
-  // Setup our event listeners
-  pWindow->SetWindowEventListener(*this);
-  pWindow->SetInputEventListener(*this);
-
-
+  // Create our screenshot texture
   const size_t imageWidth = image.GetWidth();
   const size_t imageHeight = image.GetHeight();
-  const size_t width = 1024;
-  const size_t height = 1024;
+  // TODO: For dual monitors this width and height is incorrect
+  //const size_t textureWidth = spitfire::math::NextPowerOfTwo(max(imageWidth, imageHeight));
+  const size_t textureWidth = spitfire::math::NextPowerOfTwo(max(1280, 1280));
+  const size_t textureHeight = textureWidth;
   std::vector<uint8_t> buffer;
-  buffer.resize(width * height * 4, 0);
+  buffer.resize(textureWidth * textureHeight * 4, 0);
 
   const uint8_t* pData = image.GetPointerToData();
-  for (size_t y = 0; y < height; y++) {
-    for (size_t x = 0; x < width; x++) {
+  for (size_t y = 0; y < imageHeight; y++) {
+    for (size_t x = 0; x < imageWidth; x++) {
       const size_t src = ((y * imageWidth) + x) * 4;
-      const size_t dest = ((y * imageHeight) + x) * 4;
+      const size_t dest = ((y * textureWidth) + x) * 4;
       buffer[dest] = pData[src];
       buffer[dest + 1] = pData[src + 1];
       buffer[dest + 2] = pData[src + 2];
@@ -999,13 +988,29 @@ bool cApplication::Create()
   }
 
   opengl::cImage imagePowerOfTwo;
-  imagePowerOfTwo.CreateFromBuffer(buffer.data(), width, height, opengl::PIXELFORMAT::R8G8B8A8);
+  imagePowerOfTwo.CreateFromBuffer(buffer.data(), textureWidth, textureHeight, opengl::PIXELFORMAT::R8G8B8A8);
 
   pTextureScreenShot = pContext->CreateTextureFromImage(imagePowerOfTwo);
   if (pTextureScreenShot == nullptr) {
     std::cout<<"cApplication::Create CreateTextureFromImage FAILED to create texture from desktop image, returning false"<<std::endl;
     return false;
   }
+
+  pStaticVertexBufferObjectScreenBlendQuad = pContext->CreateStaticVertexBufferObject();
+  assert(pStaticVertexBufferObjectScreenBlendQuad != nullptr);
+  const float fRatioOfTextureWidthToScreenShotWidth = float(1280) / float(textureWidth);
+  const float fRatioOfTextureHeightToScreenShotHeight = float(1024) / float(textureHeight);
+  CreateScreenBlendQuadVBO(fRatioOfTextureWidthToScreenShotWidth, fRatioOfTextureHeightToScreenShotHeight);
+
+  pShaderScreenBlendQuad = pContext->CreateShader(TEXT("shaders/blend.vert"), TEXT("shaders/blend.frag"));
+  assert(pShaderScreenBlendQuad != nullptr);
+  pShaderScreenBlendQuad->bTexUnit0 = true;
+  pShaderScreenBlendQuad->bTexUnit1 = true;
+
+
+  // Setup our event listeners
+  pWindow->SetWindowEventListener(*this);
+  pWindow->SetInputEventListener(*this);
 
   return true;
 }
