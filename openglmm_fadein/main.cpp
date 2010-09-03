@@ -62,7 +62,7 @@ public:
 
   bool GetMonitorProperties(size_t monitor, spitfire::math::cRectangle& rect, size_t& colorDepthBits) const;
 
-  bool GetScreenShotOfMonitor(size_t monitor, opengl::cImage& image) const;
+  bool GetScreenShotOfMonitor(size_t monitor, voodoo::cImage& image) const;
 };
 
 size_t cScreen::GetMonitorCount() const
@@ -78,6 +78,7 @@ size_t cScreen::GetMonitorCount() const
   XCloseDisplay(pDisplay);
   pDisplay = nullptr;
 
+  //std::cout<<"cScreen::GetMonitorCount returning "<<iScreenCount<<std::endl;
   assert(iScreenCount >= 0);
   return size_t(iScreenCount);
 }
@@ -114,8 +115,70 @@ bool cScreen::GetMonitorProperties(size_t monitor, spitfire::math::cRectangle& r
   return true;
 }
 
-bool cScreen::GetScreenShotOfMonitor(size_t monitor, opengl::cImage& image) const
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
+
+bool cScreen::GetScreenShotOfMonitor(size_t monitor, voodoo::cImage& image) const
 {
+  std::cout<<"cScreen::GetScreenShotOfMonitor"<<std::endl;
+
+#if 0
+  const size_t n = GetMonitorCount();
+  for (monitor = 0; monitor < n; monitor++) {
+    int x = 0;
+    int y = 0;
+    unsigned int width = 0;
+    unsigned int height = 0;
+
+    Display* pDisplay = XOpenDisplay(NULL);
+    assert(pDisplay != nullptr);
+    Window root = RootWindow(pDisplay, 0);
+    int num_sizes = 0;
+    std::cout<<"cScreen::GetScreenShotOfMonitor a"<<std::endl;
+    XRRScreenSize* xrrs = XRRSizes(pDisplay, 0, &num_sizes);
+    std::cout<<"cScreen::GetScreenShotOfMonitor b"<<std::endl;
+    XRRScreenConfiguration* pConfiguration = XRRGetScreenInfo(pDisplay, root);
+    std::cout<<"cScreen::GetScreenShotOfMonitor c"<<std::endl;
+    //short original_rate = XRRConfigCurrentRate(pConfiguration);
+    Rotation original_rotation;    
+    SizeID original_size_id = XRRConfigCurrentConfiguration(pConfiguration, &original_rotation);
+    std::cout<<"cScreen::GetScreenShotOfMonitor d"<<std::endl;
+
+    width = xrrs[original_size_id].width;
+    height = xrrs[original_size_id].height;
+
+    /*unsigned int border_width = 0;
+    unsigned int depth = 0;
+    Window root = RootWindow(pDisplay, monitor);
+    if (XGetGeometry(pDisplay, root, &root, &x, &y, &width, &height, &border_width, &depth) == false) {
+      std::cout<<"cScreen::GetScreenShotOfMonitor XGetGeometry FAILED, returning false"<<std::endl;
+      assert(false);
+      return false;
+    }*/
+
+    std::cout<<"cScreen::GetScreenShotOfMonitor "<<x<<","<<y<<" "<<width<<"x"<<height<<std::endl;
+
+    /*GdkScreen *screen;
+    int num_monitors;
+    int i;
+
+    screen = gdk_screen_get_default ();
+    num_monitors = gdk_screen_get_n_monitors ();
+
+    for (i = 0; i < num_monitors; i++) {
+      GdkRectangle rect;
+
+      gdk_screen_get_monitor_geometry (screen, i, &rect);
+      printf ("monitor %d: offsets (%d, %d), size (%d, %d)\n",
+      i,
+      rect.x, rect.y,
+      rect.width, rect.height);
+    }*/
+
+    assert(false);
+  }
+#endif
+
   Display* pDisplay = XOpenDisplay(NULL);
   if (pDisplay == nullptr) {
     std::cout<<"cScreen::GetScreenShotOfMonitor XOpenDisplay FAILED, returning false"<<std::endl;
@@ -147,16 +210,16 @@ bool cScreen::GetScreenShotOfMonitor(size_t monitor, opengl::cImage& image) cons
   std::vector<uint8_t> buffer;
   buffer.resize(width * height * 4, 0);
 
-  for (size_t i = 0; (i < height); i++) {
-    for (size_t j = 0; (j < width); j++) {
-      int index = ((i * width) + j) * 4;
+  for (size_t y = 0; (y < height); y++) {
+    for (size_t x = 0; (x < width); x++) {
+      int index = ((y * width) + x) * 4;
 
-      bool bIsFlip = !(
-        (i > height / 4 - 1) && (i < 3 * height / 4) &&
-        (j > width / 4 - 1)  && (j < 3 * width / 4)
-      );
+      bool bIsFlip = true;/*!(
+        (y > height / 4 - 1) && (y < 3 * height / 4) &&
+        (x > width / 4 - 1)  && (x < 3 * width / 4)
+      );*/
 
-      size_t pixel = XGetPixel(pImage, j, i);
+      size_t pixel = XGetPixel(pImage, x, y);
       uint8_t red = (pixel & pImage->red_mask) >> 16;
       uint8_t green = (pixel & pImage->green_mask) >> 8;
       uint8_t blue = (pixel & pImage->blue_mask) >> 0;
@@ -197,32 +260,17 @@ public:
   float GetHeight(size_t x, size_t y) const;
   spitfire::math::cVec3 GetNormal(size_t x, size_t y, const spitfire::math::cVec3& scale) const;
 
-  size_t GetLightmapWidth() const { return widthLightmap; }
-  size_t GetLightmapDepth() const { return depthLightmap; }
-  const uint8_t* GetLightmapBuffer() const;
-
 private:
   spitfire::math::cVec3 GetNormalOfTriangle(const spitfire::math::cVec3& p0, const spitfire::math::cVec3& p1, const spitfire::math::cVec3& p2) const;
-
-  static void GenerateLightmap(const std::vector<float>& heightmap, std::vector<spitfire::math::cColour>& lightmap, float fScaleZ, const spitfire::math::cColour& ambientColour, const spitfire::math::cColour& shadowColor, int size, float lightDir[3]);
-
-  static void DoubleImageSize(const std::vector<spitfire::math::cColour>& source, size_t width, size_t height, std::vector<spitfire::math::cColour>& destination);
-  void SmoothImage(const std::vector<spitfire::math::cColour>& source, size_t width, size_t height, size_t iterations, std::vector<spitfire::math::cColour>& destination) const;
-
-  spitfire::math::cColour GetLightmapPixel(const std::vector<spitfire::math::cColour>& lightmap, size_t x, size_t y) const;
 
   std::vector<float> heightmap;
   size_t width;
   size_t depth;
-
-  std::vector<uint8_t> lightmap;
-  size_t widthLightmap;
-  size_t depthLightmap;
 };
 
 cHeightmapData::cHeightmapData(const opengl::string_t& sFilename)
 {
-  opengl::cImage image;
+  voodoo::cImage image;
   if (!image.LoadFromFile(sFilename)) {
     std::cout<<"cHeightmapData::cHeightmapData Could not load "<<opengl::string::ToUTF8(sFilename)<<std::endl;
     assert(false);
@@ -238,144 +286,13 @@ cHeightmapData::cHeightmapData(const opengl::string_t& sFilename)
 
   const uint8_t* pPixels = image.GetPointerToSurfacePixelBuffer();
 
+  const float fOneOver255 = 1.0f / 255.0f;
+
   for (size_t y = 0; y < depth; y++) {
     for (size_t x = 0; x < width; x++) {
-      heightmap[(y * width) + x] = float(pPixels[(y * width) + x]) / 255.0f;
+      heightmap[(y * width) + x] = float(pPixels[(y * width) + x]) * fOneOver255;
     }
   }
-
-
-  // Calculate shadowmap texture
-  std::vector<spitfire::math::cColour> _lightmap;
-  _lightmap.resize(n, spitfire::math::cColour());
-
-  // I find that an exagerated z scale gives a better, more obvious result
-  const float fScaleZ = 100.0f;
-  const spitfire::math::cColour ambientColour(1.0f, 1.0f, 1.0f);
-  const spitfire::math::cColour shadowColour = 0.5f * ambientColour;
-  int size = width;
-  const spitfire::math::cVec3 sun(-50.0f, -100.0f, 1.0f);
-  const spitfire::math::cVec3 origin(0.0f, 0.0f, 0.0f);
-  const spitfire::math::cVec3 dir = (origin - sun).GetNormalised();
-  float lightDir[3] = { dir.x, dir.y, dir.z };
-
-  GenerateLightmap(heightmap, _lightmap, fScaleZ, ambientColour, shadowColour, size, lightDir);
-
-
-  widthLightmap = width;
-  depthLightmap = depth;
-
-  {
-    // Smooth the lightmap
-    std::vector<spitfire::math::cColour> smoothed;
-
-    SmoothImage(_lightmap, widthLightmap, depthLightmap, 10, smoothed);
-
-    _lightmap = smoothed;
-  }
-
-
-  for (size_t i = 0; i < 3; i++) {
-    // Double the resolution of the lightmap
-    std::vector<spitfire::math::cColour> lightmapCopy;
-
-    DoubleImageSize(_lightmap, widthLightmap, depthLightmap, lightmapCopy);
-
-    _lightmap = lightmapCopy;
-    widthLightmap *= 2;
-    depthLightmap *= 2;
-
-
-    // Smooth the lightmap
-    std::vector<spitfire::math::cColour> smoothed;
-
-    SmoothImage(_lightmap, widthLightmap, depthLightmap, 10, smoothed);
-
-    _lightmap = smoothed;
-  }
-
-  const size_t nLightmap = widthLightmap * depthLightmap;
-
-
-  // Copy the lightmap from the cColour vector to the uint8_t vector
-  lightmap.resize(nLightmap * 4, 0);
-
-  for (size_t y = 0; y < depthLightmap; y++) {
-    for (size_t x = 0; x < widthLightmap; x++) {
-      const size_t src = (y * widthLightmap) + x;
-      const size_t dst = 4 * ((y * widthLightmap) + x);
-      lightmap[dst + 0] = uint8_t(_lightmap[src].r * 255.0f);
-      lightmap[dst + 1] = uint8_t(_lightmap[src].g * 255.0f);
-      lightmap[dst + 2] = uint8_t(_lightmap[src].b * 255.0f);
-      lightmap[dst + 3] = uint8_t(_lightmap[src].a * 255.0f);
-    }
-  }
-}
-
-void cHeightmapData::DoubleImageSize(const std::vector<spitfire::math::cColour>& source, size_t widthSource, size_t heightSource, std::vector<spitfire::math::cColour>& destination)
-{
-  const size_t widthDestination = 2 * widthSource;
-  const size_t heightDestination = 2 * heightSource;
-  const size_t n = widthDestination * heightDestination;
-
-  destination.resize(n, spitfire::math::cColour());
-
-  for (size_t y = 0; y < heightSource; y++) {
-    for (size_t x = 0; x < widthSource; x++) {
-      const spitfire::math::cColour& colour = source[(y * widthSource) + x];
-      destination[(2 * ((y * widthDestination) + x)) + 0] = colour;
-      destination[(2 * ((y * widthDestination) + x)) + 1] = colour;
-      destination[widthDestination + (2 * ((y * widthDestination) + x)) + 0] = colour;
-      destination[widthDestination + (2 * ((y * widthDestination) + x)) + 1] = colour;
-    }
-  }
-}
-
-void cHeightmapData::SmoothImage(const std::vector<spitfire::math::cColour>& source, size_t width, size_t height, size_t iterations, std::vector<spitfire::math::cColour>& destination) const
-{
-  const size_t n = width * height;
-
-  destination.resize(n, spitfire::math::cColour());
-
-  std::vector<spitfire::math::cColour> temp = source;
-
-  spitfire::math::cColour surrounding[5];
-
-  for (size_t i = 0; i < iterations; i++) {
-    for (size_t y = 0; y < depthLightmap; y++) {
-      for (size_t x = 0; x < widthLightmap; x++) {
-
-        surrounding[0] = surrounding[1] = surrounding[2] = surrounding[3] = surrounding[4] = GetLightmapPixel(temp, x, y);
-
-        // We sample from the 4 surrounding pixels in a cross shape
-        if (x != 0) surrounding[0] = GetLightmapPixel(temp, x - 1, y);
-        if ((y + 1) < depthLightmap) surrounding[1] = GetLightmapPixel(temp, x, y + 1);
-        if (y != 0) surrounding[3] = GetLightmapPixel(temp, x, y - 1);
-        if ((x + 1) < widthLightmap) surrounding[4] = GetLightmapPixel(temp, x + 1, y);
-
-        //const spitfire::math::cColour averageOfSurrounding = 0.25f * (surrounding[0] + surrounding[1] + surrounding[3] + surrounding[4]);
-        //const spitfire::math::cColour final = 0.5f * (surrounding[2] + averageOfSurrounding);
-        const spitfire::math::cColour final = 0.25f * (surrounding[0] + surrounding[1] + surrounding[3] + surrounding[4]);
-
-        const size_t index = (y * widthLightmap) + x;
-
-        destination[index] = final;
-      }
-    }
-
-
-    // If we are still going then set temp to destination for the next iteration
-    if ((i + 1) < iterations) temp = destination;
-  }
-}
-
-spitfire::math::cColour cHeightmapData::GetLightmapPixel(const std::vector<spitfire::math::cColour>& lightmap, size_t x, size_t y) const
-{
-  assert(x < widthLightmap);
-  assert(y < depthLightmap);
-
-  const size_t index = (y * widthLightmap) + x;
-  return lightmap[index];
 }
 
 float cHeightmapData::GetHeight(size_t x, size_t y) const
@@ -430,208 +347,6 @@ spitfire::math::cVec3 cHeightmapData::GetNormal(size_t x, size_t y, const spitfi
   return normal;
 }
 
-const uint8_t* cHeightmapData::GetLightmapBuffer() const
-{
-  assert(!lightmap.empty());
-  return &lightmap[0];
-}
-
-
-// http://gpwiki.org/index.php/Faster_Ray_Traced_Terrain_Shadow_Maps
-
-void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::vector<spitfire::math::cColour>& _lightmap, float fScaleZ, const spitfire::math::cColour& ambientColour, const spitfire::math::cColour& shadowColour, int size, float lightDir[3])
-{
-  assert(!_lightmap.empty());
-
-  const size_t n = size * size;
-  for (size_t index = 0; index < n; index++) {
-    _lightmap[index] = ambientColour;
-  }
-
-  float px = 0.0f;
-  float py = 0.0f;
-  float height = 0.0f;
-  float distance = 0.0f;
-  int index = 0;
-
-  // create flag buffer to indicate where we've been
-  float* flagMap = new float[n];
-  for (size_t i = 0; i < n; i++) flagMap[i] = 0;
-
-  int* X = nullptr;
-  int* Y = nullptr;
-  int iX = 0;
-  int iY = 0;
-  int dirX = 0;
-  int dirY = 0;
-
-  // calculate absolute values for light direction
-  float lightDirXMagnitude = lightDir[0];
-  float lightDirZMagnitude = lightDir[2];
-  if (lightDirXMagnitude < 0) lightDirXMagnitude *= -1;
-  if (lightDirZMagnitude < 0) lightDirZMagnitude *= -1;
-
-  // decide which loop will come first, the y loop or x loop
-  // based on direction of light, makes calculations faster
-  if (lightDirXMagnitude > lightDirZMagnitude) {
-    Y = &iX;
-    X = &iY;
-
-    if(lightDir[0] < 0) {
-      iY = size-1;
-      dirY = -1;
-    } else {
-      iY = 0;
-      dirY = 1;
-    }
-
-    if(lightDir[2] < 0) {
-      iX = size-1;
-      dirX = -1;
-    } else {
-      iX = 0;
-      dirX = 1;
-    }
-  } else {
-    Y = &iY;
-    X = &iX;
-
-    if(lightDir[0] < 0) {
-      iX = size-1;
-      dirX = -1;
-    } else {
-      iX = 0;
-      dirX = 1;
-    }
-
-    if(lightDir[2] < 0) {
-      iY = size-1;
-      dirY = -1;
-    } else {
-      iY = 0;
-      dirY = 1;
-    }
-  }
-
-  // outer loop
-  while (1) {
-    // inner loop
-    while (1) {
-      // travel along the terrain until we:
-      // (1) intersect another point
-      // (2) find another point with previous collision data
-      // (3) or reach the edge of the map
-      px = *X;
-      py = *Y;
-      index = (*Y) * size + (*X);
-
-      // travel along ray
-      while (1) {
-        px -= lightDir[0];
-        py -= lightDir[2];
-
-        // check if we've reached the boundary
-        if (px < 0 || px >= size || py < 0 || py >= size) {
-          flagMap[index] = -1;
-          break;
-        }
-
-        // calculate interpolated values
-        static int x0, x1, y0, y1;
-        static float du, dv;
-        static float interpolatedHeight, interpolatedFlagMap;
-        static float heights[4];
-        static float pixels[4];
-        static float invdu, invdv;
-        static float w0, w1, w2, w3;
-
-        x0 = floor(px);
-        x1 = ceil(px);
-        y0 = floor(py);
-        y1 = ceil(py);
-
-        du = px - x0;
-        dv = py - y0;
-
-        invdu = 1.0 - du;
-        invdv = 1.0 - dv;
-        w0 = invdu * invdv;
-        w1 = invdu * dv;
-        w2 = du * invdv;
-        w3 = du * dv;
-
-        // compute interpolated height value from the heightmap direction below ray
-        heights[0] = fScaleZ * heightmap[y0 * size + x0];
-        heights[1] = fScaleZ * heightmap[y1 * size + x0];
-        heights[2] = fScaleZ * heightmap[y0 * size + x1];
-        heights[3] = fScaleZ * heightmap[y1 * size + x1];
-        interpolatedHeight = w0 * heights[0] + w1 * heights[1] + w2 * heights[2] + w3 * heights[3];
-
-        // compute interpolated flagmap value from point directly below ray
-        pixels[0] = flagMap[y0 * size + x0];
-        pixels[1] = flagMap[y1 * size + x0];
-        pixels[2] = flagMap[y0 * size + x1];
-        pixels[3] = flagMap[y1 * size + x1];
-        interpolatedFlagMap = w0 * pixels[0] + w1 * pixels[1] + w2 * pixels[2] + w3 * pixels[3];
-
-        // get distance from original point to current point
-        distance = sqrt( (px - *X)*(px - *X) + (py - *Y) * (py - *Y) );
-
-        // get height at current point while traveling along light ray
-        height = (fScaleZ * heightmap[index]) + lightDir[1] * distance;
-
-        // check intersection with either terrain or flagMap
-        // if interpolatedHeight is less than interpolatedFlagMap that means we need to use the flagMap value instead
-        // else use the height value
-        static float val;
-        val = interpolatedHeight;
-        if(interpolatedHeight < interpolatedFlagMap) val = interpolatedFlagMap;
-        if(height < val) {
-          flagMap[index] = val - height;
-
-          _lightmap[index] = shadowColour;
-
-          break;
-        }
-
-        // check if pixel we've moved to is unshadowed
-        // since the flagMap value we're using is interpolated, we will be in between shadowed and unshadowed areas
-        // to compensate for this, simply define some epsilon value and use this as an offset from -1 to decide
-        // if current point under the ray is unshadowed
-        static float epsilon = 0.5f;
-        if(interpolatedFlagMap < -1.0f+epsilon && interpolatedFlagMap > -1.0f-epsilon) {
-          flagMap[index] = -1.0f;
-          break;
-        }
-      }
-
-      // update inner loop variable
-      if(dirY < 0) {
-        iY--;
-        if(iY < 0) break;
-      } else {
-        iY++;
-        if(iY >= size) break;
-      }
-    }
-
-    // reset inner loop starting point
-    if(dirY < 0) iY = size - 1;
-    else iY = 0;
-
-    // update outer loop variable
-    if(dirX < 0) {
-      iX--;
-      if(iX < 0) break;
-    } else {
-      iX++;
-      if(iX >= size) break;
-    }
-  }
-
-  delete [] flagMap;
-}
-
 
 class cApplication : public opengl::cWindowEventListener, public opengl::cInputEventListener
 {
@@ -657,6 +372,7 @@ private:
 
   bool bIsWireframe;
   bool bUseQuadsIndexed;
+  bool bIsMouseMovement;
   bool bIsDone;
 
   size_t width;
@@ -695,6 +411,7 @@ private:
 cApplication::cApplication() :
   bIsWireframe(false),
   bUseQuadsIndexed(true),
+  bIsMouseMovement(false),
   bIsDone(false),
 
   width(0),
@@ -881,9 +598,11 @@ void cApplication::CreateScreenQuadVBO()
 
 bool cApplication::Create()
 {
-  opengl::cImage image;
+  std::cout<<"cApplication::Create"<<std::endl;
+  voodoo::cImage image;
 
   {
+    // Get a screenshot
     cScreen screen;
     size_t monitor = screen.GetMonitorContainingCursor();
 
@@ -900,72 +619,7 @@ bool cApplication::Create()
     screen.GetScreenShotOfMonitor(monitor, image);
   }
 
-  const opengl::cCapabilities& capabilities = system.GetCapabilities();
-
-  opengl::cResolution resolution = capabilities.GetCurrentResolution();
-  if ((resolution.width < 1024) || (resolution.height < 768) || (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8)) {
-    std::cout<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
-    return false;
-  }
-
-  // Set our required resolution
-  resolution.width = 1024;
-  resolution.height = 768;
-  resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
-
-  pWindow = system.CreateWindow(TEXT("openglmm_heightmap"), resolution, false);
-  if (pWindow == nullptr) {
-    std::cout<<"Window could not be created"<<std::endl;
-    return false;
-  }
-
-  pContext = pWindow->GetContext();
-  if (pContext == nullptr) {
-    std::cout<<"Context could not be created"<<std::endl;
-    return false;
-  }
-
-  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(1024, 1024, opengl::PIXELFORMAT::R8G8B8A8);
-  assert(pTextureFrameBufferObject != nullptr);
-
-  pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
-  pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
-
-  pShaderHeightmap = pContext->CreateShader(TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
-  pShaderHeightmap->bTexUnit0 = true;
-  pShaderHeightmap->bTexUnit1 = true;
-  pShaderHeightmap->bTexUnit2 = true;
-
-  cHeightmapData data(TEXT("textures/heightmap.png"));
-
-  width = data.GetWidth();
-  depth = data.GetDepth();
-
-  scale.Set(0.2f, 0.2f, 10.0f);
-
-  const uint8_t* pBuffer = data.GetLightmapBuffer();
-  const size_t widthLightmap = data.GetLightmapWidth();
-  const size_t depthLightmap = data.GetLightmapDepth();
-  pTextureLightMap = pContext->CreateTextureFromBuffer(pBuffer, widthLightmap, depthLightmap, opengl::PIXELFORMAT::R8G8B8A8);
-
-
-  pStaticVertexBufferObjectHeightmapQuads = pContext->CreateStaticVertexBufferObject();
-  CreateHeightmapQuads(pStaticVertexBufferObjectHeightmapQuads, data, scale);
-
-  pStaticVertexBufferObjectHeightmapQuadsIndexed = pContext->CreateStaticVertexBufferObject();
-  CreateHeightmapQuadsIndexed(pStaticVertexBufferObjectHeightmapQuadsIndexed, data, scale);
-
-
-  pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
-  assert(pShaderScreenQuad != nullptr);
-  pShaderScreenQuad->bTexUnit0 = true;
-
-  pStaticVertexBufferObjectScreenQuad = pContext->CreateStaticVertexBufferObject();
-  assert(pStaticVertexBufferObjectScreenQuad != nullptr);
-  CreateScreenQuadVBO();
-
-
-  // Create our screenshot texture
+  // Create a power of two image from our screenshot
   const size_t imageWidth = image.GetWidth();
   const size_t imageHeight = image.GetHeight();
   // TODO: For dual monitors this width and height is incorrect
@@ -987,9 +641,54 @@ bool cApplication::Create()
     }
   }
 
-  opengl::cImage imagePowerOfTwo;
+  voodoo::cImage imagePowerOfTwo;
   imagePowerOfTwo.CreateFromBuffer(buffer.data(), textureWidth, textureHeight, opengl::PIXELFORMAT::R8G8B8A8);
 
+
+  // Create our window
+  const opengl::cCapabilities& capabilities = system.GetCapabilities();
+
+  opengl::cResolution resolution = capabilities.GetCurrentResolution();
+  if ((resolution.width < 1024) || (resolution.height < 768) || (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8)) {
+    std::cout<<"cApplication::Create Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
+    return false;
+  }
+
+  // We will use the same resolution and depth in fullscreen
+  resolution.width = 1280;
+  resolution.height = 1024;
+  resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
+  const bool bIsFullScreen = true;
+
+  // For testing in windowed mode
+  //resolution.width = 1024;
+  //resolution.height = 768;
+  //resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
+  //const bool bIsFullScreen = false;
+
+  std::cout<<"cApplication::Create Calling create window"<<std::endl;
+  pWindow = system.CreateWindow(TEXT("openglmm_heightmap"), resolution, bIsFullScreen);
+  if (pWindow == nullptr) {
+    std::cout<<"cApplication::Create Window could not be created"<<std::endl;
+    return false;
+  }
+
+  pContext = pWindow->GetContext();
+  if (pContext == nullptr) {
+    std::cout<<"Context could not be created"<<std::endl;
+    return false;
+  }
+
+  pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
+  assert(pShaderScreenQuad != nullptr);
+  pShaderScreenQuad->bTexUnit0 = true;
+
+  pStaticVertexBufferObjectScreenQuad = pContext->CreateStaticVertexBufferObject();
+  assert(pStaticVertexBufferObjectScreenQuad != nullptr);
+  CreateScreenQuadVBO();
+
+
+  // Create our screenshot texture
   pTextureScreenShot = pContext->CreateTextureFromImage(imagePowerOfTwo);
   if (pTextureScreenShot == nullptr) {
     std::cout<<"cApplication::Create CreateTextureFromImage FAILED to create texture from desktop image, returning false"<<std::endl;
@@ -1006,7 +705,128 @@ bool cApplication::Create()
   assert(pShaderScreenBlendQuad != nullptr);
   pShaderScreenBlendQuad->bTexUnit0 = true;
   pShaderScreenBlendQuad->bTexUnit1 = true;
+  
+  
 
+  // Render one frame of the screenshot
+  {
+    assert(pContext != nullptr);
+    assert(pContext->IsValid());
+    assert(pTextureScreenShot != nullptr);
+    assert(pTextureScreenShot->IsValid());  
+
+    assert(pShaderScreenBlendQuad != nullptr);
+    assert(pShaderScreenBlendQuad->IsCompiledProgram());
+    assert(pStaticVertexBufferObjectScreenBlendQuad != nullptr);
+    assert(pStaticVertexBufferObjectScreenBlendQuad->IsCompiled());
+
+    uint32_t T0 = 0;
+    uint32_t Frames = 0;
+
+    uint32_t currentTime = SDL_GetTicks();
+
+    // Setup mouse
+    pWindow->ShowCursor(false);
+    pWindow->WarpCursorToMiddleOfScreen();
+
+
+    // Update window events
+    pWindow->UpdateEvents();
+
+    // Update state
+    currentTime = SDL_GetTicks();
+
+    const float fBlend0 = 1.0f;
+    const float fBlend1 = 0.0f;
+
+    {
+      // Render the screenshot
+      const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
+      pContext->SetClearColour(clearColour);
+
+      pContext->BeginRendering();
+
+      // Now draw an overlay of our texture
+      pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
+
+      // Move the quad into the bottom right hand corner of the screen
+      spitfire::math::cMat4 matModelView2D;
+      matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
+
+      pContext->BindTexture(0, *pTextureScreenShot);
+      pContext->BindTexture(1, *pTextureScreenShot);
+
+      pContext->BindShader(*pShaderScreenBlendQuad);
+
+      pContext->SetShaderConstant("fBlend0", fBlend0);
+      pContext->SetShaderConstant("fBlend1", fBlend1);
+
+      pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenBlendQuad);
+
+      {
+        pContext->SetModelViewMatrix(matModelView2D);
+
+        pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenBlendQuad);
+      }
+
+      pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenBlendQuad);
+
+      pContext->UnBindShader(*pShaderScreenBlendQuad);
+
+      pContext->UnBindTexture(1, *pTextureScreenShot);
+      pContext->UnBindTexture(0, *pTextureScreenShot);
+
+      pContext->EndRenderMode2D();
+
+      pContext->EndRendering();
+    }
+
+    // Gather our frames per second
+    Frames++;
+    {
+      uint32_t t = SDL_GetTicks();
+      if (t - T0 >= 5000) {
+        float seconds = (t - T0) / 1000.0;
+        float fps = Frames / seconds;
+        std::cout<<Frames<<" frames in "<<seconds<<" seconds = "<<fps<<" FPS"<<std::endl;
+        T0 = t;
+        Frames = 0;
+      }
+    }
+  }
+
+
+  // Now we can continue loading the heightmap
+  
+  std::cout<<"cApplication::Create Creating frame buffer object"<<std::endl;
+  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(1024, 1024, opengl::PIXELFORMAT::R8G8B8A8);
+  assert(pTextureFrameBufferObject != nullptr);
+
+
+  std::cout<<"cApplication::Create Creating diffuse and detail textures"<<std::endl;
+  pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
+  pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
+
+  pShaderHeightmap = pContext->CreateShader(TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
+  pShaderHeightmap->bTexUnit0 = true;
+  pShaderHeightmap->bTexUnit1 = true;
+  pShaderHeightmap->bTexUnit2 = true;
+
+  cHeightmapData data(TEXT("textures/heightmap.png"));
+
+  width = data.GetWidth();
+  depth = data.GetDepth();
+
+  scale.Set(0.2f, 0.2f, 10.0f);
+
+  std::cout<<"cApplication::Create Creating lightmap"<<std::endl;
+  pTextureLightMap = pContext->CreateTexture(TEXT("textures/lightmap.png"));
+
+  pStaticVertexBufferObjectHeightmapQuads = pContext->CreateStaticVertexBufferObject();
+  CreateHeightmapQuads(pStaticVertexBufferObjectHeightmapQuads, data, scale);
+
+  pStaticVertexBufferObjectHeightmapQuadsIndexed = pContext->CreateStaticVertexBufferObject();
+  CreateHeightmapQuadsIndexed(pStaticVertexBufferObjectHeightmapQuadsIndexed, data, scale);
 
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
@@ -1094,6 +914,8 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
 {
   // These a little too numerous to log every single one
   //std::cout<<"cApplication::_OnMouseEvent"<<std::endl;
+
+  if (!bIsMouseMovement) return;
 
   if (event.IsMouseMove()) {
     std::cout<<"cApplication::_OnMouseEvent Mouse move"<<std::endl;
@@ -1254,7 +1076,7 @@ void cApplication::Run()
   pWindow->WarpCursorToMiddleOfScreen();
 
 
-  uint32_t duration = (8 * 1000); // End in 8 seconds time
+  uint32_t duration = (5 * 1000); // End in 5 seconds time
 
   uint32_t startTime = SDL_GetTicks();
   uint32_t endTime = startTime + duration;
@@ -1263,12 +1085,19 @@ void cApplication::Run()
     // Update window events
     pWindow->UpdateEvents();
 
+    // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
+    pWindow->WarpCursorToMiddleOfScreen();
+
     // Update state
     previousTime = currentTime;
     currentTime = SDL_GetTicks();
 
-    const float fBlend0 = 1.0f - ((float(currentTime) - float(startTime)) / float(duration));
-    const float fBlend1 = (float(currentTime) - float(startTime)) / float(duration);
+    const float fComplete0To1 = min(spitfire::math::square((float(currentTime) - float(startTime)) / float(duration)), 1.0f);
+    const float fBlend0 = 1.0f - fComplete0To1;
+    const float fBlend1 = fComplete0To1;
+
+    // If we are more than 3/4 of the way through fading then we can allow the user to look around
+    if (fComplete0To1 > 0.75f) bIsMouseMovement = true;
 
     matRotation.SetRotation(rotationZ * rotationX);
 
@@ -1280,6 +1109,8 @@ void cApplication::Run()
       pContext->SetClearColour(clearColour);
 
       pContext->BeginRenderToTexture(*pTextureFrameBufferObject);
+
+      if (bIsWireframe) pContext->EnableWireframe();
 
       const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
       const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
@@ -1312,6 +1143,8 @@ void cApplication::Run()
       pContext->UnBindTexture(2, *pTextureDetail);
       pContext->UnBindTexture(1, *pTextureLightMap);
       pContext->UnBindTexture(0, *pTextureDiffuse);
+
+      if (bIsWireframe) pContext->DisableWireframe();      
 
       pContext->EndRenderToTexture(*pTextureFrameBufferObject);
     }
@@ -1372,6 +1205,8 @@ void cApplication::Run()
     }
   };
 
+  bIsMouseMovement = true;
+
   while (!bIsDone) {
     // Update window events
     pWindow->UpdateEvents();
@@ -1392,6 +1227,8 @@ void cApplication::Run()
       pContext->SetClearColour(clearColour);
 
       pContext->BeginRenderToTexture(*pTextureFrameBufferObject);
+
+      if (bIsWireframe) pContext->EnableWireframe();
 
       const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
       const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
@@ -1424,6 +1261,8 @@ void cApplication::Run()
       pContext->UnBindTexture(2, *pTextureDetail);
       pContext->UnBindTexture(1, *pTextureLightMap);
       pContext->UnBindTexture(0, *pTextureDiffuse);
+
+      if (bIsWireframe) pContext->DisableWireframe();
 
       pContext->EndRenderToTexture(*pTextureFrameBufferObject);
     }

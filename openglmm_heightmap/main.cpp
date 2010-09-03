@@ -75,7 +75,7 @@ private:
 
 cHeightmapData::cHeightmapData(const opengl::string_t& sFilename)
 {
-  opengl::cImage image;
+  voodoo::cImage image;
   if (!image.LoadFromFile(sFilename)) {
     std::cout<<"cHeightmapData::cHeightmapData Could not load "<<opengl::string::ToUTF8(sFilename)<<std::endl;
     assert(false);
