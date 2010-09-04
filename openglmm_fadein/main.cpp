@@ -363,6 +363,8 @@ private:
   void CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
   void CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
 
+  void CreateGrassVBO(const cHeightmapData& data, const spitfire::math::cVec3& scale);
+
   void CreateScreenBlendQuadVBO(float fRatioOfTextureWidthToScreenShotWidth, float fRatioOfTextureHeightToScreenShotHeight);
   void CreateScreenQuadVBO();
 
@@ -396,13 +398,17 @@ private:
   opengl::cTexture* pTextureDiffuse;
   opengl::cTexture* pTextureLightMap;
   opengl::cTexture* pTextureDetail;
+  opengl::cTexture* pTextureGrass;
 
   opengl::cShader* pShaderHeightmap;
+  opengl::cShader* pShaderGrass;
   opengl::cShader* pShaderScreenBlendQuad;
   opengl::cShader* pShaderScreenQuad;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuads;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuadsIndexed;
+
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectGrass;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenBlendQuad;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenQuad;
@@ -428,13 +434,17 @@ cApplication::cApplication() :
   pTextureDiffuse(nullptr),
   pTextureLightMap(nullptr),
   pTextureDetail(nullptr),
+  pTextureGrass(nullptr),
 
   pShaderHeightmap(nullptr),
+  pShaderGrass(nullptr),
   pShaderScreenBlendQuad(nullptr),
   pShaderScreenQuad(nullptr),
 
   pStaticVertexBufferObjectHeightmapQuads(nullptr),
   pStaticVertexBufferObjectHeightmapQuadsIndexed(nullptr),
+
+  pStaticVertexBufferObjectGrass(nullptr),
 
   pStaticVertexBufferObjectScreenBlendQuad(nullptr),
   pStaticVertexBufferObjectScreenQuad(nullptr)
@@ -541,6 +551,77 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
 }
 
 //void cApplication::CreateHeightmapTriangleStrips();
+
+void cApplication::CreateGrassVBO(const cHeightmapData& data, const spitfire::math::cVec3& scale)
+{
+  assert(pStaticVertexBufferObjectGrass != nullptr);
+
+  std::vector<float> vertices;
+  std::vector<float> normals;
+  std::vector<float> textureCoordinates;
+  //std::vector<uint16_t> indices;
+
+  opengl::cGeometryBuilder_v3_n3_t2 builder(vertices, normals, textureCoordinates);
+
+  const spitfire::math::cVec3 min(-0.5f, 0.0f, 0.0f);
+  const spitfire::math::cVec3 max(0.5f, 0.0f, 1.0f);
+  const spitfire::math::cVec3 normal(0.0f, 1.0f, 0.0f);
+
+  const spitfire::math::cVec3 axisZ(0.0f, 0.0f, 1.0f);
+
+  const size_t width = data.GetWidth();
+  const size_t depth = data.GetDepth();
+  for (size_t y = 0; y < depth - 1; y += 10) {
+    for (size_t x = 0; x < width - 1; x += 10) {
+      const spitfire::math::cVec3 position(scale * spitfire::math::cVec3(float(x), float(y), data.GetHeight(x, y) + 0.01f));
+
+      // Create 3 billboards at 60 degree increments
+      /* From above they will look something like this:
+         \|/
+         -*-
+         /|\
+      */
+      for (size_t i = 0; i < 3; i++) {
+        const float fRotationDegrees = float(i + 1) * 60.0f;
+
+        // The rotation for this billboard of grass
+        spitfire::math::cQuaternion rotationZ;
+        rotationZ.SetFromAxisAngleDegrees(axisZ, fRotationDegrees);
+
+        spitfire::math::cMat4 matRotation;
+        matRotation.SetRotation(rotationZ);
+
+        const spitfire::math::cVec3 point[4] = {
+          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(min.x, min.y, min.z)),
+          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(max.x, min.y, min.z)),
+          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(max.x, min.y, max.z)),
+          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(min.x, min.y, max.z)),
+        };
+
+        const spitfire::math::cVec3 normalRotated = matRotation.GetRotatedVec3(normal);
+
+        // Front face
+        builder.PushBack(point[0], normalRotated, spitfire::math::cVec2(0.0f, 1.0f));
+        builder.PushBack(point[1], normalRotated, spitfire::math::cVec2(1.0f, 1.0f));
+        builder.PushBack(point[2], normalRotated, spitfire::math::cVec2(1.0f, 0.0f));
+        builder.PushBack(point[3], normalRotated, spitfire::math::cVec2(0.0f, 0.0f));
+
+        // Back face
+        builder.PushBack(point[3], -normalRotated, spitfire::math::cVec2(0.0f, 0.0f));
+        builder.PushBack(point[2], -normalRotated, spitfire::math::cVec2(1.0f, 0.0f));
+        builder.PushBack(point[1], -normalRotated, spitfire::math::cVec2(1.0f, 1.0f));
+        builder.PushBack(point[0], -normalRotated, spitfire::math::cVec2(0.0f, 1.0f));
+      }
+    }
+  }
+
+  pStaticVertexBufferObjectGrass->SetVertices(vertices);
+  pStaticVertexBufferObjectGrass->SetNormals(normals);
+  pStaticVertexBufferObjectGrass->SetTextureCoordinates(textureCoordinates);
+  //pStaticVertexBufferObjectGrass->SetIndices(indices);
+
+  pStaticVertexBufferObjectGrass->Compile(system);
+}
 
 void cApplication::CreateScreenBlendQuadVBO(float fRatioOfTextureWidthToScreenShotWidth, float fRatioOfTextureHeightToScreenShotHeight)
 {
@@ -828,6 +909,18 @@ bool cApplication::Create()
   pStaticVertexBufferObjectHeightmapQuadsIndexed = pContext->CreateStaticVertexBufferObject();
   CreateHeightmapQuadsIndexed(pStaticVertexBufferObjectHeightmapQuadsIndexed, data, scale);
 
+
+  std::cout<<"cApplication::Create Creating grass texture"<<std::endl;
+  pTextureGrass = pContext->CreateTexture(TEXT("textures/grass.png"));
+
+  pShaderGrass = pContext->CreateShader(TEXT("shaders/grass.vert"), TEXT("shaders/grass.frag"));
+  pShaderGrass->bTexUnit0 = true;
+
+  pStaticVertexBufferObjectGrass = pContext->CreateStaticVertexBufferObject();
+  assert(pStaticVertexBufferObjectGrass != nullptr);
+  CreateGrassVBO(data, scale);
+
+
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
   pWindow->SetInputEventListener(*this);
@@ -857,6 +950,22 @@ void cApplication::Destroy()
   if (pTextureScreenShot != nullptr) {
     pContext->DestroyTexture(pTextureScreenShot);
     pTextureScreenShot = nullptr;
+  }
+
+
+  if (pStaticVertexBufferObjectGrass != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectGrass);
+    pStaticVertexBufferObjectGrass = nullptr;
+  }
+
+  if (pShaderGrass != nullptr) {
+    pContext->DestroyShader(pShaderGrass);
+    pShaderGrass = nullptr;
+  }
+
+  if (pTextureGrass != nullptr) {
+    pContext->DestroyTexture(pTextureGrass);
+    pTextureGrass = nullptr;
   }
 
 
@@ -997,6 +1106,13 @@ void cApplication::Run()
   assert(pContext->IsValid());
   assert(pTextureScreenShot != nullptr);
   assert(pTextureScreenShot->IsValid());  
+  assert(pTextureGrass != nullptr);
+  assert(pTextureGrass->IsValid());
+  assert(pShaderGrass != nullptr);
+  assert(pShaderGrass->IsCompiledProgram());
+  assert(pStaticVertexBufferObjectGrass != nullptr);
+  assert(pStaticVertexBufferObjectGrass->IsCompiled());  
+
   assert(pTextureDiffuse != nullptr);
   assert(pTextureDiffuse->IsValid());
   assert(pTextureLightMap != nullptr);
@@ -1111,7 +1227,7 @@ void cApplication::Run()
       pContext->BeginRenderToTexture(*pTextureFrameBufferObject);
 
       if (bIsWireframe) pContext->EnableWireframe();
-
+      
       const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
       const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
 
@@ -1120,6 +1236,8 @@ void cApplication::Run()
       spitfire::math::cMat4 matModelView;
       matModelView.LookAt(eye, target, up);
 
+
+      // Render terrain
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureLightMap);
       pContext->BindTexture(2, *pTextureDetail);
@@ -1143,6 +1261,22 @@ void cApplication::Run()
       pContext->UnBindTexture(2, *pTextureDetail);
       pContext->UnBindTexture(1, *pTextureLightMap);
       pContext->UnBindTexture(0, *pTextureDiffuse);
+
+      
+      // Render grass
+      pContext->BindTexture(0, *pTextureGrass);
+
+      pContext->BindShader(*pShaderGrass);
+
+      pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectGrass);
+        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectGrass);
+      pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectGrass);
+
+      pContext->UnBindShader(*pShaderGrass);
+
+      pContext->UnBindTexture(0, *pTextureGrass);
+
 
       if (bIsWireframe) pContext->DisableWireframe();      
 
@@ -1238,6 +1372,8 @@ void cApplication::Run()
       spitfire::math::cMat4 matModelView;
       matModelView.LookAt(eye, target, up);
 
+
+      // Render terrain
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureLightMap);
       pContext->BindTexture(2, *pTextureDetail);
@@ -1261,6 +1397,22 @@ void cApplication::Run()
       pContext->UnBindTexture(2, *pTextureDetail);
       pContext->UnBindTexture(1, *pTextureLightMap);
       pContext->UnBindTexture(0, *pTextureDiffuse);
+
+      
+      // Render grass
+      pContext->BindTexture(0, *pTextureGrass);
+
+      pContext->BindShader(*pShaderGrass);
+
+      pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectGrass);
+        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectGrass);
+      pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectGrass);
+
+      pContext->UnBindShader(*pShaderGrass);
+
+      pContext->UnBindTexture(0, *pTextureGrass);
+
 
       if (bIsWireframe) pContext->DisableWireframe();
 
