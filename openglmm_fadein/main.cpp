@@ -140,7 +140,7 @@ bool cScreen::GetScreenShotOfMonitor(size_t monitor, voodoo::cImage& image) cons
     XRRScreenConfiguration* pConfiguration = XRRGetScreenInfo(pDisplay, root);
     std::cout<<"cScreen::GetScreenShotOfMonitor c"<<std::endl;
     //short original_rate = XRRConfigCurrentRate(pConfiguration);
-    Rotation original_rotation;    
+    Rotation original_rotation;
     SizeID original_size_id = XRRConfigCurrentConfiguration(pConfiguration, &original_rotation);
     std::cout<<"cScreen::GetScreenShotOfMonitor d"<<std::endl;
 
@@ -554,14 +554,32 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
 
 void cApplication::CreateGrassVBO(const cHeightmapData& data, const spitfire::math::cVec3& scale)
 {
+  std::cout<<"cApplication::CreateGrassVBO"<<std::endl;
+
   assert(pStaticVertexBufferObjectGrass != nullptr);
+
+  voodoo::cImage lightmap;
+  if (!lightmap.LoadFromFile(TEXT("textures/lightmap.png"))) {
+    std::cout<<"cApplication::CreateGrassVBO Could not load \"textures/lightmap.png\""<<std::endl;
+    assert(false);
+  }
+
+  const uint8_t* pLightmapData = lightmap.GetPointerToData();
+
+  const spitfire::math::cVec2 lightmapScale(float(lightmap.GetWidth()) / float(data.GetWidth()), float(lightmap.GetHeight()) / float(data.GetDepth()));
+
+  const float fBytesPerPixel = lightmap.GetBytesPerPixel();
+  const float fBytesPerRow = lightmap.GetWidth() * lightmap.GetBytesPerPixel();
+
+  const float fOneOver255 = 1.0f / 255.0f;
 
   std::vector<float> vertices;
   std::vector<float> normals;
   std::vector<float> textureCoordinates;
   //std::vector<uint16_t> indices;
+  std::vector<float> colours;
 
-  opengl::cGeometryBuilder_v3_n3_t2 builder(vertices, normals, textureCoordinates);
+  opengl::cGeometryBuilder_v3_n3_t2_c4 builder(vertices, normals, textureCoordinates, colours);
 
   const spitfire::math::cVec3 min(-0.5f, 0.0f, 0.0f);
   const spitfire::math::cVec3 max(0.5f, 0.0f, 1.0f);
@@ -573,6 +591,9 @@ void cApplication::CreateGrassVBO(const cHeightmapData& data, const spitfire::ma
   const size_t depth = data.GetDepth();
   for (size_t y = 0; y < depth - 1; y += 10) {
     for (size_t x = 0; x < width - 1; x += 10) {
+      const size_t index = (lightmapScale.y * float(y) * fBytesPerRow) + (lightmapScale.x * float(x) * fBytesPerPixel);
+      const spitfire::math::cColour colour(pLightmapData[index] * fOneOver255, pLightmapData[index + 1] * fOneOver255, pLightmapData[index + 2] * fOneOver255);
+
       const spitfire::math::cVec3 position(scale * spitfire::math::cVec3(float(x), float(y), data.GetHeight(x, y) + 0.01f));
 
       // Create 3 billboards at 60 degree increments
@@ -601,16 +622,16 @@ void cApplication::CreateGrassVBO(const cHeightmapData& data, const spitfire::ma
         const spitfire::math::cVec3 normalRotated = matRotation.GetRotatedVec3(normal);
 
         // Front face
-        builder.PushBack(point[0], normalRotated, spitfire::math::cVec2(0.0f, 1.0f));
-        builder.PushBack(point[1], normalRotated, spitfire::math::cVec2(1.0f, 1.0f));
-        builder.PushBack(point[2], normalRotated, spitfire::math::cVec2(1.0f, 0.0f));
-        builder.PushBack(point[3], normalRotated, spitfire::math::cVec2(0.0f, 0.0f));
+        builder.PushBack(point[0], normalRotated, spitfire::math::cVec2(0.0f, 1.0f), colour);
+        builder.PushBack(point[1], normalRotated, spitfire::math::cVec2(1.0f, 1.0f), colour);
+        builder.PushBack(point[2], normalRotated, spitfire::math::cVec2(1.0f, 0.0f), colour);
+        builder.PushBack(point[3], normalRotated, spitfire::math::cVec2(0.0f, 0.0f), colour);
 
         // Back face
-        builder.PushBack(point[3], -normalRotated, spitfire::math::cVec2(0.0f, 0.0f));
-        builder.PushBack(point[2], -normalRotated, spitfire::math::cVec2(1.0f, 0.0f));
-        builder.PushBack(point[1], -normalRotated, spitfire::math::cVec2(1.0f, 1.0f));
-        builder.PushBack(point[0], -normalRotated, spitfire::math::cVec2(0.0f, 1.0f));
+        builder.PushBack(point[3], -normalRotated, spitfire::math::cVec2(0.0f, 0.0f), colour);
+        builder.PushBack(point[2], -normalRotated, spitfire::math::cVec2(1.0f, 0.0f), colour);
+        builder.PushBack(point[1], -normalRotated, spitfire::math::cVec2(1.0f, 1.0f), colour);
+        builder.PushBack(point[0], -normalRotated, spitfire::math::cVec2(0.0f, 1.0f), colour);
       }
     }
   }
@@ -619,6 +640,7 @@ void cApplication::CreateGrassVBO(const cHeightmapData& data, const spitfire::ma
   pStaticVertexBufferObjectGrass->SetNormals(normals);
   pStaticVertexBufferObjectGrass->SetTextureCoordinates(textureCoordinates);
   //pStaticVertexBufferObjectGrass->SetIndices(indices);
+  pStaticVertexBufferObjectGrass->SetColours(colours);
 
   pStaticVertexBufferObjectGrass->Compile(system);
 }
@@ -786,15 +808,15 @@ bool cApplication::Create()
   assert(pShaderScreenBlendQuad != nullptr);
   pShaderScreenBlendQuad->bTexUnit0 = true;
   pShaderScreenBlendQuad->bTexUnit1 = true;
-  
-  
+
+
 
   // Render one frame of the screenshot
   {
     assert(pContext != nullptr);
     assert(pContext->IsValid());
     assert(pTextureScreenShot != nullptr);
-    assert(pTextureScreenShot->IsValid());  
+    assert(pTextureScreenShot->IsValid());
 
     assert(pShaderScreenBlendQuad != nullptr);
     assert(pShaderScreenBlendQuad->IsCompiledProgram());
@@ -878,7 +900,7 @@ bool cApplication::Create()
 
 
   // Now we can continue loading the heightmap
-  
+
   std::cout<<"cApplication::Create Creating frame buffer object"<<std::endl;
   pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(1024, 1024, opengl::PIXELFORMAT::R8G8B8A8);
   assert(pTextureFrameBufferObject != nullptr);
@@ -887,6 +909,7 @@ bool cApplication::Create()
   std::cout<<"cApplication::Create Creating diffuse and detail textures"<<std::endl;
   pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
   pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
+  pTextureLightMap = pContext->CreateTexture(TEXT("textures/lightmap.png"));
 
   pShaderHeightmap = pContext->CreateShader(TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
   pShaderHeightmap->bTexUnit0 = true;
@@ -899,9 +922,6 @@ bool cApplication::Create()
   depth = data.GetDepth();
 
   scale.Set(0.2f, 0.2f, 10.0f);
-
-  std::cout<<"cApplication::Create Creating lightmap"<<std::endl;
-  pTextureLightMap = pContext->CreateTexture(TEXT("textures/lightmap.png"));
 
   pStaticVertexBufferObjectHeightmapQuads = pContext->CreateStaticVertexBufferObject();
   CreateHeightmapQuads(pStaticVertexBufferObjectHeightmapQuads, data, scale);
@@ -1105,13 +1125,13 @@ void cApplication::Run()
   assert(pContext != nullptr);
   assert(pContext->IsValid());
   assert(pTextureScreenShot != nullptr);
-  assert(pTextureScreenShot->IsValid());  
+  assert(pTextureScreenShot->IsValid());
   assert(pTextureGrass != nullptr);
   assert(pTextureGrass->IsValid());
   assert(pShaderGrass != nullptr);
   assert(pShaderGrass->IsCompiledProgram());
   assert(pStaticVertexBufferObjectGrass != nullptr);
-  assert(pStaticVertexBufferObjectGrass->IsCompiled());  
+  assert(pStaticVertexBufferObjectGrass->IsCompiled());
 
   assert(pTextureDiffuse != nullptr);
   assert(pTextureDiffuse->IsValid());
@@ -1227,7 +1247,7 @@ void cApplication::Run()
       pContext->BeginRenderToTexture(*pTextureFrameBufferObject);
 
       if (bIsWireframe) pContext->EnableWireframe();
-      
+
       const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
       const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
 
@@ -1262,7 +1282,7 @@ void cApplication::Run()
       pContext->UnBindTexture(1, *pTextureLightMap);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
-      
+
       // Render grass
       pContext->BindTexture(0, *pTextureGrass);
 
@@ -1278,7 +1298,7 @@ void cApplication::Run()
       pContext->UnBindTexture(0, *pTextureGrass);
 
 
-      if (bIsWireframe) pContext->DisableWireframe();      
+      if (bIsWireframe) pContext->DisableWireframe();
 
       pContext->EndRenderToTexture(*pTextureFrameBufferObject);
     }
@@ -1354,7 +1374,7 @@ void cApplication::Run()
 
     matRotation.SetRotation(rotationZ * rotationX);
 
-    
+
     {
       // Render the scene into the frame buffer object
       const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
@@ -1398,7 +1418,7 @@ void cApplication::Run()
       pContext->UnBindTexture(1, *pTextureLightMap);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
-      
+
       // Render grass
       pContext->BindTexture(0, *pTextureGrass);
 

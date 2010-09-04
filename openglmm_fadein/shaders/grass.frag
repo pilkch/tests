@@ -8,5 +8,5 @@ void main( void )
   vec4 colour = texture2D(texUnit0, gl_TexCoord[0].st);
   if (colour.a < tolerance) discard;
 
-  gl_FragColor = colour;
+  gl_FragColor = vec4(colour.rgb * gl_Color.rgb, colour.a);
 }
