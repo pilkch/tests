@@ -348,6 +348,36 @@ spitfire::math::cVec3 cHeightmapData::GetNormal(size_t x, size_t y, const spitfi
 }
 
 
+class cTextureVertexBufferObjectPair
+{
+public:
+  cTextureVertexBufferObjectPair();
+  ~cTextureVertexBufferObjectPair();
+
+  bool IsValid() const;
+
+  opengl::cTexture* pTexture;
+  opengl::cStaticVertexBufferObject* pVBO;
+};
+
+cTextureVertexBufferObjectPair::cTextureVertexBufferObjectPair() :
+  pTexture(nullptr),
+  pVBO(nullptr)
+{
+}
+
+cTextureVertexBufferObjectPair::~cTextureVertexBufferObjectPair()
+{
+  assert(pTexture == nullptr);
+  assert(pVBO == nullptr);
+}
+
+bool cTextureVertexBufferObjectPair::IsValid() const
+{
+  return (pTexture != nullptr) && (pTexture->IsValid()) && (pVBO != nullptr) && (pVBO->IsCompiled());
+}
+
+
 class cApplication : public opengl::cWindowEventListener, public opengl::cInputEventListener
 {
 public:
@@ -363,7 +393,7 @@ private:
   void CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
   void CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
 
-  void CreateGrassVBO(const cHeightmapData& data, const spitfire::math::cVec3& scale);
+  void CreateVegetation(const cHeightmapData& data, const spitfire::math::cVec3& scale);
 
   void CreateScreenBlendQuadVBO(float fRatioOfTextureWidthToScreenShotWidth, float fRatioOfTextureHeightToScreenShotHeight);
   void CreateScreenQuadVBO();
@@ -398,20 +428,22 @@ private:
   opengl::cTexture* pTextureDiffuse;
   opengl::cTexture* pTextureLightMap;
   opengl::cTexture* pTextureDetail;
-  opengl::cTexture* pTextureGrass;
 
   opengl::cShader* pShaderHeightmap;
-  opengl::cShader* pShaderGrass;
+  opengl::cShader* pShaderMask;
   opengl::cShader* pShaderScreenBlendQuad;
   opengl::cShader* pShaderScreenQuad;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuads;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuadsIndexed;
 
-  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectGrass;
-
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenBlendQuad;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenQuad;
+
+  cTextureVertexBufferObjectPair grass;
+  cTextureVertexBufferObjectPair flowers;
+  cTextureVertexBufferObjectPair trees;
+  cTextureVertexBufferObjectPair rocks;
 };
 
 cApplication::cApplication() :
@@ -434,17 +466,14 @@ cApplication::cApplication() :
   pTextureDiffuse(nullptr),
   pTextureLightMap(nullptr),
   pTextureDetail(nullptr),
-  pTextureGrass(nullptr),
 
   pShaderHeightmap(nullptr),
-  pShaderGrass(nullptr),
+  pShaderMask(nullptr),
   pShaderScreenBlendQuad(nullptr),
   pShaderScreenQuad(nullptr),
 
   pStaticVertexBufferObjectHeightmapQuads(nullptr),
   pStaticVertexBufferObjectHeightmapQuadsIndexed(nullptr),
-
-  pStaticVertexBufferObjectGrass(nullptr),
 
   pStaticVertexBufferObjectScreenBlendQuad(nullptr),
   pStaticVertexBufferObjectScreenQuad(nullptr)
@@ -552,15 +581,18 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
 
 //void cApplication::CreateHeightmapTriangleStrips();
 
-void cApplication::CreateGrassVBO(const cHeightmapData& data, const spitfire::math::cVec3& scale)
+void cApplication::CreateVegetation(const cHeightmapData& data, const spitfire::math::cVec3& scale)
 {
-  std::cout<<"cApplication::CreateGrassVBO"<<std::endl;
+  std::cout<<"cApplication::CreateVegetation"<<std::endl;
 
-  assert(pStaticVertexBufferObjectGrass != nullptr);
+  assert(grass.pVBO != nullptr);
+  assert(flowers.pVBO != nullptr);
+  assert(trees.pVBO != nullptr);
+  assert(rocks.pVBO != nullptr);
 
   voodoo::cImage lightmap;
   if (!lightmap.LoadFromFile(TEXT("textures/lightmap.png"))) {
-    std::cout<<"cApplication::CreateGrassVBO Could not load \"textures/lightmap.png\""<<std::endl;
+    std::cout<<"cApplication::CreateVegetation Could not load \"textures/lightmap.png\""<<std::endl;
     assert(false);
   }
 
@@ -568,18 +600,41 @@ void cApplication::CreateGrassVBO(const cHeightmapData& data, const spitfire::ma
 
   const spitfire::math::cVec2 lightmapScale(float(lightmap.GetWidth()) / float(data.GetWidth()), float(lightmap.GetHeight()) / float(data.GetDepth()));
 
-  const float fBytesPerPixel = lightmap.GetBytesPerPixel();
-  const float fBytesPerRow = lightmap.GetWidth() * lightmap.GetBytesPerPixel();
+  const float fLightmapBytesPerPixel = lightmap.GetBytesPerPixel();
+  const float fLightmapBytesPerRow = lightmap.GetWidth() * lightmap.GetBytesPerPixel();
+
+
+  voodoo::cImage vegetationmap;
+  if (!vegetationmap.LoadFromFile(TEXT("textures/vegetationmap.png"))) {
+    std::cout<<"cApplication::CreateVegetation Could not load \"textures/vegetationmap.png\""<<std::endl;
+    assert(false);
+  }
+
+  const uint8_t* pVegetationmapData = vegetationmap.GetPointerToData();
+
+  const spitfire::math::cVec2 vegetationmapScale(float(vegetationmap.GetWidth()) / float(data.GetWidth()), float(vegetationmap.GetHeight()) / float(data.GetDepth()));
+
+  const float fVegetationmapBytesPerPixel = vegetationmap.GetBytesPerPixel();
+  const float fVegetationmapBytesPerRow = vegetationmap.GetWidth() * vegetationmap.GetBytesPerPixel();
+
 
   const float fOneOver255 = 1.0f / 255.0f;
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
-  std::vector<float> colours;
+  std::vector<float> verticesGrass;
+  std::vector<float> normalsGrass;
+  std::vector<float> textureCoordinatesGrass;
+  //std::vector<uint16_t> indicesGrass;
+  std::vector<float> coloursGrass;
 
-  opengl::cGeometryBuilder_v3_n3_t2_c4 builder(vertices, normals, textureCoordinates, colours);
+  opengl::cGeometryBuilder_v3_n3_t2_c4 builderGrass(verticesGrass, normalsGrass, textureCoordinatesGrass, coloursGrass);
+
+  std::vector<float> verticesTrees;
+  std::vector<float> normalsTrees;
+  std::vector<float> textureCoordinatesTrees;
+  //std::vector<uint16_t> indicesTrees;
+  std::vector<float> coloursTrees;
+
+  opengl::cGeometryBuilder_v3_n3_t2_c4 builderTrees(verticesTrees, normalsTrees, textureCoordinatesTrees, coloursTrees);
 
   const spitfire::math::cVec3 min(-0.5f, 0.0f, 0.0f);
   const spitfire::math::cVec3 max(0.5f, 0.0f, 1.0f);
@@ -591,58 +646,150 @@ void cApplication::CreateGrassVBO(const cHeightmapData& data, const spitfire::ma
   const size_t depth = data.GetDepth();
   for (size_t y = 0; y < depth - 1; y += 10) {
     for (size_t x = 0; x < width - 1; x += 10) {
-      const size_t index = (lightmapScale.y * float(y) * fBytesPerRow) + (lightmapScale.x * float(x) * fBytesPerPixel);
-      const spitfire::math::cColour colour(pLightmapData[index] * fOneOver255, pLightmapData[index + 1] * fOneOver255, pLightmapData[index + 2] * fOneOver255);
+      const size_t vegetationindex = (vegetationmapScale.y * float(y) * fVegetationmapBytesPerRow) + (vegetationmapScale.x * float(x) * fVegetationmapBytesPerPixel);
+      const float fDensityGrass0To1 = pVegetationmapData[vegetationindex] * fOneOver255; // Red channel
+      //const float fDensityFlowers0To1 = pVegetationmapData[vegetationindex + 1] * fOneOver255; // Green channel
+      const float fDensityTrees0To1 = pVegetationmapData[vegetationindex + 2] * fOneOver255; // Blue channel
+      //const float fDensityRocks0To1 = pVegetationmapData[vegetationindex + 3] * fOneOver255; // Alpha channel
 
-      const spitfire::math::cVec3 position(scale * spitfire::math::cVec3(float(x), float(y), data.GetHeight(x, y) + 0.01f));
+      uint32_t seedGrass = (y * width) + x;
+      spitfire::math::cScopedPredictableRandom generatorGrass(seedGrass);
 
-      // Create 3 billboards at 60 degree increments
-      /* From above they will look something like this:
-         \|/
-         -*-
-         /|\
-      */
-      for (size_t i = 0; i < 3; i++) {
-        const float fRotationDegrees = float(i + 1) * 60.0f;
+      //uint32_t seedFlowers = (1 * width * depth) + (y * width) + x;
+      //spitfire::math::cScopedPredictableRandom generatorFlowers(seedFlowers);
 
-        // The rotation for this billboard of grass
-        spitfire::math::cQuaternion rotationZ;
-        rotationZ.SetFromAxisAngleDegrees(axisZ, fRotationDegrees);
+      uint32_t seedTrees = (2 * width * depth) + (y * width) + x;
+      spitfire::math::cScopedPredictableRandom generatorTrees(seedTrees);
 
-        spitfire::math::cMat4 matRotation;
-        matRotation.SetRotation(rotationZ);
+      //uint32_t seedRocks = (3 * width * depth) + (y * width) + x;
+      //spitfire::math::cScopedPredictableRandom generatorRocks(seedRocks);
 
-        const spitfire::math::cVec3 point[4] = {
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(min.x, min.y, min.z)),
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(max.x, min.y, min.z)),
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(max.x, min.y, max.z)),
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(min.x, min.y, max.z)),
-        };
+      uint32_t nGrass = fDensityGrass0To1 * 10.0f;
+      for (uint32_t iGrass = 0; iGrass < nGrass; iGrass++) {
+        float fGrassX = float(x) + 20.0f * (-0.5f + generatorGrass.GetRandomNumber0To1());
+        float fGrassY = float(y) + 20.0f * (-0.5f + generatorGrass.GetRandomNumber0To1());
+        if ((fGrassX < 0.0f) || (fGrassY < 0.0f) || (fGrassX > float(width)) || (fGrassY > float(depth))) continue;
 
-        const spitfire::math::cVec3 normalRotated = matRotation.GetRotatedVec3(normal);
+        const spitfire::math::cVec3 position(scale * spitfire::math::cVec3(fGrassX, fGrassY, data.GetHeight(fGrassX, fGrassY) + 0.01f));
+        const float fRotationDegreesOfGrass = generatorGrass.GetRandomNumber0To1() * 360.0f;
 
-        // Front face
-        builder.PushBack(point[0], normalRotated, spitfire::math::cVec2(0.0f, 1.0f), colour);
-        builder.PushBack(point[1], normalRotated, spitfire::math::cVec2(1.0f, 1.0f), colour);
-        builder.PushBack(point[2], normalRotated, spitfire::math::cVec2(1.0f, 0.0f), colour);
-        builder.PushBack(point[3], normalRotated, spitfire::math::cVec2(0.0f, 0.0f), colour);
+        const size_t index = (lightmapScale.y * float(size_t(fGrassY)) * fLightmapBytesPerRow) + (lightmapScale.x * float(size_t(fGrassX)) * fLightmapBytesPerPixel);
+        const spitfire::math::cColour colourLightmap(::min(pLightmapData[index] * fOneOver255, 0.9f), ::min(pLightmapData[index + 1] * fOneOver255, 0.9f), ::min(pLightmapData[index + 2] * fOneOver255, 0.9f));
+        const spitfire::math::cColour colour(colourLightmap.r + (0.1f * (-0.5f + generatorGrass.GetRandomNumber0To1())), colourLightmap.g + (0.1f * (-0.5f + generatorGrass.GetRandomNumber0To1())), colourLightmap.b + (0.1f * (-0.5f + generatorGrass.GetRandomNumber0To1())));
 
-        // Back face
-        builder.PushBack(point[3], -normalRotated, spitfire::math::cVec2(0.0f, 0.0f), colour);
-        builder.PushBack(point[2], -normalRotated, spitfire::math::cVec2(1.0f, 0.0f), colour);
-        builder.PushBack(point[1], -normalRotated, spitfire::math::cVec2(1.0f, 1.0f), colour);
-        builder.PushBack(point[0], -normalRotated, spitfire::math::cVec2(0.0f, 1.0f), colour);
+        // Create 3 billboards at 60 degree increments
+        /* From above they will look something like this:
+          \|/
+          -*-
+          /|\
+        */
+        for (size_t i = 0; i < 3; i++) {
+          const float fRotationDegrees = fRotationDegreesOfGrass + (float(i + 1) * 60.0f);
+
+          // The rotation for this billboard of grass
+          spitfire::math::cQuaternion rotationZ;
+          rotationZ.SetFromAxisAngleDegrees(axisZ, fRotationDegrees);
+
+          spitfire::math::cMat4 matRotation;
+          matRotation.SetRotation(rotationZ);
+
+          const spitfire::math::cVec3 point[4] = {
+            position + matRotation.GetRotatedVec3(spitfire::math::cVec3(min.x, min.y, min.z)),
+            position + matRotation.GetRotatedVec3(spitfire::math::cVec3(max.x, min.y, min.z)),
+            position + matRotation.GetRotatedVec3(spitfire::math::cVec3(max.x, min.y, max.z)),
+            position + matRotation.GetRotatedVec3(spitfire::math::cVec3(min.x, min.y, max.z)),
+          };
+
+          const spitfire::math::cVec3 normalRotated = matRotation.GetRotatedVec3(normal);
+
+          // Front face
+          builderGrass.PushBack(point[0], normalRotated, spitfire::math::cVec2(0.0f, 1.0f), colour);
+          builderGrass.PushBack(point[1], normalRotated, spitfire::math::cVec2(1.0f, 1.0f), colour);
+          builderGrass.PushBack(point[2], normalRotated, spitfire::math::cVec2(1.0f, 0.0f), colour);
+          builderGrass.PushBack(point[3], normalRotated, spitfire::math::cVec2(0.0f, 0.0f), colour);
+
+          // Back face
+          builderGrass.PushBack(point[3], -normalRotated, spitfire::math::cVec2(0.0f, 0.0f), colour);
+          builderGrass.PushBack(point[2], -normalRotated, spitfire::math::cVec2(1.0f, 0.0f), colour);
+          builderGrass.PushBack(point[1], -normalRotated, spitfire::math::cVec2(1.0f, 1.0f), colour);
+          builderGrass.PushBack(point[0], -normalRotated, spitfire::math::cVec2(0.0f, 1.0f), colour);
+        }
+      }
+
+
+      uint32_t nTrees = fDensityTrees0To1 * 10.0f;
+      for (uint32_t iTrees = 0; iTrees < nTrees; iTrees++) {
+        float fTreesX = float(x) + 20.0f * (-0.5f + generatorTrees.GetRandomNumber0To1());
+        float fTreesY = float(y) + 20.0f * (-0.5f + generatorTrees.GetRandomNumber0To1());
+        if ((fTreesX < 0.0f) || (fTreesY < 0.0f) || (fTreesX > float(width)) || (fTreesY > float(depth))) continue;
+
+        const spitfire::math::cVec3 position(scale * spitfire::math::cVec3(fTreesX, fTreesY, data.GetHeight(fTreesX, fTreesY) + 0.01f));
+        const float fRotationDegreesOfTrees = generatorTrees.GetRandomNumber0To1() * 360.0f;
+
+        const size_t index = (lightmapScale.y * float(size_t(fTreesY)) * fLightmapBytesPerRow) + (lightmapScale.x * float(size_t(fTreesX)) * fLightmapBytesPerPixel);
+        const spitfire::math::cColour colourLightmap(::min(pLightmapData[index] * fOneOver255, 0.9f), ::min(pLightmapData[index + 1] * fOneOver255, 0.9f), ::min(pLightmapData[index + 2] * fOneOver255, 0.9f));
+        const spitfire::math::cColour colour(colourLightmap.r + (0.1f * (-0.5f + generatorTrees.GetRandomNumber0To1())), colourLightmap.g + (0.1f * (-0.5f + generatorTrees.GetRandomNumber0To1())), colourLightmap.b + (0.1f * (-0.5f + generatorTrees.GetRandomNumber0To1())));
+
+        // Create 3 billboards at 60 degree increments
+        /* From above they will look something like this:
+          \|/
+          -*-
+          /|\
+        */
+        for (size_t i = 0; i < 3; i++) {
+          const float fRotationDegrees = fRotationDegreesOfTrees + (float(i + 1) * 60.0f);
+
+          // The rotation for this billboard of Trees
+          spitfire::math::cQuaternion rotationZ;
+          rotationZ.SetFromAxisAngleDegrees(axisZ, fRotationDegrees);
+
+          spitfire::math::cMat4 matRotation;
+          matRotation.SetRotation(rotationZ);
+
+          const spitfire::math::cVec3 point[4] = {
+            position + matRotation.GetRotatedVec3(spitfire::math::cVec3(min.x, min.y, min.z)),
+            position + matRotation.GetRotatedVec3(spitfire::math::cVec3(max.x, min.y, min.z)),
+            position + matRotation.GetRotatedVec3(spitfire::math::cVec3(max.x, min.y, max.z)),
+            position + matRotation.GetRotatedVec3(spitfire::math::cVec3(min.x, min.y, max.z)),
+          };
+
+          const spitfire::math::cVec3 normalRotated = matRotation.GetRotatedVec3(normal);
+
+          // Front face
+          builderTrees.PushBack(point[0], normalRotated, spitfire::math::cVec2(0.0f, 1.0f), colour);
+          builderTrees.PushBack(point[1], normalRotated, spitfire::math::cVec2(1.0f, 1.0f), colour);
+          builderTrees.PushBack(point[2], normalRotated, spitfire::math::cVec2(1.0f, 0.0f), colour);
+          builderTrees.PushBack(point[3], normalRotated, spitfire::math::cVec2(0.0f, 0.0f), colour);
+
+          // Back face
+          builderTrees.PushBack(point[3], -normalRotated, spitfire::math::cVec2(0.0f, 0.0f), colour);
+          builderTrees.PushBack(point[2], -normalRotated, spitfire::math::cVec2(1.0f, 0.0f), colour);
+          builderTrees.PushBack(point[1], -normalRotated, spitfire::math::cVec2(1.0f, 1.0f), colour);
+          builderTrees.PushBack(point[0], -normalRotated, spitfire::math::cVec2(0.0f, 1.0f), colour);
+        }
       }
     }
   }
 
-  pStaticVertexBufferObjectGrass->SetVertices(vertices);
-  pStaticVertexBufferObjectGrass->SetNormals(normals);
-  pStaticVertexBufferObjectGrass->SetTextureCoordinates(textureCoordinates);
-  //pStaticVertexBufferObjectGrass->SetIndices(indices);
-  pStaticVertexBufferObjectGrass->SetColours(colours);
+  std::cout<<"cApplication::CreateVegetation a"<<std::endl;
 
-  pStaticVertexBufferObjectGrass->Compile(system);
+  grass.pVBO->SetVertices(verticesGrass);
+  grass.pVBO->SetNormals(normalsGrass);
+  grass.pVBO->SetTextureCoordinates(textureCoordinatesGrass);
+  //grass.pVBO->SetIndices(indicesGrass);
+  grass.pVBO->SetColours(coloursGrass);
+
+  grass.pVBO->Compile(system);
+
+  trees.pVBO->SetVertices(verticesTrees);
+  trees.pVBO->SetNormals(normalsTrees);
+  trees.pVBO->SetTextureCoordinates(textureCoordinatesTrees);
+  //trees.pVBO->SetIndices(indicesTrees);
+  trees.pVBO->SetColours(coloursTrees);
+
+  trees.pVBO->Compile(system);
+
+  std::cout<<"cApplication::CreateVegetation returning"<<std::endl;
 }
 
 void cApplication::CreateScreenBlendQuadVBO(float fRatioOfTextureWidthToScreenShotWidth, float fRatioOfTextureHeightToScreenShotHeight)
@@ -930,15 +1077,32 @@ bool cApplication::Create()
   CreateHeightmapQuadsIndexed(pStaticVertexBufferObjectHeightmapQuadsIndexed, data, scale);
 
 
-  std::cout<<"cApplication::Create Creating grass texture"<<std::endl;
-  pTextureGrass = pContext->CreateTexture(TEXT("textures/grass.png"));
+  pShaderMask = pContext->CreateShader(TEXT("shaders/grass.vert"), TEXT("shaders/grass.frag"));
+  pShaderMask->bTexUnit0 = true;
 
-  pShaderGrass = pContext->CreateShader(TEXT("shaders/grass.vert"), TEXT("shaders/grass.frag"));
-  pShaderGrass->bTexUnit0 = true;
 
-  pStaticVertexBufferObjectGrass = pContext->CreateStaticVertexBufferObject();
-  assert(pStaticVertexBufferObjectGrass != nullptr);
-  CreateGrassVBO(data, scale);
+  grass.pTexture = pContext->CreateTexture(TEXT("textures/grass.png"));
+
+  grass.pVBO = pContext->CreateStaticVertexBufferObject();
+  assert(grass.pVBO != nullptr);
+
+  flowers.pTexture = pContext->CreateTexture(TEXT("textures/flowers.png"));
+
+  flowers.pVBO = pContext->CreateStaticVertexBufferObject();
+  assert(flowers.pVBO != nullptr);
+
+  trees.pTexture = pContext->CreateTexture(TEXT("textures/tree.png"));
+
+  trees.pVBO = pContext->CreateStaticVertexBufferObject();
+  assert(trees.pVBO != nullptr);
+
+  rocks.pTexture = pContext->CreateTexture(TEXT("textures/rock.png"));
+
+  rocks.pVBO = pContext->CreateStaticVertexBufferObject();
+  assert(rocks.pVBO != nullptr);
+
+
+  CreateVegetation(data, scale);
 
 
   // Setup our event listeners
@@ -973,20 +1137,48 @@ void cApplication::Destroy()
   }
 
 
-  if (pStaticVertexBufferObjectGrass != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectGrass);
-    pStaticVertexBufferObjectGrass = nullptr;
+  if (rocks.pVBO != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(rocks.pVBO);
+    rocks.pVBO = nullptr;
+  }
+  if (rocks.pTexture != nullptr) {
+    pContext->DestroyTexture(rocks.pTexture);
+    rocks.pTexture = nullptr;
   }
 
-  if (pShaderGrass != nullptr) {
-    pContext->DestroyShader(pShaderGrass);
-    pShaderGrass = nullptr;
+  if (trees.pVBO != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(trees.pVBO);
+    trees.pVBO = nullptr;
+  }
+  if (trees.pTexture != nullptr) {
+    pContext->DestroyTexture(trees.pTexture);
+    trees.pTexture = nullptr;
   }
 
-  if (pTextureGrass != nullptr) {
-    pContext->DestroyTexture(pTextureGrass);
-    pTextureGrass = nullptr;
+  if (flowers.pVBO != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(flowers.pVBO);
+    flowers.pVBO = nullptr;
   }
+  if (flowers.pTexture != nullptr) {
+    pContext->DestroyTexture(flowers.pTexture);
+    flowers.pTexture = nullptr;
+  }
+
+  if (grass.pVBO != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(grass.pVBO);
+    grass.pVBO = nullptr;
+  }
+  if (grass.pTexture != nullptr) {
+    pContext->DestroyTexture(grass.pTexture);
+    grass.pTexture = nullptr;
+  }
+
+
+  if (pShaderMask != nullptr) {
+    pContext->DestroyShader(pShaderMask);
+    pShaderMask = nullptr;
+  }
+
 
 
   if (pStaticVertexBufferObjectHeightmapQuadsIndexed != nullptr) {
@@ -1122,16 +1314,34 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
 
 void cApplication::Run()
 {
+  std::cout<<"cApplication::Run"<<std::endl;
+
   assert(pContext != nullptr);
   assert(pContext->IsValid());
   assert(pTextureScreenShot != nullptr);
   assert(pTextureScreenShot->IsValid());
-  assert(pTextureGrass != nullptr);
-  assert(pTextureGrass->IsValid());
-  assert(pShaderGrass != nullptr);
-  assert(pShaderGrass->IsCompiledProgram());
-  assert(pStaticVertexBufferObjectGrass != nullptr);
-  assert(pStaticVertexBufferObjectGrass->IsCompiled());
+  assert(pShaderMask != nullptr);
+  assert(pShaderMask->IsCompiledProgram());
+
+  assert(grass.pTexture != nullptr);
+  assert(grass.pTexture->IsValid());
+  assert(grass.pVBO != nullptr);
+  assert(grass.pVBO->IsCompiled());
+
+  assert(flowers.pTexture != nullptr);
+  assert(flowers.pTexture->IsValid());
+  assert(flowers.pVBO != nullptr);
+  //assert(flowers.pVBO->IsCompiled());
+
+  assert(trees.pTexture != nullptr);
+  assert(trees.pTexture->IsValid());
+  assert(trees.pVBO != nullptr);
+  assert(trees.pVBO->IsCompiled());
+
+  assert(rocks.pTexture != nullptr);
+  assert(rocks.pTexture->IsValid());
+  assert(rocks.pVBO != nullptr);
+  //assert(rocks.pVBO->IsCompiled());
 
   assert(pTextureDiffuse != nullptr);
   assert(pTextureDiffuse->IsValid());
@@ -1284,18 +1494,33 @@ void cApplication::Run()
 
 
       // Render grass
-      pContext->BindTexture(0, *pTextureGrass);
+      pContext->BindTexture(0, *grass.pTexture);
 
-      pContext->BindShader(*pShaderGrass);
+      pContext->BindShader(*pShaderMask);
 
-      pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectGrass);
+      pContext->BindStaticVertexBufferObject(*grass.pVBO);
         pContext->SetModelViewMatrix(matModelView * matTranslation);
-        pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectGrass);
-      pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectGrass);
+        pContext->DrawStaticVertexBufferObjectQuads(*grass.pVBO);
+      pContext->UnBindStaticVertexBufferObject(*grass.pVBO);
 
-      pContext->UnBindShader(*pShaderGrass);
+      pContext->UnBindShader(*pShaderMask);
 
-      pContext->UnBindTexture(0, *pTextureGrass);
+      pContext->UnBindTexture(0, *grass.pTexture);
+
+
+      // Render trees
+      pContext->BindTexture(0, *trees.pTexture);
+
+      pContext->BindShader(*pShaderMask);
+
+      pContext->BindStaticVertexBufferObject(*trees.pVBO);
+        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->DrawStaticVertexBufferObjectQuads(*trees.pVBO);
+      pContext->UnBindStaticVertexBufferObject(*trees.pVBO);
+
+      pContext->UnBindShader(*pShaderMask);
+
+      pContext->UnBindTexture(0, *trees.pTexture);
 
 
       if (bIsWireframe) pContext->DisableWireframe();
@@ -1420,18 +1645,33 @@ void cApplication::Run()
 
 
       // Render grass
-      pContext->BindTexture(0, *pTextureGrass);
+      pContext->BindTexture(0, *grass.pTexture);
 
-      pContext->BindShader(*pShaderGrass);
+      pContext->BindShader(*pShaderMask);
 
-      pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectGrass);
+      pContext->BindStaticVertexBufferObject(*grass.pVBO);
         pContext->SetModelViewMatrix(matModelView * matTranslation);
-        pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectGrass);
-      pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectGrass);
+        pContext->DrawStaticVertexBufferObjectQuads(*grass.pVBO);
+      pContext->UnBindStaticVertexBufferObject(*grass.pVBO);
 
-      pContext->UnBindShader(*pShaderGrass);
+      pContext->UnBindShader(*pShaderMask);
 
-      pContext->UnBindTexture(0, *pTextureGrass);
+      pContext->UnBindTexture(0, *grass.pTexture);
+
+
+      // Render trees
+      pContext->BindTexture(0, *trees.pTexture);
+
+      pContext->BindShader(*pShaderMask);
+
+      pContext->BindStaticVertexBufferObject(*trees.pVBO);
+        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->DrawStaticVertexBufferObjectQuads(*trees.pVBO);
+      pContext->UnBindStaticVertexBufferObject(*trees.pVBO);
+
+      pContext->UnBindShader(*pShaderMask);
+
+      pContext->UnBindTexture(0, *trees.pTexture);
 
 
       if (bIsWireframe) pContext->DisableWireframe();
