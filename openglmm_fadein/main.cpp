@@ -242,7 +242,7 @@ bool cScreen::GetScreenShotOfMonitor(size_t monitor, voodoo::cImage& image) cons
   assert(opengl::PIXELFORMAT::R8G8B8A8 == image.GetPixelFormat());
   image.CreateFromBuffer(buffer.data(), width, height, opengl::PIXELFORMAT::R8G8B8A8);
 
-  image.FlipDataVertically();
+  image.FlipVertically();
 
   std::cout<<"cScreen::GetScreenShotOfMonitor returning true"<<std::endl;
   return true;
@@ -284,7 +284,7 @@ cHeightmapData::cHeightmapData(const opengl::string_t& sFilename)
 
   heightmap.resize(n, 0);
 
-  const uint8_t* pPixels = image.GetPointerToSurfacePixelBuffer();
+  const uint8_t* pPixels = image.GetPointerToBuffer();
 
   const float fOneOver255 = 1.0f / 255.0f;
 
@@ -598,7 +598,7 @@ void cApplication::CreateVegetation(const cHeightmapData& data, const spitfire::
     assert(false);
   }
 
-  const uint8_t* pLightmapData = lightmap.GetPointerToData();
+  const uint8_t* pLightmapData = lightmap.GetPointerToBuffer();
 
   const spitfire::math::cVec2 lightmapScale(float(lightmap.GetWidth()) / float(data.GetWidth()), float(lightmap.GetHeight()) / float(data.GetDepth()));
 
@@ -612,7 +612,7 @@ void cApplication::CreateVegetation(const cHeightmapData& data, const spitfire::
     assert(false);
   }
 
-  const uint8_t* pVegetationmapData = vegetationmap.GetPointerToData();
+  const uint8_t* pVegetationmapData = vegetationmap.GetPointerToBuffer();
 
   const spitfire::math::cVec2 vegetationmapScale(float(vegetationmap.GetWidth()) / float(data.GetWidth()), float(vegetationmap.GetHeight()) / float(data.GetDepth()));
 
@@ -954,7 +954,7 @@ bool cApplication::Create()
   std::vector<uint8_t> buffer;
   buffer.resize(textureWidth * textureHeight * 4, 0);
 
-  const uint8_t* pData = image.GetPointerToData();
+  const uint8_t* pData = image.GetPointerToBuffer();
   for (size_t y = 0; y < imageHeight; y++) {
     for (size_t x = 0; x < imageWidth; x++) {
       const size_t src = ((y * imageWidth) + x) * 4;
