@@ -62,7 +62,7 @@ SET(OUTPUT_LIBRARY_LIBVOODOOMM_SOURCE_FILES ${OUTPUT_FILES})
 
 SET(LIBRARY_LIBOPENGLMM_SOURCE_DIRECTORY libopenglmm/)
 SET(LIBRARY_LIBOPENGLMM_SOURCE_FILES
-libopenglmm.cpp cContext.cpp cGeometry.cpp cShader.cpp cSystem.cpp cTexture.cpp cVertexBufferObject.cpp cWindow.cpp)
+libopenglmm.cpp cContext.cpp cGeometry.cpp cShader.cpp cSystem.cpp cTexture.cpp cVertexArray.cpp cVertexBufferObject.cpp cWindow.cpp)
 
 IF(WIN32)
   SET(LIBRARY_LIBOPENGLMM_SOURCE_FILES ${LIBRARY_LIBOPENGLMM_SOURCE_FILES})
