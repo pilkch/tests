@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <map>
 #include <vector>
+#include <list>
 
 // OpenGL headers
 #include <GL/GLee.h>
@@ -89,7 +90,7 @@ cHeightmapData::cHeightmapData(const opengl::string_t& sFilename)
 
   heightmap.resize(n, 0);
 
-  const uint8_t* pPixels = image.GetPointerToSurfacePixelBuffer();
+  const uint8_t* pPixels = image.GetPointerToBuffer();
 
   for (size_t y = 0; y < depth; y++) {
     for (size_t x = 0; x < width; x++) {

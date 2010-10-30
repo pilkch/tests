@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <map>
 #include <vector>
+#include <list>
 
 // OpenGL headers
 #include <GL/GLee.h>
