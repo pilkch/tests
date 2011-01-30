@@ -665,7 +665,7 @@ void cApplication::CreateVegetation(const cHeightmapData& data, const spitfire::
       const float fDensityGrass0To1 = pVegetationmapData[vegetationindex] * fOneOver255; // Red channel
       //const float fDensityFlowers0To1 = pVegetationmapData[vegetationindex + 1] * fOneOver255; // Green channel
       const float fDensityTrees0To1 = pVegetationmapData[vegetationindex + 2] * fOneOver255; // Blue channel
-      //const float fDensityRocks0To1 = pVegetationmapData[vegetationindex + 3] * fOneOver255; // Alpha channel
+      const float fDensityRocks0To1 = pVegetationmapData[vegetationindex + 3] * fOneOver255; // Alpha channel
 
       uint32_t seedGrass = (y * width) + x;
       spitfire::math::cScopedPredictableRandom generatorGrass(seedGrass);
@@ -1371,7 +1371,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
   if (event.IsKeyDown()) {
     switch (event.GetKeyCode()) {
       case SDLK_ESCAPE: {
-        std::cout<<"cApplication::_OnKeyboardEvent F1 key pressed, quiting"<<std::endl;
+        std::cout<<"cApplication::_OnKeyboardEvent Escape key pressed, quiting"<<std::endl;
         bIsDone = true;
         break;
       }

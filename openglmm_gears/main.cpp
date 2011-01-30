@@ -192,7 +192,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
   std::cout<<"cApplication::_OnKeyboardEvent"<<std::endl;
   if (event.IsKeyDown()) {
     if (event.GetKeyCode() == SDLK_ESCAPE) {
-      std::cout<<"cApplication::_OnKeyboardEvent F1 key pressed, quiting"<<std::endl;
+      std::cout<<"cApplication::_OnKeyboardEvent Escape key pressed, quiting"<<std::endl;
       bIsDone = true;
     }
   }

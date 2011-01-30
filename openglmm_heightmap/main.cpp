@@ -108,7 +108,7 @@ cHeightmapData::cHeightmapData(const opengl::string_t& sFilename)
   const spitfire::math::cColour ambientColour(1.0f, 1.0f, 1.0f);
   const spitfire::math::cColour shadowColour = 0.5f * ambientColour;
   int size = width;
-  const spitfire::math::cVec3 sun(-50.0f, -100.0f, 1.0f);
+  const spitfire::math::cVec3 sun(50.0f, 100.0f, 100.0f);
   const spitfire::math::cVec3 origin(0.0f, 0.0f, 0.0f);
   const spitfire::math::cVec3 dir = (origin - sun).GetNormalised();
   float lightDir[3] = { dir.x, dir.y, dir.z };
@@ -310,7 +310,7 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
 
   // create flag buffer to indicate where we've been
   float* flagMap = new float[n];
-  for (size_t i = 0; i < n; i++) flagMap[i] = 0;
+  for (size_t i = 0; i < n; i++) flagMap[i] = 0.0f;
 
   int* X = nullptr;
   int* Y = nullptr;
@@ -322,8 +322,8 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
   // calculate absolute values for light direction
   float lightDirXMagnitude = lightDir[0];
   float lightDirZMagnitude = lightDir[2];
-  if (lightDirXMagnitude < 0) lightDirXMagnitude *= -1;
-  if (lightDirZMagnitude < 0) lightDirZMagnitude *= -1;
+  if (lightDirXMagnitude < 0.0f) lightDirXMagnitude *= -1.0f;
+  if (lightDirZMagnitude < 0.0f) lightDirZMagnitude *= -1.0f;
 
   // decide which loop will come first, the y loop or x loop
   // based on direction of light, makes calculations faster
@@ -331,7 +331,7 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
     Y = &iX;
     X = &iY;
 
-    if(lightDir[0] < 0) {
+    if (lightDir[0] < 0) {
       iY = size-1;
       dirY = -1;
     } else {
@@ -339,7 +339,7 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
       dirY = 1;
     }
 
-    if(lightDir[2] < 0) {
+    if (lightDir[2] < 0) {
       iX = size-1;
       dirX = -1;
     } else {
@@ -350,7 +350,7 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
     Y = &iY;
     X = &iX;
 
-    if(lightDir[0] < 0) {
+    if (lightDir[0] < 0) {
       iX = size-1;
       dirX = -1;
     } else {
@@ -358,7 +358,7 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
       dirX = 1;
     }
 
-    if(lightDir[2] < 0) {
+    if (lightDir[2] < 0) {
       iY = size-1;
       dirY = -1;
     } else {
@@ -385,7 +385,7 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
         py -= lightDir[2];
 
         // check if we've reached the boundary
-        if (px < 0 || px >= size || py < 0 || py >= size) {
+        if ((px < 0) || (px >= size) || (py < 0) || (py >= size)) {
           flagMap[index] = -1;
           break;
         }
@@ -393,7 +393,8 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
         // calculate interpolated values
         static int x0, x1, y0, y1;
         static float du, dv;
-        static float interpolatedHeight, interpolatedFlagMap;
+        static float interpolatedHeight;
+	static float interpolatedFlagMap;
         static float heights[4];
         static float pixels[4];
         static float invdu, invdv;
@@ -439,8 +440,8 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
         // else use the height value
         static float val;
         val = interpolatedHeight;
-        if(interpolatedHeight < interpolatedFlagMap) val = interpolatedFlagMap;
-        if(height < val) {
+        if (interpolatedHeight < interpolatedFlagMap) val = interpolatedFlagMap;
+        if (height < val) {
           flagMap[index] = val - height;
 
           _lightmap[index] = shadowColour;
@@ -453,33 +454,33 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
         // to compensate for this, simply define some epsilon value and use this as an offset from -1 to decide
         // if current point under the ray is unshadowed
         static float epsilon = 0.5f;
-        if(interpolatedFlagMap < -1.0f+epsilon && interpolatedFlagMap > -1.0f-epsilon) {
+        if ((interpolatedFlagMap < -1.0f + epsilon) && (interpolatedFlagMap > -1.0f - epsilon)) {
           flagMap[index] = -1.0f;
           break;
         }
       }
 
       // update inner loop variable
-      if(dirY < 0) {
+      if (dirY < 0) {
         iY--;
-        if(iY < 0) break;
+        if (iY < 0) break;
       } else {
         iY++;
-        if(iY >= size) break;
+        if (iY >= size) break;
       }
     }
 
     // reset inner loop starting point
-    if(dirY < 0) iY = size - 1;
+    if (dirY < 0) iY = size - 1;
     else iY = 0;
 
     // update outer loop variable
-    if(dirX < 0) {
+    if (dirX < 0) {
       iX--;
-      if(iX < 0) break;
+      if (iX < 0) break;
     } else {
       iX++;
-      if(iX >= size) break;
+      if (iX >= size) break;
     }
   }
 
@@ -821,7 +822,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
   if (event.IsKeyDown()) {
     switch (event.GetKeyCode()) {
       case SDLK_ESCAPE: {
-        std::cout<<"cApplication::_OnKeyboardEvent F1 key pressed, quiting"<<std::endl;
+        std::cout<<"cApplication::_OnKeyboardEvent Escape key pressed, quiting"<<std::endl;
         bIsDone = true;
         break;
       }
