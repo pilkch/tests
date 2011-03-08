@@ -57,6 +57,7 @@ int main(int argc, char** argv)
 {
   bool bIsSuccess = RunTest();
 
+  std::cout<<"Tests "<<(bIsSuccess ? "Passed" : "Failed")<<std::endl;
   return bIsSuccess ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
