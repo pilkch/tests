@@ -13,7 +13,7 @@ SET(LIBRARY_INCLUDE "${CMAKE_SOURCE_DIR}/include/")
 SET(LIBRARY_SRC "${CMAKE_SOURCE_DIR}/src/")
 
 # Add definitions, compiler switches, etc.
-ADD_DEFINITIONS("-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wcast-qual -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wmissing-include-dirs -Wuninitialized -Wc++0x-compat -std=c++0x -ffor-scope -O2")
+ADD_DEFINITIONS("-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wcast-qual -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wmissing-include-dirs -Wuninitialized -Wc++0x-compat -std=c++0x -ffor-scope -O2")
 
 
 ADD_DEFINITIONS("-DUNICODE -D_UNICODE -DBUILD_OPENGLMM_FONT")
@@ -98,7 +98,7 @@ ADD_EXECUTABLE(${PROJECT_NAME} main.cpp ${OUTPUT_LIBRARY_SOURCE_FILES} ${PROJECT
 
 
 SET(LIBRARIES
-  GLU
+  OpenGL
   SDL
   SDL_image
   SDL_ttf
@@ -107,6 +107,7 @@ SET(LIBRARIES
 
 # Some of the libraries have different names than their Find*.cmake name
 SET(LIBRARIES_LINKED
+  GL
   GLU
   SDL
   SDL_image

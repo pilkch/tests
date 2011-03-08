@@ -1,10 +1,14 @@
 # Set the minimum cmake version
-cmake_minimum_required (VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 # Set the project name
-project (source_cleaner)
+PROJECT(source_cleaner)
+
+IF("${CMAKE_SYSTEM}" MATCHES "Linux")
+  ADD_DEFINITIONS("-D__LINUX__")
+ENDIF()
 
 # Add executable called "source_cleaner" that is built from the source file
 # "main.cpp". The extensions are automatically found.
-add_executable (source_cleaner main.cpp)
+ADD_EXECUTABLE(source_cleaner main.cpp)
 

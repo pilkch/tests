@@ -10,6 +10,7 @@
 // Remove trailing new lines
 // Make sure that there is a newline at the end of the file
 
+#include <cassert>
 #include <algorithm>
 #include <string>
 #include <vector>
