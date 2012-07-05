@@ -58,7 +58,7 @@ public:
 private:
   spitfire::math::cVec3 GetNormalOfTriangle(const spitfire::math::cVec3& p0, const spitfire::math::cVec3& p1, const spitfire::math::cVec3& p2) const;
 
-  static void GenerateLightmap(const std::vector<float>& heightmap, std::vector<spitfire::math::cColour>& lightmap, float fScaleZ, const spitfire::math::cColour& ambientColour, const spitfire::math::cColour& shadowColor, int size, float lightDir[3]);
+  static void GenerateLightmap(const std::vector<float>& heightmap, std::vector<spitfire::math::cColour>& lightmap, float fScaleZ, const spitfire::math::cColour& ambientColour, const spitfire::math::cColour& shadowColor, size_t size, const spitfire::math::cVec3& sunPosition);
 
   static void DoubleImageSize(const std::vector<spitfire::math::cColour>& source, size_t width, size_t height, std::vector<spitfire::math::cColour>& destination);
   void SmoothImage(const std::vector<spitfire::math::cColour>& source, size_t width, size_t height, size_t iterations, std::vector<spitfire::math::cColour>& destination) const;
@@ -108,16 +108,41 @@ cHeightmapData::cHeightmapData(const opengl::string_t& sFilename)
   const spitfire::math::cColour ambientColour(1.0f, 1.0f, 1.0f);
   const spitfire::math::cColour shadowColour = 0.5f * ambientColour;
   int size = width;
-  const spitfire::math::cVec3 sun(50.0f, 100.0f, 100.0f);
-  const spitfire::math::cVec3 origin(0.0f, 0.0f, 0.0f);
-  const spitfire::math::cVec3 dir = (origin - sun).GetNormalised();
-  float lightDir[3] = { dir.x, dir.y, dir.z };
-
-  GenerateLightmap(heightmap, _lightmap, fScaleZ, ambientColour, shadowColour, size, lightDir);
-
+  const spitfire::math::cVec3 sunPosition(50.0f, 100.0f, 100.0f);
+  GenerateLightmap(heightmap, _lightmap, fScaleZ, ambientColour, shadowColour, size, sunPosition);
 
   widthLightmap = width;
   depthLightmap = depth;
+
+
+  #if 0
+  // For debugging
+  {
+    const size_t nLightmap = widthLightmap * depthLightmap;
+
+    // Copy the lightmap from the cColour vector to the uint8_t vector
+    lightmap.resize(nLightmap * 4, 0);
+
+    for (size_t y = 0; y < depthLightmap; y++) {
+      for (size_t x = 0; x < widthLightmap; x++) {
+        const size_t src = (y * widthLightmap) + x;
+        const size_t dst = 4 * ((y * widthLightmap) + x);
+        lightmap[dst + 0] = uint8_t(_lightmap[src].r * 255.0f);
+        lightmap[dst + 1] = uint8_t(_lightmap[src].g * 255.0f);
+        lightmap[dst + 2] = uint8_t(_lightmap[src].b * 255.0f);
+        lightmap[dst + 3] = uint8_t(_lightmap[src].a * 255.0f);
+      }
+    }
+  }
+
+  voodoo::cImage generated;
+  const uint8_t* pBuffer = &lightmap[0];
+  generated.CreateFromBuffer(pBuffer, widthLightmap, depthLightmap, opengl::PIXELFORMAT::R8G8B8A8);
+  generated.SaveToBMP(TEXT("/home/chris/dev/tests/openglmm_heightmap/textures/generated.bmp"));
+
+  exit(0);
+  #endif
+
 
   {
     // Smooth the lightmap
@@ -290,10 +315,14 @@ const uint8_t* cHeightmapData::GetLightmapBuffer() const
   return &lightmap[0];
 }
 
+int round(float n)
+{
+  return (n - ((int)n) >= 0.5) ? (int)n + 1 : (int)n;
+}
 
-// http://gpwiki.org/index.php/Faster_Ray_Traced_Terrain_Shadow_Maps
+// http://www.cyberhead.de/download/articles/shadowmap/
 
-void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::vector<spitfire::math::cColour>& _lightmap, float fScaleZ, const spitfire::math::cColour& ambientColour, const spitfire::math::cColour& shadowColour, int size, float lightDir[3])
+void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::vector<spitfire::math::cColour>& _lightmap, float fScaleZ, const spitfire::math::cColour& ambientColour, const spitfire::math::cColour& shadowColour, size_t size, const spitfire::math::cVec3& sunPosition)
 {
   assert(!_lightmap.empty());
 
@@ -302,189 +331,41 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
     _lightmap[index] = ambientColour;
   }
 
-  float px = 0.0f;
-  float py = 0.0f;
-  float height = 0.0f;
-  float distance = 0.0f;
-  int index = 0;
+  spitfire::math::cVec3 CurrentPos;
+  spitfire::math::cVec3 LightDir;
 
-  // create flag buffer to indicate where we've been
-  float* flagMap = new float[n];
-  for (size_t i = 0; i < n; i++) flagMap[i] = 0.0f;
+  int LerpX, LerpZ;
 
-  int* X = nullptr;
-  int* Y = nullptr;
-  int iX = 0;
-  int iY = 0;
-  int dirX = 0;
-  int dirY = 0;
+  // For every pixel on the map
+  for (size_t z = 0; z < size; ++z) {
+    for (size_t x = 0; x < size; ++x) {
+      // Set current position in terrain
+      CurrentPos.Set(float(x), (heightmap[(z * size) + x] * fScaleZ), float(z));
 
-  // calculate absolute values for light direction
-  float lightDirXMagnitude = lightDir[0];
-  float lightDirZMagnitude = lightDir[2];
-  if (lightDirXMagnitude < 0.0f) lightDirXMagnitude *= -1.0f;
-  if (lightDirZMagnitude < 0.0f) lightDirZMagnitude *= -1.0f;
+      // Calc new direction of lightray
+      LightDir = (sunPosition - CurrentPos).GetNormalised();
 
-  // decide which loop will come first, the y loop or x loop
-  // based on direction of light, makes calculations faster
-  if (lightDirXMagnitude > lightDirZMagnitude) {
-    Y = &iX;
-    X = &iY;
+      //Start the test
+      while (
+        (CurrentPos.x >= 0) &&
+        (CurrentPos.x < size) &&
+        (CurrentPos.z >= 0) &&
+        (CurrentPos.z < size) &&
+        (CurrentPos != sunPosition) && (CurrentPos.y < 255)
+      ) {
+        CurrentPos += LightDir;
 
-    if (lightDir[0] < 0) {
-      iY = size-1;
-      dirY = -1;
-    } else {
-      iY = 0;
-      dirY = 1;
-    }
+        LerpX = round(CurrentPos.x);
+        LerpZ = round(CurrentPos.z);
 
-    if (lightDir[2] < 0) {
-      iX = size-1;
-      dirX = -1;
-    } else {
-      iX = 0;
-      dirX = 1;
-    }
-  } else {
-    Y = &iY;
-    X = &iX;
-
-    if (lightDir[0] < 0) {
-      iX = size-1;
-      dirX = -1;
-    } else {
-      iX = 0;
-      dirX = 1;
-    }
-
-    if (lightDir[2] < 0) {
-      iY = size-1;
-      dirY = -1;
-    } else {
-      iY = 0;
-      dirY = 1;
-    }
-  }
-
-  // outer loop
-  while (1) {
-    // inner loop
-    while (1) {
-      // travel along the terrain until we:
-      // (1) intersect another point
-      // (2) find another point with previous collision data
-      // (3) or reach the edge of the map
-      px = *X;
-      py = *Y;
-      index = (*Y) * size + (*X);
-
-      // travel along ray
-      while (1) {
-        px -= lightDir[0];
-        py -= lightDir[2];
-
-        // check if we've reached the boundary
-        if ((px < 0) || (px >= size) || (py < 0) || (py >= size)) {
-          flagMap[index] = -1;
-          break;
-        }
-
-        // calculate interpolated values
-        static int x0, x1, y0, y1;
-        static float du, dv;
-        static float interpolatedHeight;
-	static float interpolatedFlagMap;
-        static float heights[4];
-        static float pixels[4];
-        static float invdu, invdv;
-        static float w0, w1, w2, w3;
-
-        x0 = floor(px);
-        x1 = ceil(px);
-        y0 = floor(py);
-        y1 = ceil(py);
-
-        du = px - x0;
-        dv = py - y0;
-
-        invdu = 1.0 - du;
-        invdv = 1.0 - dv;
-        w0 = invdu * invdv;
-        w1 = invdu * dv;
-        w2 = du * invdv;
-        w3 = du * dv;
-
-        // compute interpolated height value from the heightmap direction below ray
-        heights[0] = fScaleZ * heightmap[y0 * size + x0];
-        heights[1] = fScaleZ * heightmap[y1 * size + x0];
-        heights[2] = fScaleZ * heightmap[y0 * size + x1];
-        heights[3] = fScaleZ * heightmap[y1 * size + x1];
-        interpolatedHeight = w0 * heights[0] + w1 * heights[1] + w2 * heights[2] + w3 * heights[3];
-
-        // compute interpolated flagmap value from point directly below ray
-        pixels[0] = flagMap[y0 * size + x0];
-        pixels[1] = flagMap[y1 * size + x0];
-        pixels[2] = flagMap[y0 * size + x1];
-        pixels[3] = flagMap[y1 * size + x1];
-        interpolatedFlagMap = w0 * pixels[0] + w1 * pixels[1] + w2 * pixels[2] + w3 * pixels[3];
-
-        // get distance from original point to current point
-        distance = sqrt( (px - *X)*(px - *X) + (py - *Y) * (py - *Y) );
-
-        // get height at current point while traveling along light ray
-        height = (fScaleZ * heightmap[index]) + lightDir[1] * distance;
-
-        // check intersection with either terrain or flagMap
-        // if interpolatedHeight is less than interpolatedFlagMap that means we need to use the flagMap value instead
-        // else use the height value
-        static float val;
-        val = interpolatedHeight;
-        if (interpolatedHeight < interpolatedFlagMap) val = interpolatedFlagMap;
-        if (height < val) {
-          flagMap[index] = val - height;
-
-          _lightmap[index] = shadowColour;
-
-          break;
-        }
-
-        // check if pixel we've moved to is unshadowed
-        // since the flagMap value we're using is interpolated, we will be in between shadowed and unshadowed areas
-        // to compensate for this, simply define some epsilon value and use this as an offset from -1 to decide
-        // if current point under the ray is unshadowed
-        static float epsilon = 0.5f;
-        if ((interpolatedFlagMap < -1.0f + epsilon) && (interpolatedFlagMap > -1.0f - epsilon)) {
-          flagMap[index] = -1.0f;
+        // Hit?
+        if (CurrentPos.y <= (heightmap[(LerpZ * size) + LerpX] * fScaleZ)) {
+          _lightmap[(z * size) + x] = shadowColour;
           break;
         }
       }
-
-      // update inner loop variable
-      if (dirY < 0) {
-        iY--;
-        if (iY < 0) break;
-      } else {
-        iY++;
-        if (iY >= size) break;
-      }
-    }
-
-    // reset inner loop starting point
-    if (dirY < 0) iY = size - 1;
-    else iY = 0;
-
-    // update outer loop variable
-    if (dirX < 0) {
-      iX--;
-      if (iX < 0) break;
-    } else {
-      iX++;
-      if (iX >= size) break;
     }
   }
-
-  delete [] flagMap;
 }
 
 
