@@ -26,18 +26,18 @@ Pull this project:
 yum install git  
 OR  
 sudo apt-get install git-core  
-git clone git@github.com:pilkch/test.git  
+git clone git@github.com:pilkch/tests.git  
 OR  
-git clone https://github.com/pilkch/git@github.com:pilkch/test.git  
+git clone https://github.com/pilkch/git@github.com:pilkch/tests.git  
 
 
 ### Building on Linux (Fedora 14 used)
 
 Many of the examples require <https://github.com/pilkch/library/>. For examples that use libopenglmm or libxdgmm this will require extra dependencies such as <http://www.libsdl.org/>.  
-It should be checked out at the same level as test:  
+It should be checked out at the same level as tests:  
 source/  
 library/  
-test/  
+tests/  
 
 
 ### Usage

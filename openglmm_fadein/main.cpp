@@ -1049,7 +1049,7 @@ bool cApplication::Create()
     uint32_t T0 = 0;
     uint32_t Frames = 0;
 
-    uint32_t currentTime = SDL_GetTicks();
+    //uint32_t currentTime = SDL_GetTicks();
 
     // Setup mouse
     pWindow->ShowCursor(false);
@@ -1060,7 +1060,7 @@ bool cApplication::Create()
     pWindow->UpdateEvents();
 
     // Update state
-    currentTime = SDL_GetTicks();
+    //currentTime = SDL_GetTicks();
 
     const float fBlend0 = 1.0f;
     const float fBlend1 = 0.0f;
@@ -1341,11 +1341,11 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
     }
 
     spitfire::math::cVec3 newAxis = rotationZ.GetAxis();
-    float fNewAngleDegrees = rotationZ.GetAngleDegrees();
+    //float fNewAngleDegrees = rotationZ.GetAngleDegrees();
     //std::cout<<"cApplication::_OnMouseEvent z newAxis={ "<<newAxis.x<<", "<<newAxis.y<<", "<<newAxis.z<<" } angle="<<fNewAngleDegrees<<std::endl;
 
     newAxis = rotationX.GetAxis();
-    fNewAngleDegrees = rotationX.GetAngleDegrees();
+    //fNewAngleDegrees = rotationX.GetAngleDegrees();
     //std::cout<<"cApplication::_OnMouseEvent x newAxis={ "<<newAxis.x<<", "<<newAxis.y<<", "<<newAxis.z<<" } angle="<<fNewAngleDegrees<<std::endl;
   } else if (event.IsButtonDown()) {
     const float fZoomIncrement = 5.0f;
@@ -1501,7 +1501,7 @@ void cApplication::Run()
   uint32_t T0 = 0;
   uint32_t Frames = 0;
 
-  uint32_t previousTime = SDL_GetTicks();
+  //uint32_t previousTime = SDL_GetTicks();
   uint32_t currentTime = SDL_GetTicks();
 
   // Setup mouse
@@ -1522,7 +1522,7 @@ void cApplication::Run()
     pWindow->WarpCursorToMiddleOfScreen();
 
     // Update state
-    previousTime = currentTime;
+    //previousTime = currentTime;
     currentTime = SDL_GetTicks();
 
     const float fComplete0To1 = min(spitfire::math::square((float(currentTime) - float(startTime)) / float(duration)), 1.0f);
@@ -1696,7 +1696,7 @@ void cApplication::Run()
     pWindow->WarpCursorToMiddleOfScreen();
 
     // Update state
-    previousTime = currentTime;
+    //previousTime = currentTime;
     currentTime = SDL_GetTicks();
 
     matRotation.SetRotation(rotationZ * rotationX);
