@@ -10,8 +10,6 @@
 #include <vector>
 #include <list>
 
-#error "Test breakages"
-
 // OpenGL headers
 //#include <GL/GLee.h>
 //#include <GL/glu.h>
