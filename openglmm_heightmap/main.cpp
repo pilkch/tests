@@ -208,12 +208,12 @@ void cHeightmapData::SmoothImage(const std::vector<spitfire::math::cColour>& sou
         if ((x + 1) < widthLightmap) surrounding[4] = GetLightmapPixel(temp, x + 1, y);
 
         //const spitfire::math::cColour averageOfSurrounding = 0.25f * (surrounding[0] + surrounding[1] + surrounding[3] + surrounding[4]);
-        //const spitfire::math::cColour final = 0.5f * (surrounding[2] + averageOfSurrounding);
-        const spitfire::math::cColour final = 0.25f * (surrounding[0] + surrounding[1] + surrounding[3] + surrounding[4]);
+        //const spitfire::math::cColour colour = 0.5f * (surrounding[2] + averageOfSurrounding);
+        const spitfire::math::cColour colour = 0.25f * (surrounding[0] + surrounding[1] + surrounding[3] + surrounding[4]);
 
         const size_t index = (y * widthLightmap) + x;
 
-        destination[index] = final;
+        destination[index] = colour;
       }
     }
 
@@ -792,11 +792,11 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
     }
 
     spitfire::math::cVec3 newAxis = rotationZ.GetAxis();
-    float fNewAngleDegrees = rotationZ.GetAngleDegrees();
+    //float fNewAngleDegrees = rotationZ.GetAngleDegrees();
     //std::cout<<"cApplication::_OnMouseEvent z newAxis={ "<<newAxis.x<<", "<<newAxis.y<<", "<<newAxis.z<<" } angle="<<fNewAngleDegrees<<std::endl;
 
     newAxis = rotationX.GetAxis();
-    fNewAngleDegrees = rotationX.GetAngleDegrees();
+    //fNewAngleDegrees = rotationX.GetAngleDegrees();
     //std::cout<<"cApplication::_OnMouseEvent x newAxis={ "<<newAxis.x<<", "<<newAxis.y<<", "<<newAxis.z<<" } angle="<<fNewAngleDegrees<<std::endl;
   } else if (event.IsButtonDown()) {
     const float fZoomIncrement = 5.0f;
@@ -913,8 +913,8 @@ void cApplication::Run()
   uint32_t T0 = 0;
   uint32_t Frames = 0;
 
-  uint32_t previousTime = SDL_GetTicks();
-  uint32_t currentTime = SDL_GetTicks();
+  //uint32_t previousTime = SDL_GetTicks();
+  //uint32_t currentTime = SDL_GetTicks();
 
   // Setup mouse
   pWindow->ShowCursor(false);
@@ -928,8 +928,8 @@ void cApplication::Run()
     pWindow->WarpCursorToMiddleOfScreen();
 
     // Update state
-    previousTime = currentTime;
-    currentTime = SDL_GetTicks();
+    //previousTime = currentTime;
+    //currentTime = SDL_GetTicks();
 
     matRotation.SetRotation(rotationZ * rotationX);
 
