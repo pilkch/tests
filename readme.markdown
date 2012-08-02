@@ -3,6 +3,10 @@ Chris Pilkington
 Copyright (C) 2005-2010  
 <http://chris.iluo.net/> 
 
+If you find this project helpful, please consider making a donation. 
+
+[<img alt="Make a donation via Pledgie" src="http://www.pledgie.com/campaigns/17973.png?skin_name=chrome" border="0" />][1]  
+
 ### License
 
 This program is free software; you can redistribute it and/or  
@@ -90,4 +94,6 @@ Paul Nettle
 Copyright 2000, Fluid Studios  
 All rights reserved  
 <http://www.FluidStudios.com>
+
+ [1]: http://www.pledgie.com/campaigns/17973
 
