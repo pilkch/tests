@@ -1,25 +1,36 @@
 
 // http://www.swiftless.com/tutorials/glsl/6_materials.html
 
-varying vec3 vertex_light_position;
+uniform vec4 ambientColour;
+
+uniform vec3 lightPosition;
+uniform vec4 lightAmbientColour;
+uniform vec4 lightDiffuseColour;
+uniform vec4 lightSpecularColour;
+
+uniform vec4 materialAmbientColour;
+uniform vec4 materialDiffuseColour;
+uniform vec4 materialSpecularColour;
+uniform float fMaterialShininess;
+
 varying vec3 vertex_light_half_vector;
 varying vec3 vertex_normal;
 
 void main()
 {
   // Calculate the ambient term
-  vec4 ambient_color = gl_FrontMaterial.ambient * gl_LightSource[0].ambient + gl_LightModel.ambient * gl_FrontMaterial.ambient;
+  vec4 ambient_colour = (materialAmbientColour * lightAmbientColour) + (ambientColour * materialAmbientColour);
 
   // Calculate the diffuse term
-  vec4 diffuse_color = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;
+  vec4 diffuse_colour = materialDiffuseColour * lightDiffuseColour;
 
   // Calculate the specular value
-  vec4 specular_color = gl_FrontMaterial.specular * gl_LightSource[0].specular * pow(max(dot(vertex_normal, vertex_light_half_vector), 0.0) , gl_FrontMaterial.shininess);
+  vec4 specular_colour = materialSpecularColour * lightSpecularColour * pow(max(dot(vertex_normal, vertex_light_half_vector), 0.0) , fMaterialShininess);
 
     // Set the diffuse value (darkness). This is done with a dot product between the normal and the light
   // and the maths behind it is explained in the maths section of the site.
-  float diffuse_value = max(dot(vertex_normal, vertex_light_position), 0.0);
+  float diffuse_value = max(dot(vertex_normal, lightPosition), 0.0);
 
-  // Set the output color of our current pixel
-  gl_FragColor = ambient_color + diffuse_color * diffuse_value + specular_color;
+  // Set the output colour of our current pixel
+  gl_FragColor = ambient_colour + (diffuse_colour * diffuse_value) + specular_colour;
 }

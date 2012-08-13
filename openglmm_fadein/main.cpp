@@ -1456,31 +1456,6 @@ void cApplication::Run()
 
   const spitfire::math::cColour sunColour(0.2, 0.2, 0.0);
 
-  // Setup materials
-  const spitfire::math::cColour ambient(sunColour);
-  pContext->SetMaterialAmbientColour(ambient);
-  const spitfire::math::cColour diffuse(0.8, 0.1, 0.0);
-  pContext->SetMaterialDiffuseColour(diffuse);
-  const spitfire::math::cColour specular(1.0, 0.3, 0.3);
-  pContext->SetMaterialSpecularColour(specular);
-  const float fShininess = 50.0f;
-  pContext->SetMaterialShininess(fShininess);
-
-
-  // Setup lighting
-  // NOTE: No lighting to show that the lightmap is working
-  //pContext->EnableLighting();
-  //pContext->EnableLight(0);
-  //const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
-  //pContext->SetLightPosition(0, lightPosition);
-  //const spitfire::math::cColour lightAmbient(sunColour);
-  //pContext->SetLightAmbientColour(0, lightAmbient);
-  //const spitfire::math::cColour lightDiffuse(1.0, 1.0, 1.0);
-  //pContext->SetLightDiffuseColour(0, lightDiffuse);
-  //const spitfire::math::cColour lightSpecular(1.0f, 1.0f, 1.0f);
-  //pContext->SetLightSpecularColour(0, lightSpecular);
-
-
   // Center the camera at the middle of the heightmap
   spitfire::math::cMat4 matTranslation;
   matTranslation.SetTranslation(-0.5f * scale.x * float(width), -0.5f * scale.y * float(depth), 0.0f);

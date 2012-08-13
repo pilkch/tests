@@ -231,36 +231,24 @@ void cApplication::Run()
   assert(pContext != nullptr);
   assert(pContext->IsValid());
 
+  const spitfire::math::cColour ambientColour(0.5f, 0.5f, 0.5f);
 
-  // Setup materials
-  const spitfire::math::cColour ambient(0.0, 0.0, 0.0);
-  pContext->SetMaterialAmbientColour(ambient);
-  const spitfire::math::cColour specular(1.0, 1.0, 1.0);
-  pContext->SetMaterialSpecularColour(specular);
-  const float fShininess = 50.0f;
-  pContext->SetMaterialShininess(fShininess);
-
-  // Setup lighting
-  pContext->EnableLighting();
-  pContext->EnableLight(0);
   const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
-  pContext->SetLightPosition(0, lightPosition);
-  const spitfire::math::cColour lightAmbient(0.2, 0.2, 0.2);
-  pContext->SetLightAmbientColour(0, lightAmbient);
-  const spitfire::math::cColour lightDiffuse(1.0, 1.0, 1.0);
-  pContext->SetLightDiffuseColour(0, lightDiffuse);
-  const spitfire::math::cColour lightSpecular(0.75f, 0.75f, 0.75f); // We could have used full red, green and blue, but we tone it down a little bit so that the geometry doesn't get lost as a single solid specular highlight
-  pContext->SetLightSpecularColour(0, lightSpecular);
+  const spitfire::math::cColour lightAmbientColour(0.2f, 0.2f, 0.2f);
+  const spitfire::math::cColour lightDiffuseColour(1.0f, 1.0f, 1.0f);
+  const spitfire::math::cColour lightSpecularColour(0.75f, 0.75f, 0.75f);
 
+  const spitfire::math::cColour materialAmbientColour(0.5f, 0.5f, 0.5f);
+  const float fMaterialShininess = 50.0f;
 
-  const spitfire::math::cColour red(0.8, 0.1, 0.0);
-  const spitfire::math::cColour green(0.0, 0.8, 0.2);
-  const spitfire::math::cColour blue(0.2, 0.2, 1.0);
+  const spitfire::math::cColour red(0.8f, 0.1f, 0.0f);
+  const spitfire::math::cColour green(0.0f, 0.8f, 0.2f);
+  const spitfire::math::cColour blue(0.2f, 0.2f, 1.0f);
 
   float view_rotx = 20.0f;
-  float view_roty = 30.0;
-  float view_rotz = 0.0;
-  float angle = 0.0;
+  float view_roty = 30.0f;
+  float view_rotz = 0.0f;
+  float angle = 0.0f;
 
   uint32_t T0 = 0;
   uint32_t Frames = 0;
@@ -309,10 +297,22 @@ void cApplication::Run()
 
       pContext->SetModelViewMatrix(matBase * matLocalTranslation * matLocalRotationZ);
 
-      pContext->SetMaterialSpecularColour(0.5f * red);
-      pContext->SetMaterialDiffuseColour(red);
-
       pContext->BindShader(*pShader);
+
+      // Setup ambient colour
+      pContext->SetShaderConstant("ambientColour", ambientColour);
+
+      // Setup lighting
+      pContext->SetShaderConstant("lightPosition", lightPosition);
+      pContext->SetShaderConstant("lightAmbientColour", lightAmbientColour);
+      pContext->SetShaderConstant("lightDiffuseColour", lightDiffuseColour);
+      pContext->SetShaderConstant("lightSpecularColour", lightSpecularColour);
+
+      // Setup materials
+      pContext->SetShaderConstant("materialAmbientColour", materialAmbientColour);
+      pContext->SetShaderConstant("materialDiffuseColour", red);
+      pContext->SetShaderConstant("materialSpecularColour", 0.5f * red);
+      pContext->SetShaderConstant("fMaterialShininess", fMaterialShininess);
 
       pContext->BindStaticVertexBufferObject(*pGearVBO1);
 
@@ -332,10 +332,22 @@ void cApplication::Run()
 
       pContext->SetModelViewMatrix(matBase * matLocalTranslation * matLocalRotationZ);
 
-      pContext->SetMaterialSpecularColour(0.5f * green);
-      pContext->SetMaterialDiffuseColour(green);
-
       pContext->BindShader(*pShader);
+
+      // Setup ambient colour
+      pContext->SetShaderConstant("ambientColour", ambientColour);
+
+      // Setup lighting
+      pContext->SetShaderConstant("lightPosition", lightPosition);
+      pContext->SetShaderConstant("lightAmbientColour", lightAmbientColour);
+      pContext->SetShaderConstant("lightDiffuseColour", lightDiffuseColour);
+      pContext->SetShaderConstant("lightSpecularColour", lightSpecularColour);
+
+      // Setup materials
+      pContext->SetShaderConstant("materialAmbientColour", materialAmbientColour);
+      pContext->SetShaderConstant("materialDiffuseColour", green);
+      pContext->SetShaderConstant("materialSpecularColour", 0.5f * green);
+      pContext->SetShaderConstant("fMaterialShininess", fMaterialShininess);
 
       pContext->BindStaticVertexBufferObject(*pGearVBO2);
 
@@ -355,10 +367,22 @@ void cApplication::Run()
 
       pContext->SetModelViewMatrix(matBase * matLocalTranslation * matLocalRotationZ);
 
-      pContext->SetMaterialSpecularColour(0.5f * blue);
-      pContext->SetMaterialDiffuseColour(blue);
-
       pContext->BindShader(*pShader);
+
+      // Setup ambient colour
+      pContext->SetShaderConstant("ambientColour", ambientColour);
+
+      // Setup lighting
+      pContext->SetShaderConstant("lightPosition", lightPosition);
+      pContext->SetShaderConstant("lightAmbientColour", lightAmbientColour);
+      pContext->SetShaderConstant("lightDiffuseColour", lightDiffuseColour);
+      pContext->SetShaderConstant("lightSpecularColour", lightSpecularColour);
+
+      // Setup materials
+      pContext->SetShaderConstant("materialAmbientColour", materialAmbientColour);
+      pContext->SetShaderConstant("materialDiffuseColour", blue);
+      pContext->SetShaderConstant("materialSpecularColour", 0.5f * blue);
+      pContext->SetShaderConstant("fMaterialShininess", fMaterialShininess);
 
       pContext->BindStaticVertexBufferObject(*pGearVBO3);
 
