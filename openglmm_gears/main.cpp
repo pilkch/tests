@@ -273,6 +273,8 @@ void cApplication::Run()
     // Render the scene
     pContext->BeginRendering();
 
+    const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
+
     spitfire::math::cMat4 matGlobalTranslation;
     matGlobalTranslation.SetTranslation(0.0f, 0.0f, -20.0f);
 
@@ -295,9 +297,9 @@ void cApplication::Run()
       spitfire::math::cMat4 matLocalRotationZ;
       matLocalRotationZ.SetRotationZ(spitfire::math::DegreesToRadians(angle));
 
-      pContext->SetModelViewMatrix(matBase * matLocalTranslation * matLocalRotationZ);
-
       pContext->BindShader(*pShader);
+
+      pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
 
       // Setup ambient colour
       pContext->SetShaderConstant("ambientColour", ambientColour);
@@ -330,9 +332,9 @@ void cApplication::Run()
       spitfire::math::cMat4 matLocalRotationZ;
       matLocalRotationZ.SetRotationZ(spitfire::math::DegreesToRadians(-2.0f * angle - 9.0f));
 
-      pContext->SetModelViewMatrix(matBase * matLocalTranslation * matLocalRotationZ);
-
       pContext->BindShader(*pShader);
+
+      pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
 
       // Setup ambient colour
       pContext->SetShaderConstant("ambientColour", ambientColour);
@@ -365,9 +367,9 @@ void cApplication::Run()
       spitfire::math::cMat4 matLocalRotationZ;
       matLocalRotationZ.SetRotationZ(spitfire::math::DegreesToRadians(-2.0f * angle - 25.0f));
 
-      pContext->SetModelViewMatrix(matBase * matLocalTranslation * matLocalRotationZ);
-
       pContext->BindShader(*pShader);
+
+      pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
 
       // Setup ambient colour
       pContext->SetShaderConstant("ambientColour", ambientColour);

@@ -1072,10 +1072,6 @@ bool cApplication::Create()
       // Now draw an overlay of our texture
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
-      // Move the quad into the bottom right hand corner of the screen
-      spitfire::math::cMat4 matModelView2D;
-      matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
-
       pContext->BindTexture(0, *pTextureScreenShot);
       pContext->BindTexture(1, *pTextureScreenShot);
 
@@ -1087,7 +1083,11 @@ bool cApplication::Create()
       pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenBlendQuad);
 
       {
-        pContext->SetModelViewMatrix(matModelView2D);
+        // Move the quad into the bottom right hand corner of the screen
+        spitfire::math::cMat4 matModelView2D;
+        matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
+
+        pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
 
         pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenBlendQuad);
       }
@@ -1148,6 +1148,7 @@ bool cApplication::Create()
 
 
   pShaderMask = pContext->CreateShader(TEXT("shaders/grass.vert"), TEXT("shaders/grass.frag"));
+  assert(pShaderMask != nullptr);
 
 
   pShaderPassThroughWithColour = pContext->CreateShader(TEXT("shaders/passthroughwithcolour.vert"), TEXT("shaders/passthroughwithcolour.frag"));
@@ -1512,6 +1513,8 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
+      const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
+
       const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
       const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
 
@@ -1530,12 +1533,12 @@ void cApplication::Run()
 
       if (!bUseQuadsIndexed) {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
-          pContext->SetModelViewMatrix(matModelView * matTranslation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuads);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
       } else {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
-          pContext->SetModelViewMatrix(matModelView * matTranslation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
       }
@@ -1553,7 +1556,7 @@ void cApplication::Run()
       pContext->BindShader(*pShaderMask);
 
       pContext->BindStaticVertexBufferObject(*grass.pVBO);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
         pContext->DrawStaticVertexBufferObjectQuads(*grass.pVBO);
       pContext->UnBindStaticVertexBufferObject(*grass.pVBO);
 
@@ -1568,7 +1571,7 @@ void cApplication::Run()
       pContext->BindShader(*pShaderMask);
 
       pContext->BindStaticVertexBufferObject(*trees.pVBO);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
         pContext->DrawStaticVertexBufferObjectQuads(*trees.pVBO);
       pContext->UnBindStaticVertexBufferObject(*trees.pVBO);
 
@@ -1583,7 +1586,7 @@ void cApplication::Run()
       pContext->BindShader(*pShaderPassThroughWithColour);
 
       pContext->BindStaticVertexBufferObject(*rocks.pVBO);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
         pContext->DrawStaticVertexBufferObjectQuads(*rocks.pVBO);
       pContext->UnBindStaticVertexBufferObject(*rocks.pVBO);
 
@@ -1622,7 +1625,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenBlendQuad);
 
       {
-        pContext->SetModelViewMatrix(matModelView2D);
+        pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
 
         pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenBlendQuad);
       }
@@ -1678,6 +1681,8 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
+      const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
+
       const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
       const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
 
@@ -1696,12 +1701,12 @@ void cApplication::Run()
 
       if (!bUseQuadsIndexed) {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
-          pContext->SetModelViewMatrix(matModelView * matTranslation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuads);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
       } else {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
-          pContext->SetModelViewMatrix(matModelView * matTranslation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
       }
@@ -1719,7 +1724,7 @@ void cApplication::Run()
       pContext->BindShader(*pShaderMask);
 
       pContext->BindStaticVertexBufferObject(*grass.pVBO);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
         pContext->DrawStaticVertexBufferObjectQuads(*grass.pVBO);
       pContext->UnBindStaticVertexBufferObject(*grass.pVBO);
 
@@ -1734,7 +1739,7 @@ void cApplication::Run()
       pContext->BindShader(*pShaderMask);
 
       pContext->BindStaticVertexBufferObject(*trees.pVBO);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
         pContext->DrawStaticVertexBufferObjectQuads(*trees.pVBO);
       pContext->UnBindStaticVertexBufferObject(*trees.pVBO);
 
@@ -1749,7 +1754,7 @@ void cApplication::Run()
       pContext->BindShader(*pShaderPassThroughWithColour);
 
       pContext->BindStaticVertexBufferObject(*rocks.pVBO);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
         pContext->DrawStaticVertexBufferObjectQuads(*rocks.pVBO);
       pContext->UnBindStaticVertexBufferObject(*rocks.pVBO);
 
@@ -1784,7 +1789,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
 
       {
-        pContext->SetModelViewMatrix(matModelView2D);
+        pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
 
         pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenQuad);
       }

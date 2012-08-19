@@ -820,6 +820,8 @@ void cApplication::Run()
 
     if (bIsWireframe) pContext->EnableWireframe();
 
+    const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
+
     const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
     const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
 
@@ -836,12 +838,12 @@ void cApplication::Run()
 
     if (!bUseQuadsIndexed) {
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
         pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuads);
       pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
     } else {
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
-        pContext->SetModelViewMatrix(matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
         pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
       pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
     }

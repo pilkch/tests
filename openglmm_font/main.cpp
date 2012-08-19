@@ -377,6 +377,8 @@ void cApplication::Run()
       // Draw the crate
 
       {
+        const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
+
         const spitfire::math::cVec3 eye(position + spitfire::math::cVec3(0.0f, -2.5f, 1.0f));
         const spitfire::math::cVec3 target(position);
         spitfire::math::cMat4 matModelView;
@@ -393,7 +395,7 @@ void cApplication::Run()
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectCrate);
 
         {
-          pContext->SetModelViewMatrix(matModelView * matTranslation * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation * matRotation);
 
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectCrate);
         }
@@ -410,19 +412,17 @@ void cApplication::Run()
       {
         pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
+        pContext->BindFont(*pFont);
+
         // Rendering the font in the middle of the screen
         spitfire::math::cMat4 matModelView;
         matModelView.SetTranslation(0.1f, 0.1f, 0.0f);
 
-        //pContext->SetModelViewMatrix(matModelView);
-
-        pContext->BindFont(*pFont);
+        pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView);
 
         pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectText);
 
         {
-          //pContext->SetModelViewMatrix(matModelView);// * matTranslation * matRotation);
-
           pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectText);
         }
 

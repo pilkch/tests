@@ -701,6 +701,8 @@ void cApplication::Run()
 
     if (bIsWireframe) pContext->EnableWireframe();
 
+    const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
+
     const spitfire::math::cVec3 position;
     const spitfire::math::cVec3 target(position);
     const spitfire::math::cVec3 eye(position + spitfire::math::cVec3(0.0f, -16.0f, 4.0f));
@@ -712,70 +714,70 @@ void cApplication::Run()
     if (bIsUsingVertexBufferObjects) {
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[0] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[0] * matRotation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectPlane0);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane0);
       }
 
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectCube0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[1] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[1] * matRotation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectCube0);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectCube0);
       }
 
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectBox0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[2] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[2] * matRotation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectBox0);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectBox0);
       }
 
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectSphere0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[3] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[3] * matRotation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectSphere0);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectSphere0);
       }
 
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[4] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[4] * matRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectTeapot0);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot0);
       }
     } else {
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArrayPlane0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[0] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[0] * matRotation);
           pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayPlane0);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayPlane0);
       }
 
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArrayCube0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[1] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[1] * matRotation);
           pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayCube0);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayCube0);
       }
 
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArrayBox0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[2] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[2] * matRotation);
           pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayBox0);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayBox0);
       }
 
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArraySphere0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[3] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[3] * matRotation);
           pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArraySphere0);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArraySphere0);
       }
 
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArrayTeapot0);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[4] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[4] * matRotation);
           pContext->DrawDynamicVertexArrayTriangles(*pDynamicVertexArrayTeapot0);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayTeapot0);
       }
@@ -793,70 +795,70 @@ void cApplication::Run()
     if (bIsUsingVertexBufferObjects) {
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[5] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[5] * matRotation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectPlane3);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane3);
       }
 
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectCube3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[6] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[6] * matRotation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectCube3);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectCube3);
       }
 
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectBox3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[7] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[7] * matRotation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectBox3);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectBox3);
       }
 
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectSphere3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[8] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[8] * matRotation);
           pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectSphere3);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectSphere3);
       }
 
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[9] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[9] * matRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectTeapot3);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot3);
       }
     } else {
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArrayPlane3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[5] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[5] * matRotation);
           pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayPlane3);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayPlane3);
       }
 
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArrayCube3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[6] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[6] * matRotation);
           pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayCube3);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayCube3);
       }
 
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArrayBox3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[7] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[7] * matRotation);
           pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayBox3);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayBox3);
       }
 
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArraySphere3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[8] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[8] * matRotation);
           pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArraySphere3);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArraySphere3);
       }
 
       {
         pContext->BindDynamicVertexArray(*pDynamicVertexArrayTeapot3);
-          pContext->SetModelViewMatrix(matModelView * matTranslation[9] * matRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[9] * matRotation);
           pContext->DrawDynamicVertexArrayTriangles(*pDynamicVertexArrayTeapot3);
         pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayTeapot3);
       }

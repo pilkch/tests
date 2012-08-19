@@ -365,6 +365,8 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
+      const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
+
       const spitfire::math::cVec3 eye(position + spitfire::math::cVec3(0.0f, -2.5f, 1.0f));
       const spitfire::math::cVec3 target(position);
       spitfire::math::cMat4 matModelView;
@@ -383,7 +385,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
       {
-        pContext->SetModelViewMatrix(matModelView * matTranslation * matRotation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation * matRotation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObject);
       }
@@ -407,6 +409,7 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
+      const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
       const spitfire::math::cVec3 eye(position + spitfire::math::cVec3(0.0f, -2.5f, 1.0f));
       const spitfire::math::cVec3 target(position);
@@ -426,7 +429,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
       {
-        pContext->SetModelViewMatrix(matModelView * matTranslation * matRotation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation * matRotation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObject);
       }
@@ -453,7 +456,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
 
       {
-        pContext->SetModelViewMatrix(matModelView2D);
+        pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
 
         pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenQuad);
       }
