@@ -74,7 +74,7 @@ SET(OUTPUT_LIBRARY_LIBOPENGLMM_SOURCE_FILES ${OUTPUT_FILES})
 
 SET(LIBRARY_SPITFIRE_SOURCE_DIRECTORY spitfire/)
 SET(LIBRARY_SPITFIRE_SOURCE_FILES
-math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat4.cpp math/cQuaternion.cpp math/math.cpp math/cColour.cpp)
+math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat3.cpp math/cMat4.cpp math/cQuaternion.cpp math/math.cpp math/cColour.cpp)
 
 IF(WIN32)
   SET(LIBRARY_SPITFIRE_SOURCE_FILES ${LIBRARY_SPITFIRE_SOURCE_FILES})
