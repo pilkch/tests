@@ -11,7 +11,7 @@ varying vec3 vertex_normal;
 
 void main()
 {
-  // Calculate the normal value for this vertex, in world coordinates (multiply by gl_NormalMatrix)
+  // Calculate the normal value for this vertex, in world coordinates (multiply by the normal matrix)
   vertex_normal = normalize(matNormal * gl_Normal);
 
   // Calculate the light’s half vector
