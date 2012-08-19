@@ -319,10 +319,6 @@ bool cApplication::Create()
   pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
 
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
-  pShaderCrate->bTexUnit0 = true;
-  pShaderCrate->bTexUnit1 = true;
-  pShaderCrate->bTexUnit2 = true;
-
   pShaderMetal = pContext->CreateShader(TEXT("shaders/metal.vert"), TEXT("shaders/metal.frag"));
 
   pStaticVertexBufferObjectPlane0 = pContext->CreateStaticVertexBufferObject();

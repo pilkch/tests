@@ -573,9 +573,6 @@ bool cApplication::Create()
   pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
 
   pShaderHeightmap = pContext->CreateShader(TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
-  pShaderHeightmap->bTexUnit0 = true;
-  pShaderHeightmap->bTexUnit1 = true;
-  pShaderHeightmap->bTexUnit2 = true;
 
   cHeightmapData data(TEXT("textures/heightmap.png"));
 

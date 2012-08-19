@@ -192,12 +192,9 @@ bool cApplication::Create()
 
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
   assert(pShaderCrate != nullptr);
-  pShaderCrate->bTexUnit0 = true;
-  pShaderCrate->bTexUnit1 = true;
 
   pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderScreenQuad != nullptr);
-  pShaderScreenQuad->bTexUnit0 = true;
 
   pStaticVertexBufferObject = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObject != nullptr);

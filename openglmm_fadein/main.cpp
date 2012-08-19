@@ -1007,7 +1007,6 @@ bool cApplication::Create()
 
   pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderScreenQuad != nullptr);
-  pShaderScreenQuad->bTexUnit0 = true;
 
   pStaticVertexBufferObjectScreenQuad = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObjectScreenQuad != nullptr);
@@ -1029,8 +1028,6 @@ bool cApplication::Create()
 
   pShaderScreenBlendQuad = pContext->CreateShader(TEXT("shaders/blend.vert"), TEXT("shaders/blend.frag"));
   assert(pShaderScreenBlendQuad != nullptr);
-  pShaderScreenBlendQuad->bTexUnit0 = true;
-  pShaderScreenBlendQuad->bTexUnit1 = true;
 
 
 
@@ -1135,9 +1132,6 @@ bool cApplication::Create()
   pTextureLightMap = pContext->CreateTexture(TEXT("textures/lightmap.png"));
 
   pShaderHeightmap = pContext->CreateShader(TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
-  pShaderHeightmap->bTexUnit0 = true;
-  pShaderHeightmap->bTexUnit1 = true;
-  pShaderHeightmap->bTexUnit2 = true;
 
   cHeightmapData data(TEXT("textures/heightmap.png"));
 
@@ -1154,12 +1148,10 @@ bool cApplication::Create()
 
 
   pShaderMask = pContext->CreateShader(TEXT("shaders/grass.vert"), TEXT("shaders/grass.frag"));
-  pShaderMask->bTexUnit0 = true;
 
 
   pShaderPassThroughWithColour = pContext->CreateShader(TEXT("shaders/passthroughwithcolour.vert"), TEXT("shaders/passthroughwithcolour.frag"));
   assert(pShaderPassThroughWithColour != nullptr);
-  pShaderPassThroughWithColour->bTexUnit0 = true;
 
 
   grass.pTexture = pContext->CreateTexture(TEXT("textures/grass.png"));

@@ -224,7 +224,6 @@ bool cApplication::Create()
   pTextureCrate = pContext->CreateTexture(TEXT("textures/crate.png"));
 
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
-  pShaderCrate->bTexUnit0 = true;
 
   pStaticVertexBufferObjectCrate = pContext->CreateStaticVertexBufferObject();
   CreateBox();
