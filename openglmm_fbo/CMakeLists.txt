@@ -31,14 +31,15 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 SET(CMAKE_CXX_FLAGS "-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wcast-qual -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wnon-virtual-dtor -Wmissing-include-dirs -Wuninitialized -Wc++0x-compat -std=c++0x -fno-rtti -ffor-scope")
 
 
-ADD_DEFINITIONS("-DUNICODE -D_UNICODE")
-
 IF("${CMAKE_SYSTEM}" MATCHES "Linux")
   ADD_DEFINITIONS("-D__LINUX__")
 ENDIF()
+
+ADD_DEFINITIONS("-DUNICODE -D_UNICODE")
 IF(WIN32)
   ADD_DEFINITIONS("-DNOMINMAX")
 ENDIF()
+ADD_DEFINITIONS("-DBUILD_LIBOPENGLMM_OPENGL_VERSION=200")
 
 INCLUDE_DIRECTORIES(${LIBRARY_INCLUDE})
 

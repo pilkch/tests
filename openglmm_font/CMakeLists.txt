@@ -16,14 +16,16 @@ SET(LIBRARY_SRC "${CMAKE_SOURCE_DIR}/src/")
 ADD_DEFINITIONS("-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wcast-qual -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wmissing-include-dirs -Wuninitialized -Wc++0x-compat -std=c++0x -ffor-scope -O2")
 
 
-ADD_DEFINITIONS("-DUNICODE -D_UNICODE -DBUILD_OPENGLMM_FONT")
-
 IF("${CMAKE_SYSTEM}" MATCHES "Linux")
   ADD_DEFINITIONS("-D__LINUX__")
 ENDIF()
+
+ADD_DEFINITIONS("-DUNICODE -D_UNICODE")
 IF(WIN32)
   ADD_DEFINITIONS("-DNOMINMAX")
 ENDIF()
+ADD_DEFINITIONS("-DBUILD_LIBOPENGLMM_OPENGL_VERSION=200")
+ADD_DEFINITIONS("-DBUILD_OPENGLMM_FONT")
 
 INCLUDE_DIRECTORIES(${LIBRARY_INCLUDE})
 
