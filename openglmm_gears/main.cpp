@@ -51,6 +51,7 @@ public:
 
 private:
   void CreateGear(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fInnerRadius, float fOuterRadius, float fWidth, size_t nTeeth, float fToothDepth);
+  void CreateSphere(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fRadius, size_t nSegments);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
@@ -135,6 +136,7 @@ bool cApplication::Create()
   CreateGear(pGearVBO1, 1.0f, 4.0f, 1.0f, 20, 0.7f);
   CreateGear(pGearVBO2, 0.5f, 2.0f, 2.0f, 10, 0.7f);
   CreateGear(pGearVBO3, 1.3f, 2.0f, 0.5f, 10, 0.7f);
+  //CreateSphere(pGearVBO3, 1.3f, 32);
 
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
@@ -225,6 +227,26 @@ void cApplication::CreateGear(opengl::cStaticVertexBufferObject* pStaticVertexBu
   pStaticVertexBufferObject->Compile(system);
 }
 
+
+//
+// Build a sphere vbo object for rendering later.
+//
+
+void cApplication::CreateSphere(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fRadius, size_t nSegments)
+{
+  std::vector<float> vertices;
+  std::vector<float> normals;
+  std::vector<float> textureCoords;
+  const size_t nTextureUnits = 0;
+
+  opengl::cGeometryBuilder builder;
+  builder.CreateSphere(fRadius, nSegments, vertices, normals, textureCoords, nTextureUnits);
+
+  pStaticVertexBufferObject->SetVertices(vertices);
+  pStaticVertexBufferObject->SetNormals(normals);
+
+  pStaticVertexBufferObject->Compile(system);
+}
 
 void cApplication::Run()
 {
