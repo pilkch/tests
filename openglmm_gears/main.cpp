@@ -231,15 +231,15 @@ void cApplication::Run()
   assert(pContext != nullptr);
   assert(pContext->IsValid());
 
-  const spitfire::math::cColour ambientColour(0.5f, 0.5f, 0.5f);
+  const spitfire::math::cColour ambientColour(0.1f, 0.1f, 0.1f);
 
   const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
-  const spitfire::math::cColour lightAmbientColour(0.2f, 0.2f, 0.2f);
-  const spitfire::math::cColour lightDiffuseColour(1.0f, 1.0f, 1.0f);
-  const spitfire::math::cColour lightSpecularColour(0.75f, 0.75f, 0.75f);
+  const spitfire::math::cColour lightAmbientColour(0.2, 0.2, 0.2);
+  const spitfire::math::cColour lightDiffuseColour(1.0, 1.0, 1.0);
+  const spitfire::math::cColour lightSpecularColour(1.0, 1.0, 1.0);
 
-  const spitfire::math::cColour materialAmbientColour(0.5f, 0.5f, 0.5f);
-  const float fMaterialShininess = 50.0f;
+  const spitfire::math::cColour materialAmbientColour(1.0, 0.0, 1.0);
+  const float fMaterialShininess = 20.0;
 
   const spitfire::math::cColour red(0.8f, 0.1f, 0.0f);
   const spitfire::math::cColour green(0.0f, 0.8f, 0.2f);

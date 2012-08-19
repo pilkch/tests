@@ -616,30 +616,37 @@ void cApplication::Run()
   assert(pDynamicVertexArrayTeapot3 != nullptr);
   assert(pDynamicVertexArrayTeapot3->IsCompiled());
 
+  pContext->EnableLighting();
+
   const spitfire::math::cColour sunColour(0.2, 0.2, 0.0);
 
-  // Setup materials
-  const spitfire::math::cColour ambient(sunColour);
-  pContext->SetMaterialAmbientColour(ambient);
-  const spitfire::math::cColour diffuse(0.8, 0.1, 0.0);
-  pContext->SetMaterialDiffuseColour(diffuse);
-  const spitfire::math::cColour specular(1.0, 0.3, 0.3);
-  pContext->SetMaterialSpecularColour(specular);
-  const float fShininess = 50.0f;
-  pContext->SetMaterialShininess(fShininess);
+  // Setup metal shader
+  pContext->BindShader(*pShaderMetal);
 
+    // Setup ambient colour
+    const spitfire::math::cColour ambientColour(sunColour);
+    pContext->SetAmbientColour(ambientColour);
 
-  // Setup lighting
-  pContext->EnableLighting();
-  pContext->EnableLight(0);
-  const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
-  pContext->SetLightPosition(0, lightPosition);
-  const spitfire::math::cColour lightAmbient(sunColour);
-  pContext->SetLightAmbientColour(0, lightAmbient);
-  const spitfire::math::cColour lightDiffuse(1.0, 1.0, 1.0);
-  pContext->SetLightDiffuseColour(0, lightDiffuse);
-  const spitfire::math::cColour lightSpecular(1.0f, 1.0f, 1.0f);
-  pContext->SetLightSpecularColour(0, lightSpecular);
+    // Setup lighting
+    const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
+    pContext->SetShaderLightPosition(0, lightPosition);
+    const spitfire::math::cColour lightAmbientColour(sunColour);
+    pContext->SetShaderLightAmbientColour(0, lightAmbientColour);
+    const spitfire::math::cColour lightDiffuseColour(1.0, 1.0, 1.0);
+    pContext->SetShaderLightDiffuseColour(0, lightDiffuseColour);
+    const spitfire::math::cColour lightSpecularColour(1.0f, 1.0f, 1.0f);
+    pContext->SetShaderLightSpecularColour(0, lightSpecularColour);
+
+    // Setup materials
+    pContext->SetShaderConstant("materialAmbientColour", ambientColour);
+    const spitfire::math::cColour diffuse(0.8, 0.1, 0.0);
+    pContext->SetShaderConstant("materialDiffuseColour", diffuse);
+    const spitfire::math::cColour specular(1.0, 0.3, 0.3);
+    pContext->SetShaderConstant("materialSpecularColour", specular);
+    const float fShininess = 50.0f;
+    pContext->SetShaderConstant("fMaterialShininess", fShininess);
+
+  pContext->UnBindShader(*pShaderMetal);
 
 
   const size_t columns = 5;
