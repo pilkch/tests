@@ -340,7 +340,7 @@ void cApplication::Run()
 
       pContext->BindStaticVertexBufferObject(*pGearVBO1);
 
-      pContext->DrawStaticVertexBufferObjectQuads(*pGearVBO1);
+      pContext->DrawStaticVertexBufferObjectTriangles(*pGearVBO1);
 
       pContext->UnBindStaticVertexBufferObject(*pGearVBO1);
 
@@ -375,7 +375,7 @@ void cApplication::Run()
 
       pContext->BindStaticVertexBufferObject(*pGearVBO2);
 
-      pContext->DrawStaticVertexBufferObjectQuads(*pGearVBO2);
+      pContext->DrawStaticVertexBufferObjectTriangles(*pGearVBO2);
 
       pContext->UnBindStaticVertexBufferObject(*pGearVBO2);
 
@@ -410,7 +410,7 @@ void cApplication::Run()
 
       pContext->BindStaticVertexBufferObject(*pGearVBO3);
 
-      pContext->DrawStaticVertexBufferObjectQuads(*pGearVBO3);
+      pContext->DrawStaticVertexBufferObjectTriangles(*pGearVBO3);
 
       pContext->UnBindStaticVertexBufferObject(*pGearVBO3);
 
