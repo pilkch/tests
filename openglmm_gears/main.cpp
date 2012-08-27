@@ -221,8 +221,21 @@ void cApplication::CreateGear(opengl::cStaticVertexBufferObject* pStaticVertexBu
   opengl::cGeometryBuilder builder;
   builder.CreateGear(fInnerRadius, fOuterRadius, fWidth, nTeeth, fToothDepth, vertices, normals);
 
-  pStaticVertexBufferObject->SetVertices(vertices);
-  pStaticVertexBufferObject->SetNormals(normals);
+  std::vector<float> data;
+  const size_t n = vertices.size();
+  for (size_t i = 0; i < n; i += 3) {
+    data.push_back(vertices[i]);
+    data.push_back(vertices[i + 1]);
+    data.push_back(vertices[i + 2]);
+    data.push_back(normals[i]);
+    data.push_back(normals[i + 1]);
+    data.push_back(normals[i + 2]);
+  }
+  opengl::cBufferSizes bufferSizes;
+  bufferSizes.nVertexCount = vertices.size() / 3;
+  bufferSizes.nVerticesPerPoint = 3;
+  bufferSizes.nNormalsPerPoint = 3;
+  pStaticVertexBufferObject->SetData(data, bufferSizes);
 
   pStaticVertexBufferObject->Compile(system);
 }
@@ -242,8 +255,21 @@ void cApplication::CreateSphere(opengl::cStaticVertexBufferObject* pStaticVertex
   opengl::cGeometryBuilder builder;
   builder.CreateSphere(fRadius, nSegments, vertices, normals, textureCoords, nTextureUnits);
 
-  pStaticVertexBufferObject->SetVertices(vertices);
-  pStaticVertexBufferObject->SetNormals(normals);
+  std::vector<float> data;
+  const size_t n = vertices.size();
+  for (size_t i = 0; i < n; i += 3) {
+    data.push_back(vertices[i]);
+    data.push_back(vertices[i + 1]);
+    data.push_back(vertices[i + 2]);
+    data.push_back(normals[i]);
+    data.push_back(normals[i + 1]);
+    data.push_back(normals[i + 2]);
+  }
+  opengl::cBufferSizes bufferSizes;
+  bufferSizes.nVertexCount = vertices.size() / 3;
+  bufferSizes.nVerticesPerPoint = 3;
+  bufferSizes.nNormalsPerPoint = 3;
+  pStaticVertexBufferObject->SetData(data, bufferSizes);
 
   pStaticVertexBufferObject->Compile(system);
 }
