@@ -35,7 +35,6 @@
 #include <libopenglmm/cShader.h>
 #include <libopenglmm/cSystem.h>
 #include <libopenglmm/cTexture.h>
-#include <libopenglmm/cVertexArray.h>
 #include <libopenglmm/cVertexBufferObject.h>
 #include <libopenglmm/cWindow.h>
 
@@ -70,7 +69,6 @@ private:
 
   bool bIsRotating;
   bool bIsWireframe;
-  bool bIsUsingVertexBufferObjects;
   bool bIsDone;
 
   opengl::cSystem system;
@@ -98,25 +96,11 @@ private:
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectBox3;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectSphere3;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectTeapot3;
-
-  opengl::cDynamicVertexArray* pDynamicVertexArrayPlane0;
-  opengl::cDynamicVertexArray* pDynamicVertexArrayCube0;
-  opengl::cDynamicVertexArray* pDynamicVertexArrayBox0;
-  opengl::cDynamicVertexArray* pDynamicVertexArraySphere0;
-  opengl::cDynamicVertexArray* pDynamicVertexArrayTeapot0;
-  opengl::cDynamicVertexArray* pDynamicVertexArrayGear0;
-
-  opengl::cDynamicVertexArray* pDynamicVertexArrayPlane3;
-  opengl::cDynamicVertexArray* pDynamicVertexArrayCube3;
-  opengl::cDynamicVertexArray* pDynamicVertexArrayBox3;
-  opengl::cDynamicVertexArray* pDynamicVertexArraySphere3;
-  opengl::cDynamicVertexArray* pDynamicVertexArrayTeapot3;
 };
 
 cApplication::cApplication() :
   bIsRotating(true),
   bIsWireframe(false),
-  bIsUsingVertexBufferObjects(true),
   bIsDone(false),
 
   pWindow(nullptr),
@@ -140,20 +124,7 @@ cApplication::cApplication() :
   pStaticVertexBufferObjectCube3(nullptr),
   pStaticVertexBufferObjectBox3(nullptr),
   pStaticVertexBufferObjectSphere3(nullptr),
-  pStaticVertexBufferObjectTeapot3(nullptr),
-
-  pDynamicVertexArrayPlane0(nullptr),
-  pDynamicVertexArrayCube0(nullptr),
-  pDynamicVertexArrayBox0(nullptr),
-  pDynamicVertexArraySphere0(nullptr),
-  pDynamicVertexArrayTeapot0(nullptr),
-  pDynamicVertexArrayGear0(nullptr),
-
-  pDynamicVertexArrayPlane3(nullptr),
-  pDynamicVertexArrayCube3(nullptr),
-  pDynamicVertexArrayBox3(nullptr),
-  pDynamicVertexArraySphere3(nullptr),
-  pDynamicVertexArrayTeapot3(nullptr)
+  pStaticVertexBufferObjectTeapot3(nullptr)
 {
 }
 
@@ -345,30 +316,6 @@ bool cApplication::Create()
   pStaticVertexBufferObjectTeapot3 = pContext->CreateStaticVertexBufferObject();
   CreateTeapot(pStaticVertexBufferObjectTeapot3, 3);
 
-  pDynamicVertexArrayPlane0 = pContext->CreateDynamicVertexArray();
-  CreatePlane(pDynamicVertexArrayPlane0, 0);
-  pDynamicVertexArrayCube0 = pContext->CreateDynamicVertexArray();
-  CreateCube(pDynamicVertexArrayCube0, 0);
-  pDynamicVertexArrayBox0 = pContext->CreateDynamicVertexArray();
-  CreateBox(pDynamicVertexArrayBox0, 0);
-  pDynamicVertexArraySphere0 = pContext->CreateDynamicVertexArray();
-  CreateSphere(pDynamicVertexArraySphere0, 0);
-  pDynamicVertexArrayTeapot0 = pContext->CreateDynamicVertexArray();
-  CreateTeapot(pDynamicVertexArrayTeapot0, 0);
-  pDynamicVertexArrayGear0 = pContext->CreateDynamicVertexArray();
-  CreateGear(pDynamicVertexArrayGear0);
-
-  pDynamicVertexArrayPlane3 = pContext->CreateDynamicVertexArray();
-  CreatePlane(pDynamicVertexArrayPlane3, 3);
-  pDynamicVertexArrayCube3 = pContext->CreateDynamicVertexArray();
-  CreateCube(pDynamicVertexArrayCube3, 3);
-  pDynamicVertexArrayBox3 = pContext->CreateDynamicVertexArray();
-  CreateBox(pDynamicVertexArrayBox3, 3);
-  pDynamicVertexArraySphere3 = pContext->CreateDynamicVertexArray();
-  CreateSphere(pDynamicVertexArraySphere3, 3);
-  pDynamicVertexArrayTeapot3 = pContext->CreateDynamicVertexArray();
-  CreateTeapot(pDynamicVertexArrayTeapot3, 3);
-
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
   pWindow->SetInputEventListener(*this);
@@ -378,52 +325,6 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
-  if (pDynamicVertexArrayTeapot3 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArrayTeapot3);
-    pDynamicVertexArrayTeapot3 = nullptr;
-  }
-  if (pDynamicVertexArraySphere3 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArraySphere3);
-    pDynamicVertexArraySphere3 = nullptr;
-  }
-  if (pDynamicVertexArrayBox3 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArrayBox3);
-    pDynamicVertexArrayBox3 = nullptr;
-  }
-  if (pDynamicVertexArrayCube3 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArrayCube3);
-    pDynamicVertexArrayCube3 = nullptr;
-  }
-  if (pDynamicVertexArrayPlane3 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArrayPlane3);
-    pDynamicVertexArrayPlane3 = nullptr;
-  }
-
-  if (pDynamicVertexArrayGear0 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArrayGear0);
-    pDynamicVertexArrayGear0 = nullptr;
-  }
-  if (pDynamicVertexArrayTeapot0 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArrayTeapot0);
-    pDynamicVertexArrayTeapot0 = nullptr;
-  }
-  if (pDynamicVertexArraySphere0 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArraySphere0);
-    pDynamicVertexArraySphere0 = nullptr;
-  }
-  if (pDynamicVertexArrayBox0 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArrayBox0);
-    pDynamicVertexArrayBox0 = nullptr;
-  }
-  if (pDynamicVertexArrayCube0 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArrayCube0);
-    pDynamicVertexArrayCube0 = nullptr;
-  }
-  if (pDynamicVertexArrayPlane0 != nullptr) {
-    pContext->DestroyDynamicVertexArray(pDynamicVertexArrayPlane0);
-    pDynamicVertexArrayPlane0 = nullptr;
-  }
-
   if (pStaticVertexBufferObjectTeapot3 != nullptr) {
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectTeapot3);
     pStaticVertexBufferObjectTeapot3 = nullptr;
@@ -544,11 +445,6 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         std::cout<<"cApplication::_OnKeyboardEvent Switching "<<(bIsWireframe ? "to" : "from")<<" wireframe"<<std::endl;
         break;
       }
-      case SDLK_v: {
-        bIsUsingVertexBufferObjects = !bIsUsingVertexBufferObjects;
-        std::cout<<"cApplication::_OnKeyboardEvent Switching to "<<(bIsUsingVertexBufferObjects ? "vertex buffer objects" : "vertex arrays")<<std::endl;
-        break;
-      }
     }
   }
 }
@@ -591,30 +487,6 @@ void cApplication::Run()
   assert(pStaticVertexBufferObjectSphere3->IsCompiled());
   assert(pStaticVertexBufferObjectTeapot3 != nullptr);
   assert(pStaticVertexBufferObjectTeapot3->IsCompiled());
-
-  assert(pDynamicVertexArrayPlane0 != nullptr);
-  assert(pDynamicVertexArrayPlane0->IsCompiled());
-  assert(pDynamicVertexArrayCube0 != nullptr);
-  assert(pDynamicVertexArrayCube0->IsCompiled());
-  assert(pDynamicVertexArrayBox0 != nullptr);
-  assert(pDynamicVertexArrayBox0->IsCompiled());
-  assert(pDynamicVertexArraySphere0 != nullptr);
-  assert(pDynamicVertexArraySphere0->IsCompiled());
-  assert(pDynamicVertexArrayTeapot0 != nullptr);
-  assert(pDynamicVertexArrayTeapot0->IsCompiled());
-  //assert(pDynamicVertexArrayGear0 != nullptr);
-  //assert(pDynamicVertexArrayGear0->IsCompiled());
-
-  assert(pDynamicVertexArrayPlane3 != nullptr);
-  assert(pDynamicVertexArrayPlane3->IsCompiled());
-  assert(pDynamicVertexArrayCube3 != nullptr);
-  assert(pDynamicVertexArrayCube3->IsCompiled());
-  assert(pDynamicVertexArrayBox3 != nullptr);
-  assert(pDynamicVertexArrayBox3->IsCompiled());
-  assert(pDynamicVertexArraySphere3 != nullptr);
-  assert(pDynamicVertexArraySphere3->IsCompiled());
-  assert(pDynamicVertexArrayTeapot3 != nullptr);
-  assert(pDynamicVertexArrayTeapot3->IsCompiled());
 
   pContext->EnableLighting();
 
@@ -718,7 +590,7 @@ void cApplication::Run()
 
     pContext->BindShader(*pShaderMetal);
 
-    if (bIsUsingVertexBufferObjects) {
+    {
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane0);
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[0] * matRotation);
@@ -753,41 +625,6 @@ void cApplication::Run()
           pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectTeapot0);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot0);
       }
-    } else {
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArrayPlane0);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[0] * matRotation);
-          pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayPlane0);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayPlane0);
-      }
-
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArrayCube0);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[1] * matRotation);
-          pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayCube0);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayCube0);
-      }
-
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArrayBox0);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[2] * matRotation);
-          pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayBox0);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayBox0);
-      }
-
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArraySphere0);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[3] * matRotation);
-          pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArraySphere0);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArraySphere0);
-      }
-
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArrayTeapot0);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[4] * matRotation);
-          pContext->DrawDynamicVertexArrayTriangles(*pDynamicVertexArrayTeapot0);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayTeapot0);
-      }
     }
 
     pContext->UnBindShader(*pShaderMetal);
@@ -799,7 +636,7 @@ void cApplication::Run()
 
     pContext->BindShader(*pShaderCrate);
 
-    if (bIsUsingVertexBufferObjects) {
+    {
       {
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane3);
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[5] * matRotation);
@@ -833,41 +670,6 @@ void cApplication::Run()
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[9] * matRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectTeapot3);
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot3);
-      }
-    } else {
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArrayPlane3);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[5] * matRotation);
-          pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayPlane3);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayPlane3);
-      }
-
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArrayCube3);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[6] * matRotation);
-          pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayCube3);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayCube3);
-      }
-
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArrayBox3);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[7] * matRotation);
-          pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArrayBox3);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayBox3);
-      }
-
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArraySphere3);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[8] * matRotation);
-          pContext->DrawDynamicVertexArrayQuads(*pDynamicVertexArraySphere3);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArraySphere3);
-      }
-
-      {
-        pContext->BindDynamicVertexArray(*pDynamicVertexArrayTeapot3);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation[9] * matRotation);
-          pContext->DrawDynamicVertexArrayTriangles(*pDynamicVertexArrayTeapot3);
-        pContext->UnBindDynamicVertexArray(*pDynamicVertexArrayTeapot3);
       }
     }
 
