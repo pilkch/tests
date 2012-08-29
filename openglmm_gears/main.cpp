@@ -215,27 +215,12 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
 
 void cApplication::CreateGear(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fInnerRadius, float fOuterRadius, float fWidth, size_t nTeeth, float fToothDepth)
 {
-  std::vector<float> vertices;
-  std::vector<float> normals;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   opengl::cGeometryBuilder builder;
-  builder.CreateGear(fInnerRadius, fOuterRadius, fWidth, nTeeth, fToothDepth, vertices, normals);
+  builder.CreateGear(fInnerRadius, fOuterRadius, fWidth, nTeeth, fToothDepth, *pGeometryDataPtr);
 
-  std::vector<float> data;
-  const size_t n = vertices.size();
-  for (size_t i = 0; i < n; i += 3) {
-    data.push_back(vertices[i]);
-    data.push_back(vertices[i + 1]);
-    data.push_back(vertices[i + 2]);
-    data.push_back(normals[i]);
-    data.push_back(normals[i + 1]);
-    data.push_back(normals[i + 2]);
-  }
-  opengl::cBufferSizes bufferSizes;
-  bufferSizes.nVertexCount = vertices.size() / 3;
-  bufferSizes.nVerticesPerPoint = 3;
-  bufferSizes.nNormalsPerPoint = 3;
-  pStaticVertexBufferObject->SetData(data, bufferSizes);
+  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObject->Compile(system);
 }
@@ -247,29 +232,14 @@ void cApplication::CreateGear(opengl::cStaticVertexBufferObject* pStaticVertexBu
 
 void cApplication::CreateSphere(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fRadius, size_t nSegments)
 {
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoords;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
   const size_t nTextureUnits = 0;
 
   opengl::cGeometryBuilder builder;
-  builder.CreateSphere(fRadius, nSegments, vertices, normals, textureCoords, nTextureUnits);
+  builder.CreateSphere(fRadius, nSegments, *pGeometryDataPtr, nTextureUnits);
 
-  std::vector<float> data;
-  const size_t n = vertices.size();
-  for (size_t i = 0; i < n; i += 3) {
-    data.push_back(vertices[i]);
-    data.push_back(vertices[i + 1]);
-    data.push_back(vertices[i + 2]);
-    data.push_back(normals[i]);
-    data.push_back(normals[i + 1]);
-    data.push_back(normals[i + 2]);
-  }
-  opengl::cBufferSizes bufferSizes;
-  bufferSizes.nVertexCount = vertices.size() / 3;
-  bufferSizes.nVerticesPerPoint = 3;
-  bufferSizes.nNormalsPerPoint = 3;
-  pStaticVertexBufferObject->SetData(data, bufferSizes);
+  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObject->Compile(system);
 }

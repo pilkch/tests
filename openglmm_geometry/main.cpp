@@ -138,21 +138,15 @@ void cApplication::CreatePlane(T* pObject, size_t nTextureCoordinates)
 {
   assert(pObject != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float fWidth = 2.0f;
   const float fDepth = 1.0f;
 
   opengl::cGeometryBuilder builder;
-  builder.CreatePlane(fWidth, fDepth, vertices, normals, textureCoordinates, nTextureCoordinates);
+  builder.CreatePlane(fWidth, fDepth, *pGeometryDataPtr, nTextureCoordinates);
 
-  pObject->SetVertices(vertices);
-  pObject->SetNormals(normals);
-  if (nTextureCoordinates != 0) pObject->SetTextureCoordinates(textureCoordinates);
-  //pObject->SetIndices(indices);
+  pObject->SetData(pGeometryDataPtr);
 
   pObject->Compile(system);
 }
@@ -162,20 +156,14 @@ void cApplication::CreateCube(T* pObject, size_t nTextureCoordinates)
 {
   assert(pObject != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float fWidth = 1.0f;
 
   opengl::cGeometryBuilder builder;
-  builder.CreateCube(fWidth, vertices, normals, textureCoordinates, nTextureCoordinates);
+  builder.CreateCube(fWidth, *pGeometryDataPtr, nTextureCoordinates);
 
-  pObject->SetVertices(vertices);
-  pObject->SetNormals(normals);
-  if (nTextureCoordinates != 0) pObject->SetTextureCoordinates(textureCoordinates);
-  //pObject->SetIndices(indices);
+  pObject->SetData(pGeometryDataPtr);
 
   pObject->Compile(system);
 }
@@ -185,22 +173,16 @@ void cApplication::CreateBox(T* pObject, size_t nTextureCoordinates)
 {
   assert(pObject != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float fWidth = 2.0f;
   const float fDepth = 1.0f;
   const float fHeight = 1.0f;
 
   opengl::cGeometryBuilder builder;
-  builder.CreateBox(fWidth, fDepth, fHeight, vertices, normals, textureCoordinates, nTextureCoordinates);
+  builder.CreateBox(fWidth, fDepth, fHeight, *pGeometryDataPtr, nTextureCoordinates);
 
-  pObject->SetVertices(vertices);
-  pObject->SetNormals(normals);
-  if (nTextureCoordinates != 0) pObject->SetTextureCoordinates(textureCoordinates);
-  //pObject->SetIndices(indices);
+  pObject->SetData(pGeometryDataPtr);
 
   pObject->Compile(system);
 }
@@ -210,21 +192,15 @@ void cApplication::CreateSphere(T* pObject, size_t nTextureCoordinates)
 {
   assert(pObject != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float fRadius = 1.0f;
   const size_t nSegments = 20;
 
   opengl::cGeometryBuilder builder;
-  builder.CreateSphere(fRadius, nSegments, vertices, normals, textureCoordinates, nTextureCoordinates);
+  builder.CreateSphere(fRadius, nSegments, *pGeometryDataPtr, nTextureCoordinates);
 
-  pObject->SetVertices(vertices);
-  pObject->SetNormals(normals);
-  if (nTextureCoordinates != 0) pObject->SetTextureCoordinates(textureCoordinates);
-  //pObject->SetIndices(indices);
+  pObject->SetData(pGeometryDataPtr);
 
   pObject->Compile(system);
 }
@@ -234,21 +210,15 @@ void cApplication::CreateTeapot(T* pObject, size_t nTextureCoordinates)
 {
   assert(pObject != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float fRadius = 1.0f;
   const size_t nSegments = 20;
 
   opengl::cGeometryBuilder builder;
-  builder.CreateTeapot(fRadius, nSegments, vertices, normals, textureCoordinates, nTextureCoordinates, indices);
+  builder.CreateTeapot(fRadius, nSegments, *pGeometryDataPtr, nTextureCoordinates);
 
-  pObject->SetVertices(vertices);
-  pObject->SetNormals(normals);
-  if (nTextureCoordinates != 0) pObject->SetTextureCoordinates(textureCoordinates);
-  pObject->SetIndices(indices);
+  pObject->SetData(pGeometryDataPtr);
 
   pObject->Compile(system);
 }

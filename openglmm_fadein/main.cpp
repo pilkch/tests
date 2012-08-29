@@ -492,17 +492,14 @@ void cApplication::CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStat
 {
   assert(pStaticVertexBufferObject != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float fDetailMapRepeat = 10.0f;
   const float fDetailMapWidth = fDetailMapRepeat;
 
   // NOTE: Diffuse and lightmap will have the duplicated texture coordinates (0..1)
   // Detail map will have repeated texture coordinates (0..fDetailMapRepeat)
-  opengl::cGeometryBuilder_v3_n3_t2_t2_t2 builder(vertices, normals, textureCoordinates);
+  opengl::cGeometryBuilder_v3_n3_t2_t2_t2 builder(*pGeometryDataPtr);
 
   const size_t width = data.GetWidth();
   const size_t depth = data.GetDepth();
@@ -525,10 +522,7 @@ void cApplication::CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStat
     }
   }
 
-  pStaticVertexBufferObject->SetVertices(vertices);
-  pStaticVertexBufferObject->SetNormals(normals);
-  pStaticVertexBufferObject->SetTextureCoordinates(textureCoordinates);
-  //pStaticVertexBufferObject->SetIndices(indices);
+  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObject->Compile(system);
 }
@@ -537,17 +531,14 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
 {
   assert(pStaticVertexBufferObject != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float fDetailMapRepeat = 10.0f;
   const float fDetailMapWidth = fDetailMapRepeat;
 
   // NOTE: Diffuse and lightmap will have the duplicated texture coordinates (0..1)
   // Detail map will have repeated texture coordinates (0..fDetailMapRepeat)
-  opengl::cGeometryBuilder_v3_n3_t2_t2_t2_i builder(vertices, normals, textureCoordinates, indices);
+  opengl::cGeometryBuilder_v3_n3_t2_t2_t2_i builder(*pGeometryDataPtr);
 
   const size_t width = data.GetWidth();
   const size_t depth = data.GetDepth();
@@ -574,10 +565,7 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
     }
   }
 
-  pStaticVertexBufferObject->SetVertices(vertices);
-  pStaticVertexBufferObject->SetNormals(normals);
-  pStaticVertexBufferObject->SetTextureCoordinates(textureCoordinates);
-  pStaticVertexBufferObject->SetIndices(indices);
+  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObject->Compile(system);
 }
@@ -623,29 +611,17 @@ void cApplication::CreateVegetation(const cHeightmapData& data, const spitfire::
 
   const float fOneOver255 = 1.0f / 255.0f;
 
-  std::vector<float> verticesGrass;
-  std::vector<float> normalsGrass;
-  std::vector<float> textureCoordinatesGrass;
-  //std::vector<uint16_t> indicesGrass;
-  std::vector<float> coloursGrass;
+  opengl::cGeometryDataPtr pGrassGeometryDataPtr = opengl::CreateGeometryData();
 
-  opengl::cGeometryBuilder_v3_n3_t2_c4 builderGrass(verticesGrass, normalsGrass, textureCoordinatesGrass, coloursGrass);
+  opengl::cGeometryBuilder_v3_n3_t2_c4 builderGrass(*pGrassGeometryDataPtr);
 
-  std::vector<float> verticesTrees;
-  std::vector<float> normalsTrees;
-  std::vector<float> textureCoordinatesTrees;
-  //std::vector<uint16_t> indicesTrees;
-  std::vector<float> coloursTrees;
+  opengl::cGeometryDataPtr pTreesGeometryDataPtr = opengl::CreateGeometryData();
 
-  opengl::cGeometryBuilder_v3_n3_t2_c4 builderTrees(verticesTrees, normalsTrees, textureCoordinatesTrees, coloursTrees);
+  opengl::cGeometryBuilder_v3_n3_t2_c4 builderTrees(*pTreesGeometryDataPtr);
 
-  std::vector<float> verticesRocks;
-  std::vector<float> normalsRocks;
-  std::vector<float> textureCoordinatesRocks;
-  //std::vector<uint16_t> indicesRocks;
-  std::vector<float> coloursRocks;
+  opengl::cGeometryDataPtr pRocksGeometryDataPtr = opengl::CreateGeometryData();
 
-  opengl::cGeometryBuilder_v3_n3_t2_c4 builderRocks(verticesRocks, normalsRocks, textureCoordinatesRocks, coloursRocks);
+  opengl::cGeometryBuilder_v3_n3_t2_c4 builderRocks(*pRocksGeometryDataPtr);
 
   const spitfire::math::cVec3 minGrass(-0.5f, 0.0f, 0.0f);
   const spitfire::math::cVec3 maxGrass(0.5f, 0.0f, 1.0f);
@@ -841,27 +817,15 @@ void cApplication::CreateVegetation(const cHeightmapData& data, const spitfire::
 
   std::cout<<"cApplication::CreateVegetation a"<<std::endl;
 
-  grass.pVBO->SetVertices(verticesGrass);
-  grass.pVBO->SetNormals(normalsGrass);
-  grass.pVBO->SetTextureCoordinates(textureCoordinatesGrass);
-  //grass.pVBO->SetIndices(indicesGrass);
-  grass.pVBO->SetColours(coloursGrass);
+  grass.pVBO->SetData(pGrassGeometryDataPtr);
 
   grass.pVBO->Compile(system);
 
-  trees.pVBO->SetVertices(verticesTrees);
-  trees.pVBO->SetNormals(normalsTrees);
-  trees.pVBO->SetTextureCoordinates(textureCoordinatesTrees);
-  //trees.pVBO->SetIndices(indicesTrees);
-  trees.pVBO->SetColours(coloursTrees);
+  trees.pVBO->SetData(pTreesGeometryDataPtr);
 
   trees.pVBO->Compile(system);
 
-  rocks.pVBO->SetVertices(verticesRocks);
-  rocks.pVBO->SetNormals(normalsRocks);
-  rocks.pVBO->SetTextureCoordinates(textureCoordinatesRocks);
-  //rocks.pVBO->SetIndices(indicesRocks);
-  rocks.pVBO->SetColours(coloursRocks);
+  rocks.pVBO->SetData(pRocksGeometryDataPtr);
 
   rocks.pVBO->Compile(system);
 
@@ -872,15 +836,13 @@ void cApplication::CreateScreenBlendQuadVBO(float fRatioOfTextureWidthToScreenSh
 {
   assert(pStaticVertexBufferObjectScreenBlendQuad != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float_t fHalfSize = 0.5f;
   const spitfire::math::cVec2 vMin(-fHalfSize, -fHalfSize);
   const spitfire::math::cVec2 vMax(fHalfSize, fHalfSize);
 
-  opengl::cGeometryBuilder_v2_t2_t2 builder(vertices, textureCoordinates);
+  opengl::cGeometryBuilder_v2_t2_t2 builder(*pGeometryDataPtr);
 
   // Front facing quad
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 0.0f));
@@ -888,9 +850,7 @@ void cApplication::CreateScreenBlendQuadVBO(float fRatioOfTextureWidthToScreenSh
   builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(fRatioOfTextureWidthToScreenShotWidth, fRatioOfTextureHeightToScreenShotHeight), spitfire::math::cVec2(1.0f, 1.0f));
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, fRatioOfTextureHeightToScreenShotHeight), spitfire::math::cVec2(0.0f, 1.0f));
 
-  pStaticVertexBufferObjectScreenBlendQuad->SetVertices(vertices);
-  pStaticVertexBufferObjectScreenBlendQuad->SetTextureCoordinates(textureCoordinates);
-  //pStaticVertexBufferObjectScreenBlendQuad->SetIndices(indices);
+  pStaticVertexBufferObjectScreenBlendQuad->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObjectScreenBlendQuad->Compile2D(system);
 }
@@ -899,15 +859,13 @@ void cApplication::CreateScreenQuadVBO()
 {
   assert(pStaticVertexBufferObjectScreenQuad != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float_t fHalfSize = 0.5f;
   const spitfire::math::cVec2 vMin(-fHalfSize, -fHalfSize);
   const spitfire::math::cVec2 vMax(fHalfSize, fHalfSize);
 
-  opengl::cGeometryBuilder_v2_t2 builder(vertices, textureCoordinates);
+  opengl::cGeometryBuilder_v2_t2 builder(*pGeometryDataPtr);
 
   // Front facing quad
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
@@ -915,9 +873,7 @@ void cApplication::CreateScreenQuadVBO()
   builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, 1.0f));
 
-  pStaticVertexBufferObjectScreenQuad->SetVertices(vertices);
-  pStaticVertexBufferObjectScreenQuad->SetTextureCoordinates(textureCoordinates);
-  //pStaticVertexBufferObjectScreenQuad->SetIndices(indices);
+  pStaticVertexBufferObjectScreenQuad->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObjectScreenQuad->Compile2D(system);
 }

@@ -110,11 +110,9 @@ void cApplication::CreateText()
   assert(pFont != nullptr);
   assert(pStaticVertexBufferObjectText != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> colours;
-  std::vector<float> textureCoordinates;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  opengl::cGeometryBuilder_v2_c4_t2 builder(vertices, colours, textureCoordinates);
+  opengl::cGeometryBuilder_v2_c4_t2 builder(*pGeometryDataPtr);
 
   // Front facing quad
   const spitfire::math::cColour red(1.0f, 0.0f, 0.0f);
@@ -122,29 +120,22 @@ void cApplication::CreateText()
   const spitfire::math::cColour green(0.0f, 1.0f, 0.0f);
   pFont->PushBack(builder, TEXT("abcdefghijklmnopqrstuvwxyz 1234567890"), green, spitfire::math::cVec2(0.0f, 0.5f));
 
-  pStaticVertexBufferObjectText->SetVertices(vertices);
-  pStaticVertexBufferObjectText->SetColours(colours);
-  pStaticVertexBufferObjectText->SetTextureCoordinates(textureCoordinates);
+  pStaticVertexBufferObjectText->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObjectText->Compile2D(system);
-
-  std::cout<<"cApplication::CreateBox vertices="<<vertices.size()<<", colours="<<colours.size()<<", textureCoordinates="<<textureCoordinates.size()<<std::endl;
 }
 
 void cApplication::CreateBox()
 {
   assert(pStaticVertexBufferObjectCrate != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float_t fHalfSize = 0.5f;
   const spitfire::math::cVec3 vMin(-fHalfSize, -fHalfSize, -fHalfSize);
   const spitfire::math::cVec3 vMax(fHalfSize, fHalfSize, fHalfSize);
 
-  opengl::cGeometryBuilder_v3_n3_t2 builder(vertices, normals, textureCoordinates);
+  opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
 
   // Upper Square
   builder.PushBack(spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(0.0f, 0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f));
@@ -179,10 +170,7 @@ void cApplication::CreateBox()
   builder.PushBack(spitfire::math::cVec3(vMin.x, vMax.y, vMax.z), spitfire::math::cVec3(-1.0f, 0.0f, 1.0f), spitfire::math::cVec2(1.0f, 1.0f));
   builder.PushBack(spitfire::math::cVec3(vMin.x, vMax.y, vMin.z), spitfire::math::cVec3(-1.0f, 0.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f));
 
-  pStaticVertexBufferObjectCrate->SetVertices(vertices);
-  pStaticVertexBufferObjectCrate->SetNormals(normals);
-  pStaticVertexBufferObjectCrate->SetTextureCoordinates(textureCoordinates);
-  //pStaticVertexBufferObjectCrate->SetIndices(indices);
+  pStaticVertexBufferObjectCrate->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObjectCrate->Compile(system);
 }

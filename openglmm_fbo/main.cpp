@@ -109,21 +109,15 @@ void cApplication::CreateBoxVBO()
 {
   assert(pStaticVertexBufferObject != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> textureCoordinates;
-  std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   opengl::cGeometryBuilder builder;
 
   const float fRadius = 0.3f;
   const size_t nSegments = 20;
-  builder.CreateTeapot(fRadius, nSegments, vertices, normals, textureCoordinates, 2, indices);
+  builder.CreateTeapot(fRadius, nSegments, *pGeometryDataPtr, 2);
 
-  pStaticVertexBufferObject->SetVertices(vertices);
-  pStaticVertexBufferObject->SetNormals(normals);
-  pStaticVertexBufferObject->SetTextureCoordinates(textureCoordinates);
-  pStaticVertexBufferObject->SetIndices(indices);
+  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObject->Compile(system);
 }
@@ -132,15 +126,13 @@ void cApplication::CreateScreenQuadVBO()
 {
   assert(pStaticVertexBufferObjectScreenQuad != nullptr);
 
-  std::vector<float> vertices;
-  std::vector<float> textureCoordinates;
-  //std::vector<uint16_t> indices;
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float_t fHalfSize = 0.125f;
   const spitfire::math::cVec2 vMin(-fHalfSize, -fHalfSize);
   const spitfire::math::cVec2 vMax(fHalfSize, fHalfSize);
 
-  opengl::cGeometryBuilder_v2_t2 builder(vertices, textureCoordinates);
+  opengl::cGeometryBuilder_v2_t2 builder(*pGeometryDataPtr);
 
   // Front facing quad
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
@@ -148,9 +140,7 @@ void cApplication::CreateScreenQuadVBO()
   builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, 1.0f));
 
-  pStaticVertexBufferObjectScreenQuad->SetVertices(vertices);
-  pStaticVertexBufferObjectScreenQuad->SetTextureCoordinates(textureCoordinates);
-  //pStaticVertexBufferObjectScreenQuad->SetIndices(indices);
+  pStaticVertexBufferObjectScreenQuad->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObjectScreenQuad->Compile2D(system);
 }
