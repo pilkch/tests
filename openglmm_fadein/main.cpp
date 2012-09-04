@@ -29,6 +29,9 @@
 #include <spitfire/math/cQuaternion.h>
 #include <spitfire/math/cColour.h>
 
+// libvoodoomm headers
+#include <libvoodoomm/cImageFloat.h>
+
 // libopenglmm headers
 #include <libopenglmm/libopenglmm.h>
 #include <libopenglmm/cContext.h>
@@ -271,7 +274,7 @@ private:
 
 cHeightmapData::cHeightmapData(const opengl::string_t& sFilename)
 {
-  voodoo::cImage image;
+  voodoo::cImageFloat image;
   if (!image.LoadFromFile(sFilename)) {
     std::cout<<"cHeightmapData::cHeightmapData Could not load "<<opengl::string::ToUTF8(sFilename)<<std::endl;
     assert(false);
@@ -283,17 +286,11 @@ cHeightmapData::cHeightmapData(const opengl::string_t& sFilename)
   // Create heightmap data
   const size_t n = width * depth;
 
-  heightmap.resize(n, 0);
+  heightmap.resize(n, 0.0f);
 
-  const uint8_t* pPixels = image.GetPointerToBuffer();
+  const float* pPixels = image.GetPointerToBuffer();
 
-  const float fOneOver255 = 1.0f / 255.0f;
-
-  for (size_t y = 0; y < depth; y++) {
-    for (size_t x = 0; x < width; x++) {
-      heightmap[(y * width) + x] = float(pPixels[(y * width) + x]) * fOneOver255;
-    }
-  }
+  memcpy(heightmap.data(), pPixels, width * depth * sizeof(float));
 }
 
 float cHeightmapData::GetHeight(size_t x, size_t y) const
@@ -1089,7 +1086,7 @@ bool cApplication::Create()
 
   pShaderHeightmap = pContext->CreateShader(TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
 
-  cHeightmapData data(TEXT("textures/heightmap.png"));
+  cHeightmapData data(TEXT("textures/heightmap.pfm"));
 
   width = data.GetWidth();
   depth = data.GetDepth();
