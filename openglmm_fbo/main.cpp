@@ -59,6 +59,9 @@ private:
 
   std::vector<std::string> GetInputDescription() const;
 
+  static constexpr float fTextureWidth = 720.0f;
+  static constexpr float fTextureHeight = 480.0f;
+
   bool bIsRotating;
   bool bIsWireframe;
   bool bIsDone;
@@ -130,19 +133,24 @@ void cApplication::CreateScreenRectVBO()
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  const float_t fHalfSize = 0.125f;
-  const spitfire::math::cVec2 vMin(-fHalfSize, -fHalfSize);
-  const spitfire::math::cVec2 vMax(fHalfSize, fHalfSize);
+  const float fRatio = fTextureWidth / fTextureHeight;
+
+  const float_t fWidth = fRatio * 0.250f;
+  const float_t fHeight = 0.250f;
+  const float_t fHalfWidth = fWidth / 2.0f;
+  const float_t fHalfHeight = fHeight / 2.0f;
+  const spitfire::math::cVec2 vMin(-fHalfWidth, -fHalfHeight);
+  const spitfire::math::cVec2 vMax(fHalfWidth, fHalfHeight);
 
   opengl::cGeometryBuilder_v2_t2 builder(*pGeometryDataPtr);
 
   // Front facing rectangle
-  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(fTextureWidth, fTextureHeight));
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
-  builder.PushBack(spitfire::math::cVec2(vMax.x, vMax.y), spitfire::math::cVec2(1.0f, 0.0f));
-  builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, 1.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMax.y), spitfire::math::cVec2(fTextureWidth, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, fTextureHeight));
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
-  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(fTextureWidth, fTextureHeight));
 
   pStaticVertexBufferObjectScreenRect->SetData(pGeometryDataPtr);
 
@@ -154,14 +162,14 @@ bool cApplication::Create()
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
 
   opengl::cResolution resolution = capabilities.GetCurrentResolution();
-  if ((resolution.width < 1024) || (resolution.height < 768) || (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8)) {
+  if ((resolution.width < 720) || (resolution.height < 480) || (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8)) {
     std::cout<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
     return false;
   }
 
   // Set our required resolution
-  resolution.width = 1024;
-  resolution.height = 768;
+  resolution.width = 720;
+  resolution.height = 480;
   resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
 
   pWindow = system.CreateWindow(TEXT("OpenGLmm FBO Test"), resolution, false);
@@ -176,7 +184,7 @@ bool cApplication::Create()
     return false;
   }
 
-  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(512, 512, opengl::PIXELFORMAT::R8G8B8A8);
+  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(fTextureWidth, fTextureHeight, opengl::PIXELFORMAT::R8G8B8A8);
   assert(pTextureFrameBufferObject != nullptr);
 
   pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));

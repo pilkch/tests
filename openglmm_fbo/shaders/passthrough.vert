@@ -1,4 +1,5 @@
-#version 130
+#version 140
+// 140 adds sample2DRect
 
 uniform mat4 matModelViewProjection;
 
