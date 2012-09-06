@@ -62,6 +62,8 @@ private:
   void _OnMouseEvent(const opengl::cMouseEvent& event);
   void _OnKeyboardEvent(const opengl::cKeyboardEvent& event);
 
+  std::vector<std::string> GetInputDescription() const;
+
   bool bIsRotating;
   bool bIsWireframe;
   bool bIsDone;
@@ -301,6 +303,16 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
   }
 }
 
+std::vector<std::string> cApplication::GetInputDescription() const
+{
+  std::vector<std::string> description;
+  description.push_back("Space toggle rotation");
+  description.push_back("W toggle wireframe");
+  description.push_back("Esc quit");
+
+  return description;
+}
+
 void cApplication::Run()
 {
   assert(pContext != nullptr);
@@ -319,6 +331,11 @@ void cApplication::Run()
   assert(pShaderCrate->IsCompiledProgram());
   assert(pStaticVertexBufferObjectCrate != nullptr);
   assert(pStaticVertexBufferObjectCrate->IsCompiled());
+
+  // Print the input instructions
+  const std::vector<std::string> inputDescription = GetInputDescription();
+  const size_t n = inputDescription.size();
+  for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
 
   const spitfire::math::cVec3 position(5.0f, 10.0f, 0.0f);
 

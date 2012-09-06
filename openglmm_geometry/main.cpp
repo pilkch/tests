@@ -67,6 +67,8 @@ private:
   void _OnMouseEvent(const opengl::cMouseEvent& event);
   void _OnKeyboardEvent(const opengl::cKeyboardEvent& event);
 
+  std::vector<std::string> GetInputDescription() const;
+
   bool bIsRotating;
   bool bIsWireframe;
   bool bIsDone;
@@ -419,6 +421,16 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
   }
 }
 
+std::vector<std::string> cApplication::GetInputDescription() const
+{
+  std::vector<std::string> description;
+  description.push_back("Space pause rotation");
+  description.push_back("W toggle wireframe");
+  description.push_back("Esc quit");
+
+  return description;
+}
+
 void cApplication::Run()
 {
   assert(pContext != nullptr);
@@ -457,6 +469,11 @@ void cApplication::Run()
   assert(pStaticVertexBufferObjectSphere3->IsCompiled());
   assert(pStaticVertexBufferObjectTeapot3 != nullptr);
   assert(pStaticVertexBufferObjectTeapot3->IsCompiled());
+
+  // Print the input instructions
+  const std::vector<std::string> inputDescription = GetInputDescription();
+  const size_t n = inputDescription.size();
+  for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
 
   pContext->EnableLighting();
 
