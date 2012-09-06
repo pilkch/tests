@@ -1,9 +1,12 @@
+#version 130
 
 uniform sampler2D texUnit0; // Diffuse texture
 
-void main(void)
-{
-  vec4 diffuse = texture2D(texUnit0, gl_TexCoord[0].st);
+smooth in vec2 vertOutTexCoord;
 
-  gl_FragColor = vec4((diffuse).rgb, 1.0);
+out vec4 fragmentColor;
+
+void main()
+{
+  fragmentColor = texture2D(texUnit0, vertOutTexCoord);
 }

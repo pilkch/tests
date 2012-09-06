@@ -1,4 +1,5 @@
 #version 130
+
 // http://www.swiftless.com/tutorials/glsl/6_materials.html
 
 uniform vec4 ambientColour;

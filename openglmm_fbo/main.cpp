@@ -51,7 +51,7 @@ public:
 
 private:
   void CreateBoxVBO();
-  void CreateScreenQuadVBO();
+  void CreateScreenRectVBO();
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
@@ -75,10 +75,10 @@ private:
   opengl::cTexture* pTextureDetail;
 
   opengl::cShader* pShaderCrate;
-  opengl::cShader* pShaderScreenQuad;
+  opengl::cShader* pShaderScreenRect;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
-  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenQuad;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenRect;
 };
 
 cApplication::cApplication() :
@@ -95,10 +95,10 @@ cApplication::cApplication() :
   pTextureDetail(nullptr),
 
   pShaderCrate(nullptr),
-  pShaderScreenQuad(nullptr),
+  pShaderScreenRect(nullptr),
 
   pStaticVertexBufferObject(nullptr),
-  pStaticVertexBufferObjectScreenQuad(nullptr)
+  pStaticVertexBufferObjectScreenRect(nullptr)
 {
 }
 
@@ -124,9 +124,9 @@ void cApplication::CreateBoxVBO()
   pStaticVertexBufferObject->Compile(system);
 }
 
-void cApplication::CreateScreenQuadVBO()
+void cApplication::CreateScreenRectVBO()
 {
-  assert(pStaticVertexBufferObjectScreenQuad != nullptr);
+  assert(pStaticVertexBufferObjectScreenRect != nullptr);
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -136,15 +136,17 @@ void cApplication::CreateScreenQuadVBO()
 
   opengl::cGeometryBuilder_v2_t2 builder(*pGeometryDataPtr);
 
-  // Front facing quad
+  // Front facing rectangle
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
   builder.PushBack(spitfire::math::cVec2(vMax.x, vMax.y), spitfire::math::cVec2(1.0f, 0.0f));
-  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, 1.0f));
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(1.0f, 1.0f));
 
-  pStaticVertexBufferObjectScreenQuad->SetData(pGeometryDataPtr);
+  pStaticVertexBufferObjectScreenRect->SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObjectScreenQuad->Compile2D(system);
+  pStaticVertexBufferObjectScreenRect->Compile2D(system);
 }
 
 bool cApplication::Create()
@@ -185,16 +187,16 @@ bool cApplication::Create()
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
   assert(pShaderCrate != nullptr);
 
-  pShaderScreenQuad = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
-  assert(pShaderScreenQuad != nullptr);
+  pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
+  assert(pShaderScreenRect != nullptr);
 
   pStaticVertexBufferObject = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObject != nullptr);
   CreateBoxVBO();
 
-  pStaticVertexBufferObjectScreenQuad = pContext->CreateStaticVertexBufferObject();
-  assert(pStaticVertexBufferObjectScreenQuad != nullptr);
-  CreateScreenQuadVBO();
+  pStaticVertexBufferObjectScreenRect = pContext->CreateStaticVertexBufferObject();
+  assert(pStaticVertexBufferObjectScreenRect != nullptr);
+  CreateScreenRectVBO();
 
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
@@ -205,9 +207,9 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
-  if (pStaticVertexBufferObjectScreenQuad != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectScreenQuad);
-    pStaticVertexBufferObjectScreenQuad = nullptr;
+  if (pStaticVertexBufferObjectScreenRect != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectScreenRect);
+    pStaticVertexBufferObjectScreenRect = nullptr;
   }
 
   if (pStaticVertexBufferObject != nullptr) {
@@ -215,9 +217,9 @@ void cApplication::Destroy()
     pStaticVertexBufferObject = nullptr;
   }
 
-  if (pShaderScreenQuad != nullptr) {
-    pContext->DestroyShader(pShaderScreenQuad);
-    pShaderScreenQuad = nullptr;
+  if (pShaderScreenRect != nullptr) {
+    pContext->DestroyShader(pShaderScreenRect);
+    pShaderScreenRect = nullptr;
   }
 
   if (pShaderCrate != nullptr) {
@@ -317,12 +319,12 @@ void cApplication::Run()
   assert(pTextureDetail->IsValid());
   assert(pShaderCrate != nullptr);
   assert(pShaderCrate->IsCompiledProgram());
-  assert(pShaderScreenQuad != nullptr);
-  assert(pShaderScreenQuad->IsCompiledProgram());
+  assert(pShaderScreenRect != nullptr);
+  assert(pShaderScreenRect->IsCompiledProgram());
   assert(pStaticVertexBufferObject != nullptr);
   assert(pStaticVertexBufferObject->IsCompiled());
-  assert(pStaticVertexBufferObjectScreenQuad != nullptr);
-  assert(pStaticVertexBufferObjectScreenQuad->IsCompiled());
+  assert(pStaticVertexBufferObjectScreenRect != nullptr);
+  assert(pStaticVertexBufferObjectScreenRect->IsCompiled());
 
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
@@ -404,6 +406,8 @@ void cApplication::Run()
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
+      if (bIsWireframe) pContext->DisableWireframe();
+
       pContext->EndRenderToTexture(*pTextureFrameBufferObject);
     }
 
@@ -452,29 +456,31 @@ void cApplication::Run()
       // Now draw an overlay of our rendered texture
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
-      // Move the quad into the bottom right hand corner of the screen
+      // Move the rectangle into the bottom right hand corner of the screen
       spitfire::math::cMat4 matModelView2D;
       matModelView2D.SetTranslation(0.75f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), 0.0f);
 
       pContext->BindTexture(0, *pTextureFrameBufferObject);
 
-      pContext->BindShader(*pShaderScreenQuad);
+      pContext->BindShader(*pShaderScreenRect);
 
-      pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
+      pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRect);
 
       {
         pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
 
-        pContext->DrawStaticVertexBufferObjectQuads2D(*pStaticVertexBufferObjectScreenQuad);
+        pContext->DrawStaticVertexBufferObjectTriangles2D(*pStaticVertexBufferObjectScreenRect);
       }
 
-      pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenQuad);
+      pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRect);
 
-      pContext->UnBindShader(*pShaderScreenQuad);
+      pContext->UnBindShader(*pShaderScreenRect);
 
       pContext->UnBindTexture(0, *pTextureFrameBufferObject);
 
       pContext->EndRenderMode2D();
+
+      if (bIsWireframe) pContext->DisableWireframe();
 
       pContext->EndRendering();
     }
