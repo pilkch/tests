@@ -1,4 +1,4 @@
-#version 130
+#version 330
 
 // http://www.swiftless.com/tutorials/glsl/6_materials.html
 

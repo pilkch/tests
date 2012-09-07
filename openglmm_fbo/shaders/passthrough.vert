@@ -1,10 +1,11 @@
-#version 140
-// 140 adds sample2DRect
+#version 330
 
 uniform mat4 matModelViewProjection;
 
-in vec4 position;
-in vec2 texCoord0;
+#define POSITION 0
+#define TEXCOORD0 1
+layout(location = POSITION) in vec4 position;
+layout(location = TEXCOORD0) in vec2 texCoord0;
 
 // Color to fragment program
 smooth out vec2 vertOutTexCoord;

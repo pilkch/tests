@@ -59,14 +59,13 @@ private:
 
   std::vector<std::string> GetInputDescription() const;
 
-  static constexpr float fTextureWidth = 720.0f;
-  static constexpr float fTextureHeight = 480.0f;
-
   bool bIsRotating;
   bool bIsWireframe;
   bool bIsDone;
 
   opengl::cSystem system;
+
+  opengl::cResolution resolution;
 
   opengl::cWindow* pWindow;
 
@@ -133,6 +132,9 @@ void cApplication::CreateScreenRectVBO()
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
+  const float fTextureWidth = float(resolution.width);
+  const float fTextureHeight = float(resolution.height);
+
   const float fRatio = fTextureWidth / fTextureHeight;
 
   const float_t fWidth = fRatio * 0.250f;
@@ -161,17 +163,17 @@ bool cApplication::Create()
 {
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
 
-  opengl::cResolution resolution = capabilities.GetCurrentResolution();
+  resolution = capabilities.GetCurrentResolution();
   if ((resolution.width < 720) || (resolution.height < 480) || (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8)) {
     std::cout<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
     return false;
   }
 
-  // Set our required resolution
-  resolution.width = 720;
-  resolution.height = 480;
+  // Override the resolution
+  opengl::cSystem::GetWindowedTestResolution16By9(resolution.width, resolution.height);
   resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
 
+  // Set our required resolution
   pWindow = system.CreateWindow(TEXT("OpenGLmm FBO Test"), resolution, false);
   if (pWindow == nullptr) {
     std::cout<<"Window could not be created"<<std::endl;
@@ -184,7 +186,7 @@ bool cApplication::Create()
     return false;
   }
 
-  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(fTextureWidth, fTextureHeight, opengl::PIXELFORMAT::R8G8B8A8);
+  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(resolution.width, resolution.height, opengl::PIXELFORMAT::R8G8B8A8);
   assert(pTextureFrameBufferObject != nullptr);
 
   pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));

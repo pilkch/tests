@@ -1,4 +1,4 @@
-#version 130
+#version 330
 
 // http://www.swiftless.com/tutorials/glsl/6_materials.html
 
@@ -7,8 +7,10 @@ uniform mat3 matNormal;
 
 uniform vec3 lightPosition;
 
-in vec3 position;
-in vec3 normal;
+#define POSITION 0
+#define NORMAL 1
+layout(location = POSITION) in vec3 position;
+layout(location = NORMAL) in vec3 normal;
 
 out vec3 out_normal;
 out vec3 out_light_half_vector;

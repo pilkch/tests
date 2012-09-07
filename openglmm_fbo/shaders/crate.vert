@@ -1,10 +1,13 @@
-#version 130
+#version 330
 
 uniform mat4 matModelViewProjection;
 
-in vec4 position;
-in vec2 texCoord0;
-in vec2 texCoord1;
+#define POSITION 0
+#define TEXCOORD0 1
+#define TEXCOORD1 2
+layout(location = POSITION) in vec4 position;
+layout(location = TEXCOORD0) in vec2 texCoord0;
+layout(location = TEXCOORD1) in vec2 texCoord1;
 
 // Texture coordinates for the fragment shader
 smooth out vec2 vertOutTexCoord0;
