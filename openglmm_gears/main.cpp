@@ -264,15 +264,32 @@ void cApplication::Run()
   const size_t n = inputDescription.size();
   for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
 
-  const spitfire::math::cColour ambientColour(0.1f, 0.1f, 0.1f);
-
+  // Light
   const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
-  const spitfire::math::cColour lightAmbientColour(0.2, 0.2, 0.2);
-  const spitfire::math::cColour lightDiffuseColour(1.0, 1.0, 1.0);
-  const spitfire::math::cColour lightSpecularColour(1.0, 1.0, 1.0);
+  const spitfire::math::cColour lightAmbientColour(0.2f, 0.2f, 0.2f);
+  const spitfire::math::cColour lightDiffuseColour(1.0f, 1.0f, 1.0f);
+  const spitfire::math::cColour lightSpecularColour(1.0f, 1.0f, 1.0f);
 
-  const spitfire::math::cColour materialAmbientColour(1.0, 0.0, 1.0);
-  const float fMaterialShininess = 20.0;
+  // Material
+  const spitfire::math::cColour materialAmbientColour(0.0f, 0.0f, 0.0f);
+  const spitfire::math::cColour materialSpecularColour(1.0f, 1.0f, 1.0f);
+  const float fMaterialShininess = 50.0f;
+
+  // Set our shader constants
+  pContext->BindShader(*pShader);
+
+    // Setup lighting
+    pContext->SetShaderConstant("light.position", lightPosition);
+    pContext->SetShaderConstant("light.ambientColour", lightAmbientColour);
+    pContext->SetShaderConstant("light.diffuseColour", lightDiffuseColour);
+    pContext->SetShaderConstant("light.specularColour", lightSpecularColour);
+
+    // Setup materials
+    pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+    pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
+    pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
+
+  pContext->UnBindShader(*pShader);
 
   const spitfire::math::cColour red(0.8f, 0.1f, 0.0f);
   const spitfire::math::cColour green(0.0f, 0.8f, 0.2f);
@@ -334,20 +351,8 @@ void cApplication::Run()
 
       pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
 
-      // Setup ambient colour
-      pContext->SetShaderConstant("ambientColour", ambientColour);
-
-      // Setup lighting
-      pContext->SetShaderConstant("lightPosition", lightPosition);
-      pContext->SetShaderConstant("lightAmbientColour", lightAmbientColour);
-      pContext->SetShaderConstant("lightDiffuseColour", lightDiffuseColour);
-      pContext->SetShaderConstant("lightSpecularColour", lightSpecularColour);
-
-      // Setup materials
-      pContext->SetShaderConstant("materialAmbientColour", materialAmbientColour);
-      pContext->SetShaderConstant("materialDiffuseColour", red);
-      pContext->SetShaderConstant("materialSpecularColour", 0.5f * red);
-      pContext->SetShaderConstant("fMaterialShininess", fMaterialShininess);
+      // Setup material
+      pContext->SetShaderConstant("material.diffuseColour", red);
 
       pContext->BindStaticVertexBufferObject(*pGearVBO1);
 
@@ -369,20 +374,8 @@ void cApplication::Run()
 
       pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
 
-      // Setup ambient colour
-      pContext->SetShaderConstant("ambientColour", ambientColour);
-
-      // Setup lighting
-      pContext->SetShaderConstant("lightPosition", lightPosition);
-      pContext->SetShaderConstant("lightAmbientColour", lightAmbientColour);
-      pContext->SetShaderConstant("lightDiffuseColour", lightDiffuseColour);
-      pContext->SetShaderConstant("lightSpecularColour", lightSpecularColour);
-
-      // Setup materials
-      pContext->SetShaderConstant("materialAmbientColour", materialAmbientColour);
-      pContext->SetShaderConstant("materialDiffuseColour", green);
-      pContext->SetShaderConstant("materialSpecularColour", 0.5f * green);
-      pContext->SetShaderConstant("fMaterialShininess", fMaterialShininess);
+      // Setup material
+      pContext->SetShaderConstant("material.diffuseColour", green);
 
       pContext->BindStaticVertexBufferObject(*pGearVBO2);
 
@@ -404,20 +397,8 @@ void cApplication::Run()
 
       pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
 
-      // Setup ambient colour
-      pContext->SetShaderConstant("ambientColour", ambientColour);
-
-      // Setup lighting
-      pContext->SetShaderConstant("lightPosition", lightPosition);
-      pContext->SetShaderConstant("lightAmbientColour", lightAmbientColour);
-      pContext->SetShaderConstant("lightDiffuseColour", lightDiffuseColour);
-      pContext->SetShaderConstant("lightSpecularColour", lightSpecularColour);
-
-      // Setup materials
-      pContext->SetShaderConstant("materialAmbientColour", materialAmbientColour);
-      pContext->SetShaderConstant("materialDiffuseColour", blue);
-      pContext->SetShaderConstant("materialSpecularColour", 0.5f * blue);
-      pContext->SetShaderConstant("fMaterialShininess", fMaterialShininess);
+      // Setup material
+      pContext->SetShaderConstant("material.diffuseColour", blue);
 
       pContext->BindStaticVertexBufferObject(*pGearVBO3);
 

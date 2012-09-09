@@ -5,7 +5,23 @@
 uniform mat4 matModelViewProjection;
 uniform mat3 matNormal;
 
-uniform vec3 lightPosition;
+struct cLight
+{
+  vec4 ambientColour;
+  vec4 diffuseColour;
+  vec4 specularColour;
+  vec3 position;
+  vec4 halfVector;
+  vec3 spotDirection;
+  float spotExponent;
+  float spotCutoff;
+  float spotCosCutoff;
+  float constantAttenuation;
+  float linearAttenuation;
+  float quadraticAttenuation;
+};
+
+uniform cLight light;
 
 #define POSITION 0
 #define NORMAL 1
@@ -25,5 +41,5 @@ void main()
 
   // Calculate the light’s half vector
   const vec3 eyeVec = vec3(0.0, 0.0, 1.0);
-  out_light_half_vector = normalize(lightPosition + eyeVec);
+  out_light_half_vector = normalize(light.position + eyeVec);
 }
