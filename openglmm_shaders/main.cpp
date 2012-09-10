@@ -63,6 +63,10 @@ private:
   bool bIsWireframe;
   bool bIsDone;
 
+  // For controlling the rotation of the trackball
+  spitfire::math::cQuaternion rotationX;
+  spitfire::math::cQuaternion rotationZ;
+
   opengl::cSystem system;
 
   opengl::cResolution resolution;
@@ -271,6 +275,32 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
 {
   // These a little too numerous to log every single one
   //std::cout<<"cApplication::_OnMouseEvent"<<std::endl;
+
+  if (event.IsMouseMove()) {
+    std::cout<<"cApplication::_OnMouseEvent Mouse move"<<std::endl;
+
+    if (fabs(event.GetX() - (pWindow->GetWidth() * 0.5f)) > 0.5f) {
+      const spitfire::math::cVec3 axisIncrementZ(0.0f, 0.0f, 1.0f);
+      spitfire::math::cQuaternion rotationIncrementZ;
+      rotationIncrementZ.SetFromAxisAngle(axisIncrementZ, -0.001f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
+      rotationZ *= rotationIncrementZ;
+    }
+
+    if (fabs(event.GetY() - (pWindow->GetHeight() * 0.5f)) > 1.5f) {
+      const spitfire::math::cVec3 axisIncrementX(1.0f, 0.0f, 0.0f);
+      spitfire::math::cQuaternion rotationIncrementX;
+      rotationIncrementX.SetFromAxisAngle(axisIncrementX, -0.0005f * (event.GetY() - (pWindow->GetHeight() * 0.5f)));
+      rotationX *= rotationIncrementX;
+    }
+
+    spitfire::math::cVec3 newAxis = rotationZ.GetAxis();
+    //float fNewAngleDegrees = rotationZ.GetAngleDegrees();
+    //std::cout<<"cApplication::_OnMouseEvent z newAxis={ "<<newAxis.x<<", "<<newAxis.y<<", "<<newAxis.z<<" } angle="<<fNewAngleDegrees<<std::endl;
+
+    newAxis = rotationX.GetAxis();
+    //fNewAngleDegrees = rotationX.GetAngleDegrees();
+    //std::cout<<"cApplication::_OnMouseEvent x newAxis={ "<<newAxis.x<<", "<<newAxis.y<<", "<<newAxis.z<<" } angle="<<fNewAngleDegrees<<std::endl;
+  }
 }
 
 void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
@@ -339,38 +369,57 @@ void cApplication::Run()
   const size_t n = inputDescription.size();
   for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
 
-  const spitfire::math::cVec3 position(5.0f, 10.0f, 0.0f);
-
+  // Center the camera at the middle of the objects
   spitfire::math::cMat4 matTranslation;
-  matTranslation.SetTranslation(position);
+  matTranslation.SetTranslation(0.0f, 0.0f, 0.0f);
 
-  spitfire::math::cQuaternion rotation;
+  // Set the defaults for the orbiting camera
+  {
+    const spitfire::math::cVec3 axisZ(0.0f, 0.0f, 1.0f);
+    rotationZ.SetFromAxisAngleDegrees(axisZ, 0.0f);
+
+    const spitfire::math::cVec3 axisX(1.0f, 0.0f, 0.0f);
+    rotationX.SetFromAxisAngleDegrees(axisX, -20.0f);
+  }
+  const float fZoom = 10.0f;
+
   spitfire::math::cMat4 matRotation;
 
-
-  const spitfire::math::cVec3 axis(0.0f, 0.0f, 1.0f);
-  float fAngleRadians = 0.0f;
-  const float fRotationSpeed = 0.001f;
 
   uint32_t T0 = 0;
   uint32_t Frames = 0;
 
-  uint32_t previousTime = SDL_GetTicks();
-  uint32_t currentTime = SDL_GetTicks();
+  //uint32_t previousTime = SDL_GetTicks();
+  //uint32_t currentTime = SDL_GetTicks();
 
   pContext->EnableLighting();
+
+  // Setup mouse
+  pWindow->ShowCursor(false);
+  pWindow->WarpCursorToMiddleOfScreen();
 
   while (!bIsDone) {
     // Update window events
     pWindow->UpdateEvents();
 
+    // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
+    pWindow->WarpCursorToMiddleOfScreen();
 
     // Update state
-    previousTime = currentTime;
-    currentTime = SDL_GetTicks();
+    //previousTime = currentTime;
+    //currentTime = SDL_GetTicks();
 
-    if (bIsRotating) fAngleRadians += float(currentTime - previousTime) * fRotationSpeed;
+    matRotation.SetRotation(rotationZ * rotationX);
 
+    const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
+
+    const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
+    const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
+
+    const spitfire::math::cVec3 target(0.0f, 0.0f, 0.0f);
+    const spitfire::math::cVec3 eye(target + offset);
+    spitfire::math::cMat4 matModelView;
+    matModelView.LookAt(eye, target, up);
 
 
     {
@@ -382,18 +431,6 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
-      const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
-
-      const spitfire::math::cVec3 eye(position + spitfire::math::cVec3(0.0f, -2.5f, 1.0f));
-      const spitfire::math::cVec3 target(position);
-      spitfire::math::cMat4 matModelView;
-      matModelView.LookAt(eye, target, spitfire::math::v3Up);
-
-      rotation.SetFromAxisAngle(axis, fAngleRadians);
-
-      matRotation.SetRotation(rotation);
-
-
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureDetail);
 
@@ -402,7 +439,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation * matRotation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObject);
       }
@@ -428,18 +465,6 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
-      const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
-
-      const spitfire::math::cVec3 eye(position + spitfire::math::cVec3(0.0f, -2.5f, 1.0f));
-      const spitfire::math::cVec3 target(position);
-      spitfire::math::cMat4 matModelView;
-      matModelView.LookAt(eye, target, spitfire::math::v3Up);
-
-      rotation.SetFromAxisAngle(axis, fAngleRadians);
-
-      matRotation.SetRotation(rotation);
-
-
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureDetail);
 
@@ -448,7 +473,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation * matRotation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObject);
       }
@@ -506,6 +531,8 @@ void cApplication::Run()
       }
     }
   };
+
+  pWindow->ShowCursor(true);
 }
 
 int main(int argc, char** argv)
