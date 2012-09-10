@@ -9,7 +9,7 @@
 *.mode1v3
 Thumbs.db
 openglmm_fadein/*
-openglmm_fbo/*
+openglmm_shaders/*
 openglmm_font/*
 openglmm_gears/*
 openglmm_geometry/*
