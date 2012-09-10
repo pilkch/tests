@@ -2,7 +2,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 # Set the project name
-PROJECT(openglmm_fbo)
+PROJECT(openglmm_shaders)
 
 SET(CMAKE_SOURCE_DIR ./../../library/)
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")

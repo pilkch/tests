@@ -135,12 +135,10 @@ void cApplication::CreateScreenRectVBO()
   const float fTextureWidth = float(resolution.width);
   const float fTextureHeight = float(resolution.height);
 
-  const float fRatio = fTextureWidth / fTextureHeight;
-
-  const float_t fWidth = fRatio * 0.250f;
+  const float_t fWidth = 0.250f;
   const float_t fHeight = 0.250f;
-  const float_t fHalfWidth = fWidth / 2.0f;
-  const float_t fHalfHeight = fHeight / 2.0f;
+  const float_t fHalfWidth = fWidth * 0.5f;
+  const float_t fHalfHeight = fHeight * 0.5f;
   const spitfire::math::cVec2 vMin(-fHalfWidth, -fHalfHeight);
   const spitfire::math::cVec2 vMax(fHalfWidth, fHalfHeight);
 
@@ -174,7 +172,7 @@ bool cApplication::Create()
   resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
 
   // Set our required resolution
-  pWindow = system.CreateWindow(TEXT("OpenGLmm FBO Test"), resolution, false);
+  pWindow = system.CreateWindow(TEXT("OpenGLmm Shaders Test"), resolution, false);
   if (pWindow == nullptr) {
     std::cout<<"Window could not be created"<<std::endl;
     return false;
