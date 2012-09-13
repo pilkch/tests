@@ -79,8 +79,9 @@ private:
 
   opengl::cTexture* pTextureDiffuse;
   opengl::cTexture* pTextureDetail;
+  opengl::cTextureCubeMap* pTextureCubeMap;
 
-  opengl::cShader* pShaderCrate;
+  opengl::cShader* pShaderCubeMap;
   opengl::cShader* pShaderScreenRect;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
@@ -99,8 +100,9 @@ cApplication::cApplication() :
 
   pTextureDiffuse(nullptr),
   pTextureDetail(nullptr),
+  pTextureCubeMap(nullptr),
 
-  pShaderCrate(nullptr),
+  pShaderCubeMap(nullptr),
   pShaderScreenRect(nullptr),
 
   pStaticVertexBufferObject(nullptr),
@@ -196,8 +198,18 @@ bool cApplication::Create()
   pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
   assert(pTextureDetail != nullptr);
 
-  pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
-  assert(pShaderCrate != nullptr);
+  pTextureCubeMap = pContext->CreateTextureCubeMap(
+    TEXT("textures/cubemap_positive_x.png"),
+    TEXT("textures/cubemap_negative_x.png"),
+    TEXT("textures/cubemap_positive_y.png"),
+    TEXT("textures/cubemap_negative_y.png"),
+    TEXT("textures/cubemap_positive_z.png"),
+    TEXT("textures/cubemap_negative_z.png")
+  );
+  assert(pTextureCubeMap != nullptr);
+
+  pShaderCubeMap = pContext->CreateShader(TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
+  assert(pShaderCubeMap != nullptr);
 
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderScreenRect != nullptr);
@@ -234,11 +246,15 @@ void cApplication::Destroy()
     pShaderScreenRect = nullptr;
   }
 
-  if (pShaderCrate != nullptr) {
-    pContext->DestroyShader(pShaderCrate);
-    pShaderCrate = nullptr;
+  if (pShaderCubeMap != nullptr) {
+    pContext->DestroyShader(pShaderCubeMap);
+    pShaderCubeMap = nullptr;
   }
 
+  if (pTextureCubeMap != nullptr) {
+    pContext->DestroyTextureCubeMap(pTextureCubeMap);
+    pTextureCubeMap = nullptr;
+  }
   if (pTextureDetail != nullptr) {
     pContext->DestroyTexture(pTextureDetail);
     pTextureDetail = nullptr;
@@ -355,8 +371,10 @@ void cApplication::Run()
   assert(pTextureDiffuse->IsValid());
   assert(pTextureDetail != nullptr);
   assert(pTextureDetail->IsValid());
-  assert(pShaderCrate != nullptr);
-  assert(pShaderCrate->IsCompiledProgram());
+  assert(pTextureCubeMap != nullptr);
+  assert(pTextureCubeMap->IsValid());
+  assert(pShaderCubeMap != nullptr);
+  assert(pShaderCubeMap->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
   assert(pStaticVertexBufferObject != nullptr);
@@ -381,7 +399,7 @@ void cApplication::Run()
     const spitfire::math::cVec3 axisX(1.0f, 0.0f, 0.0f);
     rotationX.SetFromAxisAngleDegrees(axisX, -20.0f);
   }
-  const float fZoom = 10.0f;
+  const float fZoom = 2.0f;
 
   spitfire::math::cMat4 matRotation;
 
@@ -421,6 +439,10 @@ void cApplication::Run()
     spitfire::math::cMat4 matModelView;
     matModelView.LookAt(eye, target, up);
 
+    // Set up the cube map shader
+    pContext->BindShader(*pShaderCubeMap);
+      pContext->SetShaderConstant("cameraPosition", spitfire::math::cVec3(0.0f, 0.0f, 0.0f));
+    pContext->UnBindShader(*pShaderCubeMap);
 
     {
       // Render the scene into the frame buffer object
@@ -433,8 +455,9 @@ void cApplication::Run()
 
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureDetail);
+      pContext->BindTextureCubeMap(2, *pTextureCubeMap);
 
-      pContext->BindShader(*pShaderCrate);
+      pContext->BindShader(*pShaderCubeMap);
 
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
@@ -446,8 +469,9 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
-      pContext->UnBindShader(*pShaderCrate);
+      pContext->UnBindShader(*pShaderCubeMap);
 
+      pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
@@ -467,8 +491,9 @@ void cApplication::Run()
 
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureDetail);
+      pContext->BindTextureCubeMap(2, *pTextureCubeMap);
 
-      pContext->BindShader(*pShaderCrate);
+      pContext->BindShader(*pShaderCubeMap);
 
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
@@ -480,8 +505,9 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
-      pContext->UnBindShader(*pShaderCrate);
+      pContext->UnBindShader(*pShaderCubeMap);
 
+      pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
