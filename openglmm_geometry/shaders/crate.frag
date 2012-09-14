@@ -1,13 +1,20 @@
+#version 130
 
 uniform sampler2D texUnit0; // Diffuse texture
 uniform sampler2D texUnit1; // Lightmap texture
 uniform sampler2D texUnit2; // Detail texture
 
-void main(void)
-{
-  vec4 diffuse = texture2D(texUnit0, gl_TexCoord[0].st);
-  vec4 lightmap = texture2D(texUnit1, gl_TexCoord[1].st);
-  vec4 detail = texture2D(texUnit2, gl_TexCoord[2].st);
+smooth in vec2 vertOutTexCoord0;
+smooth in vec2 vertOutTexCoord1;
+smooth in vec2 vertOutTexCoord2;
 
-  gl_FragColor = vec4((diffuse * lightmap * detail).rgb, 1.0);
+out vec4 fragmentColor;
+
+void main()
+{
+  vec4 diffuse = texture2D(texUnit0, vertOutTexCoord0);
+  vec4 lightmap = texture2D(texUnit1, vertOutTexCoord1);
+  vec4 detail = texture2D(texUnit2, vertOutTexCoord2);
+
+  fragmentColor = vec4((diffuse * lightmap * detail).rgb, 1.0);
 }
