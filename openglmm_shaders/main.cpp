@@ -50,6 +50,19 @@ public:
   void Run();
 
 private:
+  template <class T>
+  void CreatePlane(T* pObject, size_t nTextureCoordinates);
+  template <class T>
+  void CreateCube(T* pObject, size_t nTextureCoordinates);
+  template <class T>
+  void CreateBox(T* pObject, size_t nTextureCoordinates);
+  template <class T>
+  void CreateSphere(T* pObject, size_t nTextureCoordinates);
+  template <class T>
+  void CreateTeapot(T* pObject, size_t nTextureCoordinates);
+  template <class T>
+  void CreateGear(T* pObject);
+
   void CreateBoxVBO();
   void CreateScreenRectVBO();
 
@@ -78,6 +91,7 @@ private:
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObject;
 
   opengl::cTexture* pTextureDiffuse;
+  opengl::cTexture* pTextureLightMap;
   opengl::cTexture* pTextureDetail;
   opengl::cTextureCubeMap* pTextureCubeMap;
 
@@ -86,6 +100,23 @@ private:
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenRect;
+
+
+  opengl::cShader* pShaderCrate;
+  opengl::cShader* pShaderMetal;
+
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectPlane0;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectCube0;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectBox0;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectSphere0;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectTeapot0;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectGear0;
+
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectPlane3;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectCube3;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectBox3;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectSphere3;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectTeapot3;
 };
 
 cApplication::cApplication() :
@@ -99,6 +130,7 @@ cApplication::cApplication() :
   pTextureFrameBufferObject(nullptr),
 
   pTextureDiffuse(nullptr),
+  pTextureLightMap(nullptr),
   pTextureDetail(nullptr),
   pTextureCubeMap(nullptr),
 
@@ -106,13 +138,125 @@ cApplication::cApplication() :
   pShaderScreenRect(nullptr),
 
   pStaticVertexBufferObject(nullptr),
-  pStaticVertexBufferObjectScreenRect(nullptr)
+  pStaticVertexBufferObjectScreenRect(nullptr),
+
+
+  pShaderCrate(nullptr),
+  pShaderMetal(nullptr),
+
+  pStaticVertexBufferObjectPlane0(nullptr),
+  pStaticVertexBufferObjectCube0(nullptr),
+  pStaticVertexBufferObjectBox0(nullptr),
+  pStaticVertexBufferObjectSphere0(nullptr),
+  pStaticVertexBufferObjectTeapot0(nullptr),
+  pStaticVertexBufferObjectGear0(nullptr),
+
+  pStaticVertexBufferObjectPlane3(nullptr),
+  pStaticVertexBufferObjectCube3(nullptr),
+  pStaticVertexBufferObjectBox3(nullptr),
+  pStaticVertexBufferObjectSphere3(nullptr),
+  pStaticVertexBufferObjectTeapot3(nullptr)
 {
 }
 
 cApplication::~cApplication()
 {
   Destroy();
+}
+
+template <class T>
+void cApplication::CreatePlane(T* pObject, size_t nTextureCoordinates)
+{
+  assert(pObject != nullptr);
+
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fWidth = 2.0f;
+  const float fDepth = 1.0f;
+
+  opengl::cGeometryBuilder builder;
+  builder.CreatePlane(fWidth, fDepth, *pGeometryDataPtr, nTextureCoordinates);
+
+  pObject->SetData(pGeometryDataPtr);
+
+  pObject->Compile(system);
+}
+
+template <class T>
+void cApplication::CreateCube(T* pObject, size_t nTextureCoordinates)
+{
+  assert(pObject != nullptr);
+
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fWidth = 1.0f;
+
+  opengl::cGeometryBuilder builder;
+  builder.CreateCube(fWidth, *pGeometryDataPtr, nTextureCoordinates);
+
+  pObject->SetData(pGeometryDataPtr);
+
+  pObject->Compile(system);
+}
+
+template <class T>
+void cApplication::CreateBox(T* pObject, size_t nTextureCoordinates)
+{
+  assert(pObject != nullptr);
+
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fWidth = 2.0f;
+  const float fDepth = 1.0f;
+  const float fHeight = 1.0f;
+
+  opengl::cGeometryBuilder builder;
+  builder.CreateBox(fWidth, fDepth, fHeight, *pGeometryDataPtr, nTextureCoordinates);
+
+  pObject->SetData(pGeometryDataPtr);
+
+  pObject->Compile(system);
+}
+
+template <class T>
+void cApplication::CreateSphere(T* pObject, size_t nTextureCoordinates)
+{
+  assert(pObject != nullptr);
+
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fRadius = 1.0f;
+  const size_t nSegments = 20;
+
+  opengl::cGeometryBuilder builder;
+  builder.CreateSphere(fRadius, nSegments, *pGeometryDataPtr, nTextureCoordinates);
+
+  pObject->SetData(pGeometryDataPtr);
+
+  pObject->Compile(system);
+}
+
+template <class T>
+void cApplication::CreateTeapot(T* pObject, size_t nTextureCoordinates)
+{
+  assert(pObject != nullptr);
+
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fRadius = 1.0f;
+  const size_t nSegments = 20;
+
+  opengl::cGeometryBuilder builder;
+  builder.CreateTeapot(fRadius, nSegments, *pGeometryDataPtr, nTextureCoordinates);
+
+  pObject->SetData(pGeometryDataPtr);
+
+  pObject->Compile(system);
+}
+
+template <class T>
+void cApplication::CreateGear(T* pObject)
+{
 }
 
 void cApplication::CreateBoxVBO()
@@ -195,6 +339,8 @@ bool cApplication::Create()
 
   pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
   assert(pTextureDiffuse != nullptr);
+  pTextureLightMap = pContext->CreateTexture(TEXT("textures/lightmap.png"));
+  assert(pTextureLightMap != nullptr);
   pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
   assert(pTextureDetail != nullptr);
 
@@ -222,6 +368,35 @@ bool cApplication::Create()
   assert(pStaticVertexBufferObjectScreenRect != nullptr);
   CreateScreenRectVBO();
 
+
+  pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
+  pShaderMetal = pContext->CreateShader(TEXT("shaders/metal.vert"), TEXT("shaders/metal.frag"));
+
+  pStaticVertexBufferObjectPlane0 = pContext->CreateStaticVertexBufferObject();
+  CreatePlane(pStaticVertexBufferObjectPlane0, 0);
+  pStaticVertexBufferObjectCube0 = pContext->CreateStaticVertexBufferObject();
+  CreateCube(pStaticVertexBufferObjectCube0, 0);
+  pStaticVertexBufferObjectBox0 = pContext->CreateStaticVertexBufferObject();
+  CreateBox(pStaticVertexBufferObjectBox0, 0);
+  pStaticVertexBufferObjectSphere0 = pContext->CreateStaticVertexBufferObject();
+  CreateSphere(pStaticVertexBufferObjectSphere0, 0);
+  pStaticVertexBufferObjectTeapot0 = pContext->CreateStaticVertexBufferObject();
+  CreateTeapot(pStaticVertexBufferObjectTeapot0, 0);
+  pStaticVertexBufferObjectGear0 = pContext->CreateStaticVertexBufferObject();
+  CreateGear(pStaticVertexBufferObjectGear0);
+
+  pStaticVertexBufferObjectPlane3 = pContext->CreateStaticVertexBufferObject();
+  CreatePlane(pStaticVertexBufferObjectPlane3, 3);
+  pStaticVertexBufferObjectCube3 = pContext->CreateStaticVertexBufferObject();
+  CreateCube(pStaticVertexBufferObjectCube3, 3);
+  pStaticVertexBufferObjectBox3 = pContext->CreateStaticVertexBufferObject();
+  CreateBox(pStaticVertexBufferObjectBox3, 3);
+  pStaticVertexBufferObjectSphere3 = pContext->CreateStaticVertexBufferObject();
+  CreateSphere(pStaticVertexBufferObjectSphere3, 3);
+  pStaticVertexBufferObjectTeapot3 = pContext->CreateStaticVertexBufferObject();
+  CreateTeapot(pStaticVertexBufferObjectTeapot3, 3);
+
+
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
   pWindow->SetInputEventListener(*this);
@@ -231,6 +406,62 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
+  if (pStaticVertexBufferObjectTeapot3 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectTeapot3);
+    pStaticVertexBufferObjectTeapot3 = nullptr;
+  }
+  if (pStaticVertexBufferObjectSphere3 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectSphere3);
+    pStaticVertexBufferObjectSphere3 = nullptr;
+  }
+  if (pStaticVertexBufferObjectBox3 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectBox3);
+    pStaticVertexBufferObjectBox3 = nullptr;
+  }
+  if (pStaticVertexBufferObjectCube3 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectCube3);
+    pStaticVertexBufferObjectCube3 = nullptr;
+  }
+  if (pStaticVertexBufferObjectPlane3 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectPlane3);
+    pStaticVertexBufferObjectPlane3 = nullptr;
+  }
+
+  if (pStaticVertexBufferObjectGear0 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectGear0);
+    pStaticVertexBufferObjectGear0 = nullptr;
+  }
+  if (pStaticVertexBufferObjectTeapot0 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectTeapot0);
+    pStaticVertexBufferObjectTeapot0 = nullptr;
+  }
+  if (pStaticVertexBufferObjectSphere0 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectSphere0);
+    pStaticVertexBufferObjectSphere0 = nullptr;
+  }
+  if (pStaticVertexBufferObjectBox0 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectBox0);
+    pStaticVertexBufferObjectBox0 = nullptr;
+  }
+  if (pStaticVertexBufferObjectCube0 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectCube0);
+    pStaticVertexBufferObjectCube0 = nullptr;
+  }
+  if (pStaticVertexBufferObjectPlane0 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectPlane0);
+    pStaticVertexBufferObjectPlane0 = nullptr;
+  }
+
+  if (pShaderMetal != nullptr) {
+    pContext->DestroyShader(pShaderMetal);
+    pShaderMetal = nullptr;
+  }
+  if (pShaderCrate != nullptr) {
+    pContext->DestroyShader(pShaderCrate);
+    pShaderCrate = nullptr;
+  }
+
+
   if (pStaticVertexBufferObjectScreenRect != nullptr) {
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectScreenRect);
     pStaticVertexBufferObjectScreenRect = nullptr;
@@ -258,6 +489,10 @@ void cApplication::Destroy()
   if (pTextureDetail != nullptr) {
     pContext->DestroyTexture(pTextureDetail);
     pTextureDetail = nullptr;
+  }
+  if (pTextureLightMap != nullptr) {
+    pContext->DestroyTexture(pTextureLightMap);
+    pTextureLightMap = nullptr;
   }
   if (pTextureDiffuse != nullptr) {
     pContext->DestroyTexture(pTextureDiffuse);
@@ -369,6 +604,8 @@ void cApplication::Run()
   assert(pContext->IsValid());
   assert(pTextureDiffuse != nullptr);
   assert(pTextureDiffuse->IsValid());
+  assert(pTextureLightMap != nullptr);
+  assert(pTextureLightMap->IsValid());
   assert(pTextureDetail != nullptr);
   assert(pTextureDetail->IsValid());
   assert(pTextureCubeMap != nullptr);
@@ -382,10 +619,60 @@ void cApplication::Run()
   assert(pStaticVertexBufferObjectScreenRect != nullptr);
   assert(pStaticVertexBufferObjectScreenRect->IsCompiled());
 
+
+  assert(pShaderCrate != nullptr);
+  assert(pShaderCrate->IsCompiledProgram());
+  assert(pShaderMetal != nullptr);
+  assert(pShaderMetal->IsCompiledProgram());
+
+  assert(pStaticVertexBufferObjectPlane0 != nullptr);
+  assert(pStaticVertexBufferObjectPlane0->IsCompiled());
+  assert(pStaticVertexBufferObjectCube0 != nullptr);
+  assert(pStaticVertexBufferObjectCube0->IsCompiled());
+  assert(pStaticVertexBufferObjectBox0 != nullptr);
+  assert(pStaticVertexBufferObjectBox0->IsCompiled());
+  assert(pStaticVertexBufferObjectSphere0 != nullptr);
+  assert(pStaticVertexBufferObjectSphere0->IsCompiled());
+  assert(pStaticVertexBufferObjectTeapot0 != nullptr);
+  assert(pStaticVertexBufferObjectTeapot0->IsCompiled());
+  //assert(pStaticVertexBufferObjectGear0 != nullptr);
+  //assert(pStaticVertexBufferObjectGear0->IsCompiled());
+
+  assert(pStaticVertexBufferObjectPlane3 != nullptr);
+  assert(pStaticVertexBufferObjectPlane3->IsCompiled());
+  assert(pStaticVertexBufferObjectCube3 != nullptr);
+  assert(pStaticVertexBufferObjectCube3->IsCompiled());
+  assert(pStaticVertexBufferObjectBox3 != nullptr);
+  assert(pStaticVertexBufferObjectBox3->IsCompiled());
+  assert(pStaticVertexBufferObjectSphere3 != nullptr);
+  assert(pStaticVertexBufferObjectSphere3->IsCompiled());
+  assert(pStaticVertexBufferObjectTeapot3 != nullptr);
+  assert(pStaticVertexBufferObjectTeapot3->IsCompiled());
+
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
   const size_t n = inputDescription.size();
   for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
+
+  const size_t columns = 5;
+  const size_t rows = 2;
+
+  const float fSpacingX = 0.007f * pContext->GetWidth() / float(rows);
+  const float fSpacingY = 0.03f * pContext->GetHeight() / float(columns);
+  const float fLeft = -0.5f * float(columns - 1) * fSpacingX;
+  const float fDepth = -0.5f * float(rows - 1) * fSpacingY;
+
+  spitfire::math::cVec3 positions[columns * rows];
+  size_t i = 0;
+  for (size_t y = 0; y < rows; y++) {
+    for (size_t x = 0; x < columns; x++) {
+      positions[i].Set(fLeft + (x * fSpacingX), fDepth + (y * fSpacingY), 0.0f);
+      i++;
+    }
+  }
+
+  spitfire::math::cMat4 matTranslationArray[columns * rows];
+  for (size_t i = 0; i < columns * rows; i++) matTranslationArray[i].SetTranslation(positions[i]);
 
   // Center the camera at the middle of the objects
   spitfire::math::cMat4 matTranslation;
@@ -399,18 +686,53 @@ void cApplication::Run()
     const spitfire::math::cVec3 axisX(1.0f, 0.0f, 0.0f);
     rotationX.SetFromAxisAngleDegrees(axisX, -20.0f);
   }
-  const float fZoom = 2.0f;
+  const float fZoom = 20.0f;
 
+  spitfire::math::cQuaternion rotation;
   spitfire::math::cMat4 matRotation;
 
+  float fAngleRadians = 0.0f;
+  const float fRotationSpeed = 0.001f;
+
+  spitfire::math::cMat4 matObjectRotation;
 
   uint32_t T0 = 0;
   uint32_t Frames = 0;
 
-  //uint32_t previousTime = SDL_GetTicks();
-  //uint32_t currentTime = SDL_GetTicks();
+  uint32_t previousTime = SDL_GetTicks();
+  uint32_t currentTime = SDL_GetTicks();
 
   pContext->EnableLighting();
+
+
+  // Light
+  const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
+  const spitfire::math::cColour lightAmbientColour(0.2f, 0.2f, 0.2f);
+  const spitfire::math::cColour lightDiffuseColour(1.0f, 1.0f, 1.0f);
+  const spitfire::math::cColour lightSpecularColour(1.0f, 1.0f, 1.0f);
+
+  // Material
+  const spitfire::math::cColour materialDiffuseColour(0.5f, 0.5f, 0.5f);
+  const spitfire::math::cColour materialAmbientColour(0.0f, 0.0f, 0.0f);
+  const spitfire::math::cColour materialSpecularColour(1.0f, 1.0f, 1.0f);
+  const float fMaterialShininess = 50.0f;
+
+  // Set our shader constants
+  pContext->BindShader(*pShaderMetal);
+
+    // Setup lighting
+    pContext->SetShaderConstant("light.ambientColour", lightAmbientColour);
+    pContext->SetShaderConstant("light.diffuseColour", lightDiffuseColour);
+    pContext->SetShaderConstant("light.specularColour", lightSpecularColour);
+
+    // Setup materials
+    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
+    pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+    pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
+    pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
+
+  pContext->UnBindShader(*pShaderMetal);
+
 
   // Setup mouse
   pWindow->ShowCursor(false);
@@ -424,9 +746,10 @@ void cApplication::Run()
     pWindow->WarpCursorToMiddleOfScreen();
 
     // Update state
-    //previousTime = currentTime;
-    //currentTime = SDL_GetTicks();
+    previousTime = currentTime;
+    currentTime = SDL_GetTicks();
 
+    // Update view rotation
     matRotation.SetRotation(rotationZ * rotationX);
 
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
@@ -436,13 +759,27 @@ void cApplication::Run()
 
     const spitfire::math::cVec3 target(0.0f, 0.0f, 0.0f);
     const spitfire::math::cVec3 eye(target + offset);
-    spitfire::math::cMat4 matModelView;
-    matModelView.LookAt(eye, target, up);
+    spitfire::math::cMat4 matView;
+    matView.LookAt(eye, target, up);
+
+    // Set up the metal shader
+    pContext->BindShader(*pShaderMetal);
+      pContext->SetShaderConstant("light.position", matView * lightPosition);
+    pContext->UnBindShader(*pShaderMetal);
 
     // Set up the cube map shader
     pContext->BindShader(*pShaderCubeMap);
-      pContext->SetShaderConstant("cameraPosition", spitfire::math::cVec3(0.0f, 0.0f, 0.0f));
+      pContext->SetShaderConstant("cameraPosition", matView * spitfire::math::cVec3(0.0f, 0.0f, 0.0f));
     pContext->UnBindShader(*pShaderCubeMap);
+
+
+    // Update object rotation
+    if (bIsRotating) fAngleRadians += float(currentTime - previousTime) * fRotationSpeed;
+
+    rotation.SetFromAxisAngle(spitfire::math::v3Up, fAngleRadians);
+
+    matObjectRotation.SetRotation(rotation);
+
 
     {
       // Render the scene into the frame buffer object
@@ -462,7 +799,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObject);
       }
@@ -498,7 +835,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObject);
       }
@@ -510,6 +847,100 @@ void cApplication::Run()
       pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
+
+
+
+      pContext->BindShader(*pShaderMetal);
+
+      {
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane0);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[0] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectPlane0);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectCube0);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[1] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectCube0);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectCube0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectBox0);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[2] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectBox0);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectBox0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectSphere0);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[3] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectSphere0);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectSphere0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot0);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[4] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectTeapot0);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot0);
+        }
+      }
+
+      pContext->UnBindShader(*pShaderMetal);
+
+
+      pContext->BindTexture(0, *pTextureDiffuse);
+      pContext->BindTexture(1, *pTextureLightMap);
+      pContext->BindTexture(2, *pTextureDetail);
+
+      pContext->BindShader(*pShaderCrate);
+
+      {
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane3);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[5] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectPlane3);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane3);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectCube3);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[6] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectCube3);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectCube3);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectBox3);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[7] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectBox3);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectBox3);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectSphere3);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[8] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectSphere3);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectSphere3);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot3);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[9] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectTeapot3);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectTeapot3);
+        }
+      }
+
+      pContext->UnBindShader(*pShaderCrate);
+
+      pContext->UnBindTexture(2, *pTextureDetail);
+      pContext->UnBindTexture(1, *pTextureLightMap);
+      pContext->UnBindTexture(0, *pTextureDiffuse);
+
 
 
       // Now draw an overlay of our rendered texture
