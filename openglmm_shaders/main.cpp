@@ -38,6 +38,65 @@
 #include <libopenglmm/cVertexBufferObject.h>
 #include <libopenglmm/cWindow.h>
 
+class cFreeLookCamera
+{
+public:
+  void SetPosition(const spitfire::math::cVec3& position);
+  void SetRotation(const spitfire::math::cQuaternion& rotation);
+
+  void MoveX(float fDistance);
+  void MoveY(float fDistance);
+  void RotateX(float fDegrees);
+  void RotateZ(float fDegrees);
+
+  spitfire::math::cMat4 CalculateViewMatrix() const;
+
+private:
+  spitfire::math::cVec3 position;
+  spitfire::math::cQuaternion rotation;
+};
+
+void cFreeLookCamera::SetPosition(const spitfire::math::cVec3& _position)
+{
+  position = _position;
+}
+
+void cFreeLookCamera::SetRotation(const spitfire::math::cQuaternion& _rotation)
+{
+  rotation = _rotation;
+}
+
+void cFreeLookCamera::MoveX(float xmmod)
+{
+  position += rotation * spitfire::math::cVec3(xmmod, 0.0f, 0.0f);
+}
+
+void cFreeLookCamera::MoveY(float ymmod)
+{
+  position += rotation * spitfire::math::cVec3(0.0f, 0.0f, -ymmod);
+}
+
+void cFreeLookCamera::RotateX(float xrmod)
+{
+  spitfire::math::cQuaternion nrot;
+  nrot.SetFromAxisAngleDegrees(spitfire::math::cVec3(1.0f, 0.0f, 0.0f), xrmod);
+  rotation = rotation * nrot;
+}
+
+void cFreeLookCamera::RotateZ(float yrmod)
+{
+  spitfire::math::cQuaternion nrot;
+  nrot.SetFromAxisAngleDegrees(spitfire::math::cVec3(0.0f, 0.0f, 1.0f), yrmod);
+  rotation = nrot * rotation;
+}
+
+spitfire::math::cMat4 cFreeLookCamera::CalculateViewMatrix() const
+{
+  spitfire::math::cMat4 matTranslation;
+  matTranslation.TranslateMatrix(-position);
+  return (-rotation).GetMatrix() * matTranslation;
+}
+
 class cApplication : public opengl::cWindowEventListener, public opengl::cInputEventListener
 {
 public:
@@ -72,13 +131,14 @@ private:
 
   std::vector<std::string> GetInputDescription() const;
 
+  bool bIsMovingForward;
+  bool bIsMovingLeft;
+  bool bIsMovingRight;
+  bool bIsMovingBackward;
+
   bool bIsRotating;
   bool bIsWireframe;
   bool bIsDone;
-
-  // For controlling the rotation of the trackball
-  spitfire::math::cQuaternion rotationX;
-  spitfire::math::cQuaternion rotationZ;
 
   opengl::cSystem system;
 
@@ -87,6 +147,8 @@ private:
   opengl::cWindow* pWindow;
 
   opengl::cContext* pContext;
+
+  cFreeLookCamera camera;
 
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObject;
 
@@ -120,6 +182,11 @@ private:
 };
 
 cApplication::cApplication() :
+  bIsMovingForward(false),
+  bIsMovingLeft(false),
+  bIsMovingRight(false),
+  bIsMovingBackward(false),
+
   bIsRotating(true),
   bIsWireframe(false),
   bIsDone(false),
@@ -531,26 +598,12 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
     std::cout<<"cApplication::_OnMouseEvent Mouse move"<<std::endl;
 
     if (fabs(event.GetX() - (pWindow->GetWidth() * 0.5f)) > 0.5f) {
-      const spitfire::math::cVec3 axisIncrementZ(0.0f, 0.0f, 1.0f);
-      spitfire::math::cQuaternion rotationIncrementZ;
-      rotationIncrementZ.SetFromAxisAngle(axisIncrementZ, -0.001f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
-      rotationZ *= rotationIncrementZ;
+      camera.RotateZ(-0.1f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
     }
 
     if (fabs(event.GetY() - (pWindow->GetHeight() * 0.5f)) > 1.5f) {
-      const spitfire::math::cVec3 axisIncrementX(1.0f, 0.0f, 0.0f);
-      spitfire::math::cQuaternion rotationIncrementX;
-      rotationIncrementX.SetFromAxisAngle(axisIncrementX, -0.0005f * (event.GetY() - (pWindow->GetHeight() * 0.5f)));
-      rotationX *= rotationIncrementX;
+      camera.RotateX(-0.05f * (event.GetY() - (pWindow->GetHeight() * 0.5f)));
     }
-
-    spitfire::math::cVec3 newAxis = rotationZ.GetAxis();
-    //float fNewAngleDegrees = rotationZ.GetAngleDegrees();
-    //std::cout<<"cApplication::_OnMouseEvent z newAxis={ "<<newAxis.x<<", "<<newAxis.y<<", "<<newAxis.z<<" } angle="<<fNewAngleDegrees<<std::endl;
-
-    newAxis = rotationX.GetAxis();
-    //fNewAngleDegrees = rotationX.GetAngleDegrees();
-    //std::cout<<"cApplication::_OnMouseEvent x newAxis={ "<<newAxis.x<<", "<<newAxis.y<<", "<<newAxis.z<<" } angle="<<fNewAngleDegrees<<std::endl;
   }
 }
 
@@ -562,6 +615,22 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
       case SDLK_ESCAPE: {
         std::cout<<"cApplication::_OnKeyboardEvent Escape key pressed, quiting"<<std::endl;
         bIsDone = true;
+        break;
+      }
+      case SDLK_w: {
+        bIsMovingForward = true;
+        break;
+      }
+      case SDLK_a: {
+        bIsMovingLeft = true;
+        break;
+      }
+      case SDLK_s: {
+        bIsMovingBackward = true;
+        break;
+      }
+      case SDLK_d: {
+        bIsMovingRight = true;
         break;
       }
       case SDLK_SPACE: {
@@ -578,7 +647,22 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_w: {
-        std::cout<<"cApplication::_OnKeyboardEvent w up"<<std::endl;
+        bIsMovingForward = false;
+        break;
+      }
+      case SDLK_a: {
+        bIsMovingLeft = false;
+        break;
+      }
+      case SDLK_s: {
+        bIsMovingBackward = false;
+        break;
+      }
+      case SDLK_d: {
+        bIsMovingRight = false;
+        break;
+      }
+      case SDLK_1: {
         bIsWireframe = !bIsWireframe;
         break;
       }
@@ -589,8 +673,12 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
 std::vector<std::string> cApplication::GetInputDescription() const
 {
   std::vector<std::string> description;
+  description.push_back("W forward");
+  description.push_back("A left");
+  description.push_back("S backward");
+  description.push_back("D right");
   description.push_back("Space pause rotation");
-  description.push_back("W toggle wireframe");
+  description.push_back("1 toggle wireframe");
   description.push_back("Esc quit");
 
   return description;
@@ -654,6 +742,13 @@ void cApplication::Run()
   const size_t n = inputDescription.size();
   for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
 
+  // Set up the camera
+  camera.SetPosition(spitfire::math::cVec3(0.0f, 10.0f, 5.0f));
+  spitfire::math::cQuaternion cameraRotation;
+  cameraRotation.SetFromAxisAngle(spitfire::math::v3Up, -45.0f);
+  camera.SetRotation(cameraRotation);
+
+  // Set up the translations for our objects
   const size_t columns = 5;
   const size_t rows = 2;
 
@@ -674,19 +769,6 @@ void cApplication::Run()
   spitfire::math::cMat4 matTranslationArray[columns * rows];
   for (size_t i = 0; i < columns * rows; i++) matTranslationArray[i].SetTranslation(positions[i]);
 
-  // Center the camera at the middle of the objects
-  spitfire::math::cMat4 matTranslation;
-  matTranslation.SetTranslation(0.0f, 0.0f, 0.0f);
-
-  // Set the defaults for the orbiting camera
-  {
-    const spitfire::math::cVec3 axisZ(0.0f, 0.0f, 1.0f);
-    rotationZ.SetFromAxisAngleDegrees(axisZ, 0.0f);
-
-    const spitfire::math::cVec3 axisX(1.0f, 0.0f, 0.0f);
-    rotationX.SetFromAxisAngleDegrees(axisX, -20.0f);
-  }
-  const float fZoom = 20.0f;
 
   spitfire::math::cQuaternion rotation;
   spitfire::math::cMat4 matRotation;
@@ -749,18 +831,16 @@ void cApplication::Run()
     previousTime = currentTime;
     currentTime = SDL_GetTicks();
 
-    // Update view rotation
-    matRotation.SetRotation(rotationZ * rotationX);
+    // Update the camera
+    const float fDistance = 0.01f;
+    if (bIsMovingForward) camera.MoveY(fDistance);
+    if (bIsMovingBackward) camera.MoveY(-fDistance);
+    if (bIsMovingLeft) camera.MoveX(-fDistance);
+    if (bIsMovingRight) camera.MoveX(fDistance);
 
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
-    const spitfire::math::cVec3 offset = matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, -fZoom, 0.0f));
-    const spitfire::math::cVec3 up = matRotation.GetRotatedVec3(spitfire::math::v3Up);
-
-    const spitfire::math::cVec3 target(0.0f, 0.0f, 0.0f);
-    const spitfire::math::cVec3 eye(target + offset);
-    spitfire::math::cMat4 matView;
-    matView.LookAt(eye, target, up);
+    const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
 
     // Set up the metal shader
     pContext->BindShader(*pShaderMetal);
@@ -799,7 +879,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView);
 
         pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObject);
       }
@@ -835,7 +915,7 @@ void cApplication::Run()
       pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObject);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslation);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView);
 
         pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObject);
       }

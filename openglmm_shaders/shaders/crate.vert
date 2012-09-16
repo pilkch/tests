@@ -7,7 +7,7 @@ uniform mat4 matModelViewProjection;
 #define TEXCOORD0 2
 #define TEXCOORD1 3
 #define TEXCOORD2 4
-layout(location = POSITION) in vec4 position;
+layout(location = POSITION) in vec3 position;
 //layout(location = NORMAL) in vec3 normal;
 layout(location = TEXCOORD0) in vec2 texCoord0;
 layout(location = TEXCOORD1) in vec2 texCoord1;
@@ -20,7 +20,7 @@ smooth out vec2 vertOutTexCoord2;
 
 void main()
 {
-  gl_Position = matModelViewProjection * position;
+  gl_Position = matModelViewProjection * vec4(position, 1.0);
 
   // Pass on the texture coordinates
   vertOutTexCoord0 = texCoord0;
