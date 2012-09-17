@@ -321,7 +321,7 @@ void cApplication::Run()
 
 
     // Render the scene
-    pContext->BeginRendering();
+    pContext->BeginRenderToScreen();
 
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
@@ -409,7 +409,7 @@ void cApplication::Run()
       pContext->UnBindShader(*pShader);
     }
 
-    pContext->EndRendering();
+    pContext->EndRenderToScreen();
 
     // Calculate our frames per second
     Frames++;

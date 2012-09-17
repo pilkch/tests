@@ -902,7 +902,7 @@ void cApplication::Run()
       const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
       pContext->SetClearColour(clearColour);
 
-      pContext->BeginRendering();
+      pContext->BeginRenderToScreen();
 
       if (bIsWireframe) pContext->EnableWireframe();
 
@@ -1052,7 +1052,7 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->DisableWireframe();
 
-      pContext->EndRendering();
+      pContext->EndRenderToScreen();
     }
 
     // Gather our frames per second

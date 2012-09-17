@@ -820,7 +820,7 @@ void cApplication::Run()
     const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
     pContext->SetClearColour(clearColour);
 
-    pContext->BeginRendering();
+    pContext->BeginRenderToScreen();
 
     if (bIsWireframe) pContext->EnableWireframe();
 
@@ -858,7 +858,7 @@ void cApplication::Run()
     pContext->UnBindTexture(1, *pTextureLightMap);
     pContext->UnBindTexture(0, *pTextureDiffuse);
 
-    pContext->EndRendering();
+    pContext->EndRenderToScreen();
 
     // Gather our frames per second
     Frames++;

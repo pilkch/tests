@@ -1022,7 +1022,7 @@ bool cApplication::Create()
       const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
       pContext->SetClearColour(clearColour);
 
-      pContext->BeginRendering();
+      pContext->BeginRenderToScreen();
 
       // Now draw an overlay of our texture
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
@@ -1056,7 +1056,7 @@ bool cApplication::Create()
 
       pContext->EndRenderMode2D();
 
-      pContext->EndRendering();
+      pContext->EndRenderToScreen();
     }
 
     // Gather our frames per second
@@ -1574,7 +1574,7 @@ void cApplication::Run()
       const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
       pContext->SetClearColour(clearColour);
 
-      pContext->BeginRendering();
+      pContext->BeginRenderToScreen();
 
       // Now draw an overlay of our rendered texture
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
@@ -1608,7 +1608,7 @@ void cApplication::Run()
 
       pContext->EndRenderMode2D();
 
-      pContext->EndRendering();
+      pContext->EndRenderToScreen();
     }
 
     // Gather our frames per second
@@ -1742,7 +1742,7 @@ void cApplication::Run()
       const spitfire::math::cColour clearColour(0.392156863f, 0.584313725f, 0.929411765f);
       pContext->SetClearColour(clearColour);
 
-      pContext->BeginRendering();
+      pContext->BeginRenderToScreen();
 
       // Now draw an overlay of our rendered texture
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
@@ -1771,7 +1771,7 @@ void cApplication::Run()
 
       pContext->EndRenderMode2D();
 
-      pContext->EndRendering();
+      pContext->EndRenderToScreen();
     }
 
     // Gather our frames per second
