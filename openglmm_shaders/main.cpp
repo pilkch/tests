@@ -598,7 +598,7 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
     std::cout<<"cApplication::_OnMouseEvent Mouse move"<<std::endl;
 
     if (fabs(event.GetX() - (pWindow->GetWidth() * 0.5f)) > 0.5f) {
-      camera.RotateZ(-0.1f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
+      camera.RotateZ(-0.08f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
     }
 
     if (fabs(event.GetY() - (pWindow->GetHeight() * 0.5f)) > 1.5f) {
@@ -743,10 +743,12 @@ void cApplication::Run()
   for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
 
   // Set up the camera
-  camera.SetPosition(spitfire::math::cVec3(0.0f, 10.0f, 5.0f));
-  spitfire::math::cQuaternion cameraRotation;
-  cameraRotation.SetFromAxisAngle(spitfire::math::v3Up, -45.0f);
-  camera.SetRotation(cameraRotation);
+  camera.SetPosition(spitfire::math::cVec3(-6.5f, 2.5f, 7.0f));
+  spitfire::math::cQuaternion cameraRotationZ;
+  cameraRotationZ.SetFromAxisAngleDegrees(spitfire::math::v3Up, -90.0f);
+  spitfire::math::cQuaternion cameraRotationX;
+  cameraRotationX.SetFromAxisAngleDegrees(spitfire::math::v3Left, 45.0f);
+  camera.SetRotation(cameraRotationZ * cameraRotationX);
 
   // Set up the translations for our objects
   const size_t columns = 5;
@@ -784,8 +786,6 @@ void cApplication::Run()
   uint32_t previousTime = SDL_GetTicks();
   uint32_t currentTime = SDL_GetTicks();
 
-  pContext->EnableLighting();
-
 
   // Light
   const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
@@ -814,7 +814,6 @@ void cApplication::Run()
     pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
 
   pContext->UnBindShader(*pShaderMetal);
-
 
   // Setup mouse
   pWindow->ShowCursor(false);
@@ -852,14 +851,12 @@ void cApplication::Run()
       pContext->SetShaderConstant("cameraPosition", matView * spitfire::math::cVec3(0.0f, 0.0f, 0.0f));
     pContext->UnBindShader(*pShaderCubeMap);
 
-
     // Update object rotation
     if (bIsRotating) fAngleRadians += float(currentTime - previousTime) * fRotationSpeed;
 
     rotation.SetFromAxisAngle(spitfire::math::v3Up, fAngleRadians);
 
     matObjectRotation.SetRotation(rotation);
-
 
     {
       // Render the scene into the frame buffer object
