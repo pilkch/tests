@@ -20,6 +20,8 @@
 // Spitfire headers
 #include <spitfire/spitfire.h>
 
+// TODO: GET A HEBE STATUE MODEL
+
 #include <spitfire/math/math.h>
 #include <spitfire/math/cVec2.h>
 #include <spitfire/math/cVec3.h>
@@ -27,6 +29,10 @@
 #include <spitfire/math/cMat4.h>
 #include <spitfire/math/cQuaternion.h>
 #include <spitfire/math/cColour.h>
+
+// Breathe headers
+#include <breathe/render/model/cFileFormatOBJ.h>
+#include <breathe/render/model/cStatic.h>
 
 // libopenglmm headers
 #include <libopenglmm/libopenglmm.h>
@@ -122,7 +128,8 @@ private:
   template <class T>
   void CreateGear(T* pObject);
 
-  void CreateBoxVBO();
+  void CreateTeapotVBO();
+  void CreateStatueVBO();
   void CreateScreenRectVBO();
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
@@ -156,11 +163,14 @@ private:
   opengl::cTexture* pTextureLightMap;
   opengl::cTexture* pTextureDetail;
   opengl::cTextureCubeMap* pTextureCubeMap;
+  opengl::cTexture* pTextureMarble;
 
   opengl::cShader* pShaderCubeMap;
+  opengl::cShader* pShaderLights;
   opengl::cShader* pShaderScreenRect;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectStatue;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenRect;
 
 
@@ -207,11 +217,14 @@ cApplication::cApplication() :
   pTextureLightMap(nullptr),
   pTextureDetail(nullptr),
   pTextureCubeMap(nullptr),
+  pTextureMarble(nullptr),
 
   pShaderCubeMap(nullptr),
+  pShaderLights(nullptr),
   pShaderScreenRect(nullptr),
 
   pStaticVertexBufferObject(nullptr),
+  pStaticVertexBufferObjectStatue(nullptr),
   pStaticVertexBufferObjectScreenRect(nullptr),
 
 
@@ -340,7 +353,7 @@ void cApplication::CreateGear(T* pObject)
 {
 }
 
-void cApplication::CreateBoxVBO()
+void cApplication::CreateTeapotVBO()
 {
   assert(pStaticVertexBufferObject != nullptr);
 
@@ -355,6 +368,52 @@ void cApplication::CreateBoxVBO()
   pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
   pStaticVertexBufferObject->Compile(system);
+}
+
+void cApplication::CreateStatueVBO()
+{
+  assert(pStaticVertexBufferObjectStatue != nullptr);
+
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  breathe::render::model::cStaticModel model;
+
+  breathe::render::model::cFileFormatOBJ loader;
+  if (!loader.Load(TEXT("models/venus.obj"), model)) {
+    std::cerr<<"cApplication::CreateStatueVBO Failed to load obj file"<<std::endl;
+    return;
+  }
+
+  opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
+
+  // The obj file uses Y up, so we rotate all the points and normals within it
+  spitfire::math::cQuaternion rotation;
+  rotation.SetFromAxisAngleDegrees(spitfire::math::v3Left, 90.0f);
+
+  spitfire::math::cMat4 matRotation;
+  matRotation.SetRotation(rotation);
+
+  // The obj file is giant so scale it down as well
+  spitfire::math::cMat4 matScale;
+  matScale.SetScale(spitfire::math::cVec3(0.1f, 0.1f, 0.1f));
+
+  const spitfire::math::cMat4 matTransform = matRotation * matScale;
+
+  const size_t nMeshes = model.mesh.size();
+  for (size_t iMesh = 0; iMesh < nMeshes; iMesh++) {
+    const size_t nVertices = model.mesh[iMesh]->vertices.size() / 3;
+    for (size_t iVertex = 0; iVertex < nVertices; iVertex++) {
+      builder.PushBack(
+        matTransform * spitfire::math::cVec3(model.mesh[iMesh]->vertices[(3 * iVertex)], model.mesh[iMesh]->vertices[(3 * iVertex) + 1], model.mesh[iMesh]->vertices[(3 * iVertex) + 2]),
+        matRotation * spitfire::math::cVec3(model.mesh[iMesh]->normals[(3 * iVertex)], model.mesh[iMesh]->normals[(3 * iVertex) + 1], model.mesh[iMesh]->normals[(3 * iVertex) + 2]),
+        spitfire::math::cVec2(model.mesh[iMesh]->textureCoordinates[(2 * iVertex)], model.mesh[iMesh]->textureCoordinates[(2 * iVertex) + 1])
+      );
+    }
+  }
+
+  pStaticVertexBufferObjectStatue->SetData(pGeometryDataPtr);
+
+  pStaticVertexBufferObjectStatue->Compile(system);
 }
 
 void cApplication::CreateScreenRectVBO()
@@ -435,15 +494,25 @@ bool cApplication::Create()
   );
   assert(pTextureCubeMap != nullptr);
 
+  pTextureMarble = pContext->CreateTexture(TEXT("textures/marble.png"));
+  assert(pTextureDetail != nullptr);
+
   pShaderCubeMap = pContext->CreateShader(TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
   assert(pShaderCubeMap != nullptr);
+
+  pShaderLights = pContext->CreateShader(TEXT("shaders/lights.vert"), TEXT("shaders/lights.frag"));
+  assert(pShaderLights != nullptr);
 
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderScreenRect != nullptr);
 
   pStaticVertexBufferObject = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObject != nullptr);
-  CreateBoxVBO();
+  CreateTeapotVBO();
+
+  pStaticVertexBufferObjectStatue = pContext->CreateStaticVertexBufferObject();
+  assert(pStaticVertexBufferObjectStatue != nullptr);
+  CreateStatueVBO();
 
   pStaticVertexBufferObjectScreenRect = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObjectScreenRect != nullptr);
@@ -584,6 +653,11 @@ void cApplication::Destroy()
     pStaticVertexBufferObjectScreenRect = nullptr;
   }
 
+  if (pStaticVertexBufferObjectStatue != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectStatue);
+    pStaticVertexBufferObjectStatue = nullptr;
+  }
+
   if (pStaticVertexBufferObject != nullptr) {
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObject);
     pStaticVertexBufferObject = nullptr;
@@ -594,11 +668,20 @@ void cApplication::Destroy()
     pShaderScreenRect = nullptr;
   }
 
+  if (pShaderLights != nullptr) {
+    pContext->DestroyShader(pShaderLights);
+    pShaderLights = nullptr;
+  }
+
   if (pShaderCubeMap != nullptr) {
     pContext->DestroyShader(pShaderCubeMap);
     pShaderCubeMap = nullptr;
   }
 
+  if (pTextureMarble != nullptr) {
+    pContext->DestroyTexture(pTextureMarble);
+    pTextureMarble = nullptr;
+  }
   if (pTextureCubeMap != nullptr) {
     pContext->DestroyTextureCubeMap(pTextureCubeMap);
     pTextureCubeMap = nullptr;
@@ -645,7 +728,7 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
   //std::cout<<"cApplication::_OnMouseEvent"<<std::endl;
 
   if (event.IsMouseMove()) {
-    std::cout<<"cApplication::_OnMouseEvent Mouse move"<<std::endl;
+    //std::cout<<"cApplication::_OnMouseEvent Mouse move"<<std::endl;
 
     if (fabs(event.GetX() - (pWindow->GetWidth() * 0.5f)) > 0.5f) {
       camera.RotateZ(-0.08f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
@@ -748,12 +831,18 @@ void cApplication::Run()
   assert(pTextureDetail->IsValid());
   assert(pTextureCubeMap != nullptr);
   assert(pTextureCubeMap->IsValid());
+  assert(pTextureMarble != nullptr);
+  assert(pTextureMarble->IsValid());
   assert(pShaderCubeMap != nullptr);
   assert(pShaderCubeMap->IsCompiledProgram());
+  assert(pShaderLights != nullptr);
+  assert(pShaderLights->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
   assert(pStaticVertexBufferObject != nullptr);
   assert(pStaticVertexBufferObject->IsCompiled());
+  assert(pStaticVertexBufferObjectStatue != nullptr);
+  assert(pStaticVertexBufferObjectStatue->IsCompiled());
   assert(pStaticVertexBufferObjectScreenRect != nullptr);
   assert(pStaticVertexBufferObjectScreenRect->IsCompiled());
 
@@ -820,13 +909,12 @@ void cApplication::Run()
   const float fSpacingX = 0.007f * pContext->GetWidth() / float(rows);
   const float fSpacingY = 0.03f * pContext->GetHeight() / float(columns);
   const float fLeft = -0.5f * float(columns - 1) * fSpacingX;
-  const float fDepth = -0.5f * float(rows - 1) * fSpacingY;
 
   spitfire::math::cVec3 positions[columns * rows];
   size_t i = 0;
   for (size_t y = 0; y < rows; y++) {
     for (size_t x = 0; x < columns; x++) {
-      positions[i].Set(fLeft + (x * fSpacingX), fDepth + (y * fSpacingY), 0.0f);
+      positions[i].Set(fLeft + (x * fSpacingX), (y * fSpacingY), 0.0f);
       i++;
     }
   }
@@ -844,9 +932,13 @@ void cApplication::Run()
   spitfire::math::cMat4 matObjectRotation;
 
 
-  const spitfire::math::cVec3 positionCubeMappedTeapot(0.0f, 10.0f, 0.0f);
+  const spitfire::math::cVec3 positionCubeMappedTeapot(0.0f, (-1.0f * fSpacingY), 0.0f);
   spitfire::math::cMat4 matTranslationCubeMappedTeapot;
   matTranslationCubeMappedTeapot.SetTranslation(positionCubeMappedTeapot);
+
+  const spitfire::math::cVec3 positionStatue(0.0f, (-2.0f * fSpacingY), 0.0f);
+  spitfire::math::cMat4 matTranslationStatue;
+  matTranslationStatue.SetTranslation(positionStatue);
 
 
   uint32_t T0 = 0;
@@ -896,6 +988,18 @@ void cApplication::Run()
     //pContext->SetShaderConstant("fog.fDensity", fFogDensity);
   pContext->UnBindShader(*pShaderFog);
 
+  pContext->BindShader(*pShaderLights);
+    // Setup lighting
+    pContext->SetShaderConstant("light.ambientColour", lightAmbientColour);
+    pContext->SetShaderConstant("light.diffuseColour", lightDiffuseColour);
+    pContext->SetShaderConstant("light.specularColour", lightSpecularColour);
+
+    // Setup materials
+    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
+    pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+    pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
+    pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
+  pContext->UnBindShader(*pShaderLights);
 
   // Setup mouse
   pWindow->ShowCursor(false);
@@ -932,6 +1036,11 @@ void cApplication::Run()
     pContext->BindShader(*pShaderCubeMap);
       pContext->SetShaderConstant("cameraPosition", matView * spitfire::math::cVec3(0.0f, 0.0f, 0.0f));
     pContext->UnBindShader(*pShaderCubeMap);
+
+    // Set up the lights shader
+    pContext->BindShader(*pShaderLights);
+      pContext->SetShaderConstant("light.position", matView * lightPosition);
+    pContext->UnBindShader(*pShaderLights);
 
     // Update object rotation
     if (bIsRotating) fAngleRadians += float(currentTime - previousTime) * fRotationSpeed;
@@ -985,6 +1094,8 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
+
+      // Render the teapot
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureDetail);
       pContext->BindTextureCubeMap(2, *pTextureCubeMap);
@@ -1008,7 +1119,27 @@ void cApplication::Run()
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
 
+      // Render the statue
+      {
+        pContext->BindTexture(0, *pTextureMarble);
 
+        pContext->BindShader(*pShaderLights);
+
+        pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectStatue);
+
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationStatue * matObjectRotation);
+
+        pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectStatue);
+
+        pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectStatue);
+
+        pContext->UnBindShader(*pShaderLights);
+
+        pContext->UnBindTexture(0, *pTextureMarble);
+      }
+
+
+      // Render the cubemapped objects
       pContext->BindShader(*pShaderMetal);
 
       {
@@ -1051,6 +1182,7 @@ void cApplication::Run()
       pContext->UnBindShader(*pShaderMetal);
 
 
+      // Render the textured objects
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureLightMap);
       pContext->BindTexture(2, *pTextureDetail);
@@ -1101,8 +1233,7 @@ void cApplication::Run()
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
 
-
-
+      // Render the foggy objects
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureDetail);
 

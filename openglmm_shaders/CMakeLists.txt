@@ -26,7 +26,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE "-O2")
 SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
 # Add definitions, compiler switches, etc.
-SET(CMAKE_CXX_FLAGS "-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wcast-qual -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wnon-virtual-dtor -Wmissing-include-dirs -Wuninitialized -Wc++0x-compat -std=c++0x -fno-rtti -ffor-scope")
+SET(CMAKE_CXX_FLAGS "-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wcast-qual -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wnon-virtual-dtor -Wmissing-include-dirs -Wuninitialized -Wc++0x-compat -std=c++0x -ffor-scope")
 
 
 IF("${CMAKE_SYSTEM}" MATCHES "Linux")
@@ -88,10 +88,30 @@ PREFIX_PATHS(${LIBRARY_LIBOPENGLMM_SOURCE_DIRECTORY} ${LIBRARY_LIBOPENGLMM_SOURC
 SET(OUTPUT_LIBRARY_LIBOPENGLMM_SOURCE_FILES ${OUTPUT_FILES})
 
 
+SET(LIBRARY_LIBTRASHMM_SOURCE_DIRECTORY libtrashmm/)
+SET(LIBRARY_LIBTRASHMM_SOURCE_FILES
+libtrashmm.cpp)
+
+PREFIX_PATHS(${LIBRARY_LIBTRASHMM_SOURCE_DIRECTORY} ${LIBRARY_LIBTRASHMM_SOURCE_FILES})
+SET(OUTPUT_LIBRARY_LIBTRASHMM_SOURCE_FILES ${OUTPUT_FILES})
+
+
+SET(LIBRARY_LIBXDGMM_SOURCE_DIRECTORY libxdgmm/)
+SET(LIBRARY_LIBXDGMM_SOURCE_FILES
+libxdgmm.cpp)
+
+IF(WIN32)
+  SET(LIBRARY_LIBXDGMM_SOURCE_FILES ${LIBRARY_LIBXDGMM_SOURCE_FILES})
+ENDIF()
+
+PREFIX_PATHS(${LIBRARY_LIBXDGMM_SOURCE_DIRECTORY} ${LIBRARY_LIBXDGMM_SOURCE_FILES})
+SET(OUTPUT_LIBRARY_LIBXDGMM_SOURCE_FILES ${OUTPUT_FILES})
+
 
 SET(LIBRARY_SPITFIRE_SOURCE_DIRECTORY spitfire/)
 SET(LIBRARY_SPITFIRE_SOURCE_FILES
-math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat3.cpp math/cMat4.cpp math/cQuaternion.cpp math/math.cpp math/cColour.cpp)
+math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat3.cpp math/cMat4.cpp math/cQuaternion.cpp math/math.cpp math/cColour.cpp
+storage/file.cpp storage/filesystem.cpp util/string.cpp util/thread.cpp)
 
 IF(WIN32)
   SET(LIBRARY_SPITFIRE_SOURCE_FILES ${LIBRARY_SPITFIRE_SOURCE_FILES})
@@ -101,8 +121,20 @@ PREFIX_PATHS(${LIBRARY_SPITFIRE_SOURCE_DIRECTORY} ${LIBRARY_SPITFIRE_SOURCE_FILE
 SET(OUTPUT_LIBRARY_SPITFIRE_SOURCE_FILES ${OUTPUT_FILES})
 
 
+SET(LIBRARY_BREATHE_SOURCE_DIRECTORY breathe/)
+SET(LIBRARY_BREATHE_SOURCE_FILES
+render/model/cFileFormatOBJ.cpp render/model/cStatic.cpp)
 
-SET(LIBRARY_SOURCE_FILES ${OUTPUT_LIBRARY_SPITFIRE_SOURCE_FILES} ${OUTPUT_LIBRARY_BREATHE_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBVOODOOMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBOPENGLMM_SOURCE_FILES}
+IF(WIN32)
+  SET(LIBRARY_BREATHE_SOURCE_FILES ${LIBRARY_BREATHE_SOURCE_FILES})
+ENDIF()
+
+PREFIX_PATHS(${LIBRARY_BREATHE_SOURCE_DIRECTORY} ${LIBRARY_BREATHE_SOURCE_FILES})
+SET(OUTPUT_LIBRARY_BREATHE_SOURCE_FILES ${OUTPUT_FILES})
+
+
+
+SET(LIBRARY_SOURCE_FILES ${OUTPUT_LIBRARY_SPITFIRE_SOURCE_FILES} ${OUTPUT_LIBRARY_BREATHE_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBVOODOOMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBOPENGLMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBTRASHMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBXDGMM_SOURCE_FILES}
 GL/GLee.cpp
 )
 PREFIX_PATHS(${LIBRARY_SRC} ${LIBRARY_SOURCE_FILES})
@@ -124,11 +156,16 @@ SET(LIBRARIES
 
 # Some of the libraries have different names than their Find*.cmake name
 SET(LIBRARIES_LINKED
+  boost_filesystem
+  boost_iostreams
+  boost_locale
+  boost_system
   GL
   GLU
   SDL
   SDL_image
   SDL_ttf
+  xdg-basedir
 )
 
 
