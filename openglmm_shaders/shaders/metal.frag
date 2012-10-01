@@ -1,23 +1,14 @@
-#version 330
+#version 130
 
-// http://www.swiftless.com/tutorials/glsl/6_materials.html
+precision highp float;
 
 struct cLight
 {
+  vec3 direction;
   vec4 ambientColour;
   vec4 diffuseColour;
   vec4 specularColour;
-  vec3 position;
-  vec4 halfVector;
-  vec3 spotDirection;
-  float spotExponent;
-  float spotCutoff;
-  float spotCosCutoff;
-  float constantAttenuation;
-  float linearAttenuation;
-  float quadraticAttenuation;
 };
-
 uniform cLight light;
 
 struct cMaterial
@@ -27,29 +18,34 @@ struct cMaterial
   vec4 specularColour;
   float fShininess;
 };
-
 uniform cMaterial material;
 
-smooth in vec3 out_light_half_vector;
-smooth in vec3 out_normal;
+smooth in vec3 vertOutPosition;
+smooth in vec3 vertOutNormal;
+smooth in vec3 vertOutLightDirection;
 
-out vec4 out_color0;
+out vec4 fragmentColour;
+
+
+vec4 ApplyLightDirectionalLight()
+{
+  vec3 L = normalize(vertOutLightDirection);
+  vec3 N = normalize(vertOutNormal);
+  vec3 V = normalize(-vertOutPosition);
+  vec3 R = normalize(-reflect(L, N));
+
+  float nDotL = max(0.0, dot(N, L));
+  float rDotV = max(0.0, dot(R, V));
+
+  vec4 ambient = light.ambientColour * material.ambientColour;
+  vec4 diffuse = light.diffuseColour * material.diffuseColour * nDotL;
+  vec4 specular = light.specularColour * material.specularColour * pow(rDotV, material.fShininess);
+
+  return (ambient + diffuse + specular);
+}
+
 
 void main()
 {
-  // Calculate the ambient term
-  vec4 ambient_colour = (material.ambientColour * light.ambientColour);
-
-  // Calculate the diffuse term
-  vec4 diffuse_colour = material.diffuseColour * light.diffuseColour;
-
-  // Calculate the specular value
-  vec4 specular_colour = material.specularColour * light.specularColour * pow(max(dot(out_normal, out_light_half_vector), 0.0) , material.fShininess);
-
-    // Set the diffuse value (darkness). This is done with a dot product between the normal and the light
-  // and the maths behind it is explained in the maths section of the site.
-  float diffuse_value = max(dot(out_normal, light.position), 0.0);
-
-  // Set the output colour of our current pixel
-  out_color0 = ambient_colour + (diffuse_colour * diffuse_value) + specular_colour;
+  fragmentColour = ApplyLightDirectionalLight();
 }

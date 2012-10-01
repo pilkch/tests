@@ -1,15 +1,16 @@
 #version 130
 
+precision highp float;
+
 uniform sampler2D texUnit0; // Diffuse texture
 
 struct cLight
 {
-  vec3 position;
+  vec3 direction;
   vec4 ambientColour;
   vec4 diffuseColour;
   vec4 specularColour;
 };
-
 uniform cLight light;
 
 struct cMaterial
@@ -19,59 +20,47 @@ struct cMaterial
   vec4 specularColour;
   float fShininess;
 };
-
 uniform cMaterial material;
 
+smooth in vec3 vertOutPosition;
 smooth in vec2 vertOutTexCoord0;
-
-smooth in vec3 out_normal;
-smooth in vec3 out_light_half_vector;
+smooth in vec3 vertOutNormal;
+smooth in vec3 vertOutLightDirection;
 
 out vec4 fragmentColour;
 
 
-vec3 ApplyLightDirectionalLight()
+vec4 ApplyLightDirectionalLight()
 {
-  return vec3(0.0, 0.0, 0.0);
+  vec3 L = normalize(vertOutLightDirection);
+  vec3 N = normalize(vertOutNormal);
+  vec3 V = normalize(-vertOutPosition);
+  vec3 R = normalize(-reflect(L, N));
+
+  float nDotL = max(0.0, dot(N, L));
+  float rDotV = max(0.0, dot(R, V));
+
+  vec4 ambient = light.ambientColour * material.ambientColour;
+  vec4 diffuse = light.diffuseColour * material.diffuseColour * nDotL;
+  vec4 specular = light.specularColour * material.specularColour * pow(rDotV, material.fShininess);
+
+  return (ambient + diffuse + specular);
 }
 
-vec3 ApplyLightPointLight()
+vec4 ApplyLightPointLight()
 {
-  return vec3(0.0, 0.0, 0.0);
+  return vec4(1.0, 1.0, 1.0, 1.0);
 }
 
-vec3 ApplyLightSpotLight()
+vec4 ApplyLightSpotLight()
 {
-  return vec3(0.0, 0.0, 0.0);
+  return vec4(1.0, 1.0, 1.0, 1.0);
 }
 
 
 void main()
 {
-  vec3 diffuse = texture2D(texUnit0, vertOutTexCoord0).rgb;
+  vec3 texel = texture2D(texUnit0, vertOutTexCoord0).rgb;
 
-  // Calculate the lighting
-  vec3 V = vec3 (0.0, 0.0, 1.0);
-
-  // Normalize the vector from surface to light position
-  vec3 H = normalize(V + out_light_half_vector);
-
-  vec4 A = material.ambientColour * light.ambientColour;
-  float fDiffuse = max(dot(out_normal, out_light_half_vector), 0.0);
-  float pf = 0.0;
-  if (fDiffuse == 0.0)
-  {
-    pf = 0.0;
-  }
-  else
-  {
-    pf = max(pow(dot(out_normal, H), material.fShininess), 0.0);
-  }
-  vec4 S = light.specularColour * material.specularColour * pf;
-  vec4 D = fDiffuse * material.diffuseColour * light.diffuseColour;
-
-  // Pass on the colour
-  vec4 lighting = A + D + S;
-
-  fragmentColour = vec4(diffuse + ApplyLightDirectionalLight() + ApplyLightPointLight() + ApplyLightSpotLight(), 1.0) * lighting;
+  fragmentColour = vec4(texel, 1.0) * ApplyLightDirectionalLight();
 }

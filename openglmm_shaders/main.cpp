@@ -1032,9 +1032,12 @@ void cApplication::Run()
 
     const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
 
+    const spitfire::math::cVec3 lightDirection = (spitfire::math::cVec3(0.0f, 0.0f, 0.0f) - lightPosition).GetNormalised();
+
     // Set up the metal shader
     pContext->BindShader(*pShaderMetal);
-      pContext->SetShaderConstant("light.position", matView * lightPosition);
+      pContext->SetShaderConstant("matView", matView);
+      pContext->SetShaderConstant("light.direction", lightDirection);
     pContext->UnBindShader(*pShaderMetal);
 
     // Set up the cube map shader
@@ -1044,7 +1047,8 @@ void cApplication::Run()
 
     // Set up the lights shader
     pContext->BindShader(*pShaderLights);
-      pContext->SetShaderConstant("light.position", matView * lightPosition);
+      pContext->SetShaderConstant("matView", matView);
+      pContext->SetShaderConstant("light.direction", lightDirection);
     pContext->UnBindShader(*pShaderLights);
 
     // Update object rotation

@@ -1,17 +1,29 @@
 #version 330
 
-uniform mat3 matNormal;
+precision highp float;
+
+uniform mat4 matView;
+uniform mat4 matModelView;
 uniform mat4 matModelViewProjection;
+uniform mat3 matNormal;
 
 struct cLight
 {
-  vec3 position;
+  vec3 direction;
   vec4 ambientColour;
   vec4 diffuseColour;
   vec4 specularColour;
 };
-
 uniform cLight light;
+
+struct cMaterial
+{
+  vec4 ambientColour;
+  vec4 diffuseColour;
+  vec4 specularColour;
+  float fShininess;
+};
+uniform cMaterial material;
 
 #define POSITION 0
 #define NORMAL 1
@@ -20,23 +32,29 @@ layout(location = POSITION) in vec3 position;
 layout(location = NORMAL) in vec3 normal;
 layout(location = TEXCOORD0) in vec2 texCoord0;
 
-// Texture coordinates for the fragment shader
+smooth out vec3 vertOutPosition;
 smooth out vec2 vertOutTexCoord0;
-
-smooth out vec3 out_normal;
-smooth out vec3 out_light_half_vector;
+smooth out vec3 vertOutNormal;
+smooth out vec3 vertOutLightDirection;
 
 void main()
 {
-  gl_Position = matModelViewProjection * vec4(position, 1.0);
+  // All vertex shaders should write the transformed homogeneous clip space
+  // vertex position into the gl_Position variables.
+  vec4 pos = vec4(position.x, position.y, position.z, 1.0);
 
-  // Pass on the texture coordinates
+  gl_Position = matModelViewProjection * pos;
+
+  // Transform the vertex position into eye space. We use this later on to
+  // calculate the view (eye) vector.
+  pos = matModelView * pos;
+  vertOutPosition = pos.xyz / pos.w;
+
+  // Transform the light direction into eye space. Directional lights are
+  // specified in world space. For example, a directional light aimed along
+  // the world negative z axis has the direction vector (0, 0, -1).
+  vertOutLightDirection = vec3(matView * vec4(-light.direction, 0.0f));
+
+  vertOutNormal = matNormal * normal;
   vertOutTexCoord0 = texCoord0;
-
-  // Calculate the normal value for this vertex, in world coordinates (multiply by the normal matrix)
-  out_normal = normalize(matNormal * normal);
-
-  // Calculate the light’s half vector
-  const vec3 eyeVec = vec3(0.0, 0.0, 1.0);
-  out_light_half_vector = normalize(light.position + eyeVec);
 }
