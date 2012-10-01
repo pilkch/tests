@@ -47,6 +47,7 @@
 class cFreeLookCamera
 {
 public:
+  spitfire::math::cVec3 GetPosition() const;
   void SetPosition(const spitfire::math::cVec3& position);
   void SetRotation(const spitfire::math::cQuaternion& rotation);
 
@@ -61,6 +62,11 @@ private:
   spitfire::math::cVec3 position;
   spitfire::math::cQuaternion rotation;
 };
+
+spitfire::math::cVec3 cFreeLookCamera::GetPosition() const
+{
+  return position;
+}
 
 void cFreeLookCamera::SetPosition(const spitfire::math::cVec3& _position)
 {
@@ -320,7 +326,7 @@ void cApplication::CreateSphere(T* pObject, size_t nTextureCoordinates)
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float fRadius = 1.0f;
-  const size_t nSegments = 20;
+  const size_t nSegments = 30;
 
   opengl::cGeometryBuilder builder;
   builder.CreateSphere(fRadius, nSegments, *pGeometryDataPtr, nTextureCoordinates);
@@ -948,37 +954,35 @@ void cApplication::Run()
   uint32_t currentTime = SDL_GetTicks();
 
 
-  // Light
+  // Green directional light
   const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
-  const spitfire::math::cColour lightAmbientColour(0.2f, 0.2f, 0.2f);
-  const spitfire::math::cColour lightDiffuseColour(1.0f, 1.0f, 1.0f);
-  const spitfire::math::cColour lightSpecularColour(1.0f, 1.0f, 1.0f);
+  const spitfire::math::cColour lightAmbientColour(0.2f, 0.25f, 0.2f);
+  const spitfire::math::cColour lightDiffuseColour(0.6f, 0.8f, 0.6f);
+  const spitfire::math::cColour lightSpecularColour(0.0f, 1.0f, 0.0f);
 
   // Material
-  const spitfire::math::cColour materialDiffuseColour(0.5f, 0.5f, 0.5f);
-  const spitfire::math::cColour materialAmbientColour(0.0f, 0.0f, 0.0f);
+  const spitfire::math::cColour materialAmbientColour(1.0f, 1.0f, 1.0f);
+  const spitfire::math::cColour materialDiffuseColour(1.0f, 1.0f, 1.0f);
   const spitfire::math::cColour materialSpecularColour(1.0f, 1.0f, 1.0f);
-  const float fMaterialShininess = 50.0f;
+  const float fMaterialShininess = 25.0f;
 
   // Set our shader constants
   pContext->BindShader(*pShaderMetal);
-
     // Setup lighting
     pContext->SetShaderConstant("light.ambientColour", lightAmbientColour);
     pContext->SetShaderConstant("light.diffuseColour", lightDiffuseColour);
     pContext->SetShaderConstant("light.specularColour", lightSpecularColour);
 
     // Setup materials
-    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
     pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
     pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
     pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
-
   pContext->UnBindShader(*pShaderMetal);
 
   const spitfire::math::cColour fogColour(1.0f, 0.0f, 0.0f);
-  const float fFogStart = 0.3f;
-  const float fFogEnd = 10.0f;
+  const float fFogStart = 5.0f;
+  const float fFogEnd = 20.0f;
   //const float fFogDensity = 0.5f;
 
   pContext->BindShader(*pShaderFog);
@@ -995,11 +999,12 @@ void cApplication::Run()
     pContext->SetShaderConstant("light.specularColour", lightSpecularColour);
 
     // Setup materials
-    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
     pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
     pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
     pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
   pContext->UnBindShader(*pShaderLights);
+
 
   // Setup mouse
   pWindow->ShowCursor(false);
