@@ -3,18 +3,32 @@
 precision highp float;
 
 uniform mat4 matView;
+uniform mat4 matModel;
 uniform mat4 matModelView;
 uniform mat4 matModelViewProjection;
 uniform mat3 matNormal;
 
-struct cLight
+struct cLightDirectional
 {
   vec3 direction;
   vec4 ambientColour;
   vec4 diffuseColour;
   vec4 specularColour;
 };
-uniform cLight light;
+uniform cLightDirectional lightDirectional;
+
+struct cLightPointLight
+{
+  vec3 position;
+  vec4 colour;
+
+  float fAmbient;
+
+  float fConstantAttenuation;
+  float fLinearAttenuation;
+  float fExpAttenuation;
+};
+uniform cLightPointLight lightPointLight;
 
 struct cMaterial
 {
@@ -35,25 +49,21 @@ layout(location = TEXCOORD0) in vec2 texCoord0;
 smooth out vec3 vertOutPosition;
 smooth out vec2 vertOutTexCoord0;
 smooth out vec3 vertOutNormal;
-smooth out vec3 vertOutLightDirection;
+smooth out vec3 vertOutPointLightDirection;
 
 void main()
 {
-  // All vertex shaders should write the transformed homogeneous clip space
-  // vertex position into the gl_Position variables.
-  vec4 pos = vec4(position.x, position.y, position.z, 1.0);
-
-  gl_Position = matModelViewProjection * pos;
+  gl_Position = matModelViewProjection * vec4(position, 1.0);
 
   // Transform the vertex position into eye space. We use this later on to
   // calculate the view (eye) vector.
-  pos = matModelView * pos;
+  vec4 pos = matModelView * vec4(position, 1.0);
   vertOutPosition = pos.xyz / pos.w;
 
-  // Transform the light direction into eye space. Directional lights are
-  // specified in world space. For example, a directional light aimed along
-  // the world negative z axis has the direction vector (0, 0, -1).
-  vertOutLightDirection = vec3(matView * vec4(-light.direction, 0.0f));
+  vec3 pointLightPosition = (matView * vec4(lightPointLight.position, 1.0)).xyz;
+  vec3 vertOutWorldPosition = (matModelView * vec4(position, 1.0)).xyz;
+
+  vertOutPointLightDirection = pointLightPosition - vertOutWorldPosition;
 
   vertOutNormal = matNormal * normal;
   vertOutTexCoord0 = texCoord0;

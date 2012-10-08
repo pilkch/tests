@@ -4,14 +4,27 @@ precision highp float;
 
 uniform sampler2D texUnit0; // Diffuse texture
 
-struct cLight
+struct cLightDirectional
 {
   vec3 direction;
   vec4 ambientColour;
   vec4 diffuseColour;
   vec4 specularColour;
 };
-uniform cLight light;
+uniform cLightDirectional lightDirectional;
+
+struct cLightPointLight
+{
+  vec3 position;
+  vec4 colour;
+
+  float fAmbient;
+
+  float fConstantAttenuation;
+  float fLinearAttenuation;
+  float fExpAttenuation;
+};
+uniform cLightPointLight lightPointLight;
 
 struct cMaterial
 {
@@ -25,14 +38,14 @@ uniform cMaterial material;
 smooth in vec3 vertOutPosition;
 smooth in vec2 vertOutTexCoord0;
 smooth in vec3 vertOutNormal;
-smooth in vec3 vertOutLightDirection;
+smooth in vec3 vertOutPointLightDirection;
 
 out vec4 fragmentColour;
 
 
 vec4 ApplyLightDirectionalLight()
 {
-  vec3 L = normalize(vertOutLightDirection);
+  vec3 L = normalize(lightDirectional.direction);
   vec3 N = normalize(vertOutNormal);
   vec3 V = normalize(-vertOutPosition);
   vec3 R = normalize(-reflect(L, N));
@@ -40,21 +53,29 @@ vec4 ApplyLightDirectionalLight()
   float nDotL = max(0.0, dot(N, L));
   float rDotV = max(0.0, dot(R, V));
 
-  vec4 ambient = light.ambientColour * material.ambientColour;
-  vec4 diffuse = light.diffuseColour * material.diffuseColour * nDotL;
-  vec4 specular = light.specularColour * material.specularColour * pow(rDotV, material.fShininess);
+  vec4 ambient = lightDirectional.ambientColour * material.ambientColour;
+  vec4 diffuse = lightDirectional.diffuseColour * material.diffuseColour * nDotL;
+  vec4 specular = lightDirectional.specularColour * material.specularColour * pow(rDotV, material.fShininess);
 
   return (ambient + diffuse + specular);
 }
 
 vec4 ApplyLightPointLight()
 {
-  return vec4(1.0, 1.0, 1.0, 1.0);
+  float fDist = length(vertOutPointLightDirection);
+  vec3 L = normalize(vertOutPointLightDirection);
+  vec3 N = normalize(vertOutNormal);
+
+  float nDotL = max(0.0, dot(N, L));
+
+  float fAttTotal = lightPointLight.fConstantAttenuation + lightPointLight.fLinearAttenuation * fDist + lightPointLight.fExpAttenuation * fDist * fDist;
+
+  return vec4(lightPointLight.colour.rgb, 1.0) * (lightPointLight.fAmbient + nDotL) / fAttTotal;
 }
 
 vec4 ApplyLightSpotLight()
 {
-  return vec4(1.0, 1.0, 1.0, 1.0);
+  return vec4(0.0, 0.0, 0.0, 0.0);
 }
 
 
@@ -62,5 +83,5 @@ void main()
 {
   vec3 texel = texture2D(texUnit0, vertOutTexCoord0).rgb;
 
-  fragmentColour = vec4(texel, 1.0) * ApplyLightDirectionalLight();
+  fragmentColour = vec4(texel, 1.0) * (ApplyLightDirectionalLight() + ApplyLightPointLight() + ApplyLightSpotLight());
 }

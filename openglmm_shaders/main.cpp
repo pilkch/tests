@@ -128,7 +128,7 @@ private:
   template <class T>
   void CreateBox(T* pObject, size_t nTextureCoordinates);
   template <class T>
-  void CreateSphere(T* pObject, size_t nTextureCoordinates);
+  void CreateSphere(T* pObject, size_t nTextureCoordinates, float fRadius);
   template <class T>
   void CreateTeapot(T* pObject, size_t nTextureCoordinates);
   template <class T>
@@ -202,6 +202,8 @@ private:
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectBox3;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectSphere3;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectTeapot3;
+
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectPointLight;
 };
 
 cApplication::cApplication() :
@@ -255,7 +257,9 @@ cApplication::cApplication() :
   pStaticVertexBufferObjectCube3(nullptr),
   pStaticVertexBufferObjectBox3(nullptr),
   pStaticVertexBufferObjectSphere3(nullptr),
-  pStaticVertexBufferObjectTeapot3(nullptr)
+  pStaticVertexBufferObjectTeapot3(nullptr),
+
+  pStaticVertexBufferObjectPointLight(nullptr),
 {
 }
 
@@ -319,13 +323,12 @@ void cApplication::CreateBox(T* pObject, size_t nTextureCoordinates)
 }
 
 template <class T>
-void cApplication::CreateSphere(T* pObject, size_t nTextureCoordinates)
+void cApplication::CreateSphere(T* pObject, size_t nTextureCoordinates, float fRadius)
 {
   assert(pObject != nullptr);
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  const float fRadius = 1.0f;
   const size_t nSegments = 30;
 
   opengl::cGeometryBuilder builder;
@@ -529,6 +532,8 @@ bool cApplication::Create()
   pShaderFog = pContext->CreateShader(TEXT("shaders/fog.vert"), TEXT("shaders/fog.frag"));
   pShaderMetal = pContext->CreateShader(TEXT("shaders/metal.vert"), TEXT("shaders/metal.frag"));
 
+  const float fRadius = 1.0f;
+
   pStaticVertexBufferObjectPlane0 = pContext->CreateStaticVertexBufferObject();
   CreatePlane(pStaticVertexBufferObjectPlane0, 0);
   pStaticVertexBufferObjectCube0 = pContext->CreateStaticVertexBufferObject();
@@ -536,7 +541,7 @@ bool cApplication::Create()
   pStaticVertexBufferObjectBox0 = pContext->CreateStaticVertexBufferObject();
   CreateBox(pStaticVertexBufferObjectBox0, 0);
   pStaticVertexBufferObjectSphere0 = pContext->CreateStaticVertexBufferObject();
-  CreateSphere(pStaticVertexBufferObjectSphere0, 0);
+  CreateSphere(pStaticVertexBufferObjectSphere0, 0, fRadius);
   pStaticVertexBufferObjectTeapot0 = pContext->CreateStaticVertexBufferObject();
   CreateTeapot(pStaticVertexBufferObjectTeapot0, 0);
   pStaticVertexBufferObjectGear0 = pContext->CreateStaticVertexBufferObject();
@@ -549,7 +554,7 @@ bool cApplication::Create()
   pStaticVertexBufferObjectBox2 = pContext->CreateStaticVertexBufferObject();
   CreateBox(pStaticVertexBufferObjectBox2, 2);
   pStaticVertexBufferObjectSphere2 = pContext->CreateStaticVertexBufferObject();
-  CreateSphere(pStaticVertexBufferObjectSphere2, 2);
+  CreateSphere(pStaticVertexBufferObjectSphere2, 2, fRadius);
   pStaticVertexBufferObjectTeapot2 = pContext->CreateStaticVertexBufferObject();
   CreateTeapot(pStaticVertexBufferObjectTeapot2, 2);
 
@@ -560,9 +565,12 @@ bool cApplication::Create()
   pStaticVertexBufferObjectBox3 = pContext->CreateStaticVertexBufferObject();
   CreateBox(pStaticVertexBufferObjectBox3, 3);
   pStaticVertexBufferObjectSphere3 = pContext->CreateStaticVertexBufferObject();
-  CreateSphere(pStaticVertexBufferObjectSphere3, 3);
+  CreateSphere(pStaticVertexBufferObjectSphere3, 3, fRadius);
   pStaticVertexBufferObjectTeapot3 = pContext->CreateStaticVertexBufferObject();
   CreateTeapot(pStaticVertexBufferObjectTeapot3, 3);
+
+  pStaticVertexBufferObjectPointLight = pContext->CreateStaticVertexBufferObject();
+  CreateSphere(pStaticVertexBufferObjectPointLight, 0, 0.3f);
 
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
@@ -573,6 +581,11 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
+  if (pStaticVertexBufferObjectPointLight != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectPointLight);
+    pStaticVertexBufferObjectPointLight = nullptr;
+  }
+
   if (pStaticVertexBufferObjectTeapot3 != nullptr) {
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectTeapot3);
     pStaticVertexBufferObjectTeapot3 = nullptr;
@@ -895,6 +908,8 @@ void cApplication::Run()
   assert(pStaticVertexBufferObjectTeapot3 != nullptr);
   assert(pStaticVertexBufferObjectTeapot3->IsCompiled());
 
+  assert(pStaticVertexBufferObjectPointLight != nullptr);
+  assert(pStaticVertexBufferObjectPointLight->IsCompiled());
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
   const size_t n = inputDescription.size();
@@ -955,10 +970,18 @@ void cApplication::Run()
 
 
   // Green directional light
-  const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
-  const spitfire::math::cColour lightAmbientColour(0.2f, 0.25f, 0.2f);
-  const spitfire::math::cColour lightDiffuseColour(0.6f, 0.8f, 0.6f);
-  const spitfire::math::cColour lightSpecularColour(0.0f, 1.0f, 0.0f);
+  const spitfire::math::cVec3 lightDirectionalPosition(5.0f, 5.0f, 10.0f);
+  const spitfire::math::cColour lightDirectionalAmbientColour(0.2f, 0.25f, 0.2f);
+  const spitfire::math::cColour lightDirectionalDiffuseColour(0.6f, 0.8f, 0.6f);
+  const spitfire::math::cColour lightDirectionalSpecularColour(0.0f, 1.0f, 0.0f);
+
+  // Red point light
+  const spitfire::math::cVec3 lightPointPosition(-5.0f, -5.0f, 1.0f);
+  const spitfire::math::cColour lightPointColour(0.5f, 0.0f, 0.0f);
+  const float lightPointAmbient = 0.15f;
+  const float lightPointConstantAttenuation = 0.3f;
+  const float lightPointLinearAttenuation = 0.007f;
+  const float lightPointExpAttenuation = 0.00008f;
 
   // Material
   const spitfire::math::cColour materialAmbientColour(1.0f, 1.0f, 1.0f);
@@ -969,9 +992,9 @@ void cApplication::Run()
   // Set our shader constants
   pContext->BindShader(*pShaderMetal);
     // Setup lighting
-    pContext->SetShaderConstant("light.ambientColour", lightAmbientColour);
-    pContext->SetShaderConstant("light.diffuseColour", lightDiffuseColour);
-    pContext->SetShaderConstant("light.specularColour", lightSpecularColour);
+    pContext->SetShaderConstant("light.ambientColour", lightDirectionalAmbientColour);
+    pContext->SetShaderConstant("light.diffuseColour", lightDirectionalDiffuseColour);
+    pContext->SetShaderConstant("light.specularColour", lightDirectionalSpecularColour);
 
     // Setup materials
     pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
@@ -994,9 +1017,15 @@ void cApplication::Run()
 
   pContext->BindShader(*pShaderLights);
     // Setup lighting
-    pContext->SetShaderConstant("light.ambientColour", lightAmbientColour);
-    pContext->SetShaderConstant("light.diffuseColour", lightDiffuseColour);
-    pContext->SetShaderConstant("light.specularColour", lightSpecularColour);
+    pContext->SetShaderConstant("lightDirectional.ambientColour", lightDirectionalAmbientColour);
+    pContext->SetShaderConstant("lightDirectional.diffuseColour", lightDirectionalDiffuseColour);
+    pContext->SetShaderConstant("lightDirectional.specularColour", lightDirectionalSpecularColour);
+
+    pContext->SetShaderConstant("lightPointLight.colour", lightPointColour);
+    pContext->SetShaderConstant("lightPointLight.fAmbient", lightPointAmbient);
+    pContext->SetShaderConstant("lightPointLight.fConstantAttenuation", lightPointConstantAttenuation);
+    pContext->SetShaderConstant("lightPointLight.fLinearAttenuation", lightPointLinearAttenuation);
+    pContext->SetShaderConstant("lightPointLight.fExpAttenuation", lightPointExpAttenuation);
 
     // Setup materials
     pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
@@ -1032,7 +1061,7 @@ void cApplication::Run()
 
     const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
 
-    const spitfire::math::cVec3 lightDirection = (spitfire::math::cVec3(0.0f, 0.0f, 0.0f) - lightPosition).GetNormalised();
+    const spitfire::math::cVec3 lightDirection = (spitfire::math::cVec3(0.0f, 0.0f, 0.0f) - lightDirectionalPosition).GetNormalised();
 
     // Set up the metal shader
     pContext->BindShader(*pShaderMetal);
@@ -1048,7 +1077,12 @@ void cApplication::Run()
     // Set up the lights shader
     pContext->BindShader(*pShaderLights);
       pContext->SetShaderConstant("matView", matView);
-      pContext->SetShaderConstant("light.direction", lightDirection);
+
+      // Directional light
+      pContext->SetShaderConstant("lightDirectional.direction", matView * -lightDirection);
+
+      // Point light
+      pContext->SetShaderConstant("lightPointLight.position", lightPointPosition);
     pContext->UnBindShader(*pShaderLights);
 
     // Update object rotation
@@ -1128,7 +1162,7 @@ void cApplication::Run()
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
 
-      // Render the statue
+      // Render the statues
       {
         pContext->BindTexture(0, *pTextureMarble);
 
@@ -1148,10 +1182,29 @@ void cApplication::Run()
       }
 
 
+      // Render the lights
+      {
+        pContext->BindShader(*pShaderMetal);
+
+        {
+          pContext->SetShaderConstant("material.ambientColour", lightPointColour);
+
+          spitfire::math::cMat4 matTransform;
+          matTransform.SetTranslation(lightPointPosition);
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectPointLight);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectPointLight);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectPointLight);
+        }
+      }
+
+
       // Render the cubemapped objects
       pContext->BindShader(*pShaderMetal);
 
       {
+        pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+
         {
           pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectPlane0);
             pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[0] * matObjectRotation);
