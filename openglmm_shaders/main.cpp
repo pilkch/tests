@@ -149,6 +149,8 @@ private:
   bool bIsMovingRight;
   bool bIsMovingBackward;
 
+  bool bIsDirectionalLightOn;
+  bool bIsPointLightOn;
   bool bIsRotating;
   bool bIsWireframe;
   bool bIsDone;
@@ -212,6 +214,8 @@ cApplication::cApplication() :
   bIsMovingRight(false),
   bIsMovingBackward(false),
 
+  bIsDirectionalLightOn(true),
+  bIsPointLightOn(true),
   bIsRotating(true),
   bIsWireframe(false),
   bIsDone(false),
@@ -504,7 +508,7 @@ bool cApplication::Create()
   assert(pTextureCubeMap != nullptr);
 
   pTextureMarble = pContext->CreateTexture(TEXT("textures/marble.png"));
-  assert(pTextureDetail != nullptr);
+  assert(pTextureMarble != nullptr);
 
   pShaderCubeMap = pContext->CreateShader(TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
   assert(pShaderCubeMap != nullptr);
@@ -818,6 +822,14 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsWireframe = !bIsWireframe;
         break;
       }
+      case SDLK_2: {
+        bIsDirectionalLightOn = !bIsDirectionalLightOn;
+        break;
+      }
+      case SDLK_3: {
+        bIsPointLightOn = !bIsPointLightOn;
+        break;
+      }
     }
   }
 }
@@ -831,6 +843,8 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("D right");
   description.push_back("Space pause rotation");
   description.push_back("1 toggle wireframe");
+  description.push_back("2 toggle directional light");
+  description.push_back("3 toggle point light");
   description.push_back("Esc quit");
 
   return description;
@@ -977,7 +991,7 @@ void cApplication::Run()
 
   // Red point light
   const spitfire::math::cVec3 lightPointPosition(-5.0f, -5.0f, 1.0f);
-  const spitfire::math::cColour lightPointColour(0.5f, 0.0f, 0.0f);
+  const spitfire::math::cColour lightPointColour(0.25f, 0.0f, 0.0f);
   const float lightPointAmbient = 0.15f;
   const float lightPointConstantAttenuation = 0.3f;
   const float lightPointLinearAttenuation = 0.007f;
@@ -1016,11 +1030,12 @@ void cApplication::Run()
   pContext->UnBindShader(*pShaderFog);
 
   pContext->BindShader(*pShaderLights);
-    // Setup lighting
+    // Directional light
     pContext->SetShaderConstant("lightDirectional.ambientColour", lightDirectionalAmbientColour);
     pContext->SetShaderConstant("lightDirectional.diffuseColour", lightDirectionalDiffuseColour);
     pContext->SetShaderConstant("lightDirectional.specularColour", lightDirectionalSpecularColour);
 
+    // Point light
     pContext->SetShaderConstant("lightPointLight.colour", lightPointColour);
     pContext->SetShaderConstant("lightPointLight.fAmbient", lightPointAmbient);
     pContext->SetShaderConstant("lightPointLight.fConstantAttenuation", lightPointConstantAttenuation);
@@ -1079,9 +1094,11 @@ void cApplication::Run()
       pContext->SetShaderConstant("matView", matView);
 
       // Directional light
+      pContext->SetShaderConstant("lightDirectional.bOn", bIsDirectionalLightOn ? 1 : 0);
       pContext->SetShaderConstant("lightDirectional.direction", matView * -lightDirection);
 
       // Point light
+      pContext->SetShaderConstant("lightPointLight.bOn", bIsPointLightOn ? 1 : 0);
       pContext->SetShaderConstant("lightPointLight.position", lightPointPosition);
     pContext->UnBindShader(*pShaderLights);
 

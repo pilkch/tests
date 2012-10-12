@@ -6,6 +6,8 @@ uniform sampler2D texUnit0; // Diffuse texture
 
 struct cLightDirectional
 {
+  int bOn; // 1 if on, 0 if off
+
   vec3 direction;
   vec4 ambientColour;
   vec4 diffuseColour;
@@ -15,6 +17,8 @@ uniform cLightDirectional lightDirectional;
 
 struct cLightPointLight
 {
+  int bOn; // 1 if on, 0 if off
+
   vec3 position;
   vec4 colour;
 
@@ -45,6 +49,9 @@ out vec4 fragmentColour;
 
 vec4 ApplyLightDirectionalLight()
 {
+  // If light isn't turned on, return no color
+  if (lightDirectional.bOn == 0) return vec4(0.0, 0.0, 0.0, 0.0);
+
   vec3 L = normalize(lightDirectional.direction);
   vec3 N = normalize(vertOutNormal);
   vec3 V = normalize(-vertOutPosition);
@@ -62,6 +69,9 @@ vec4 ApplyLightDirectionalLight()
 
 vec4 ApplyLightPointLight()
 {
+  // If light isn't turned on, return no color
+  if (lightPointLight.bOn == 0) return vec4(0.0, 0.0, 0.0, 0.0);
+
   float fDist = length(vertOutPointLightDirection);
   vec3 L = normalize(vertOutPointLightDirection);
   vec3 N = normalize(vertOutNormal);

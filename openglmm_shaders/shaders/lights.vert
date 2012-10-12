@@ -10,6 +10,8 @@ uniform mat3 matNormal;
 
 struct cLightDirectional
 {
+  int bOn; // 1 if on, 0 if off
+
   vec3 direction;
   vec4 ambientColour;
   vec4 diffuseColour;
@@ -19,6 +21,8 @@ uniform cLightDirectional lightDirectional;
 
 struct cLightPointLight
 {
+  int bOn; // 1 if on, 0 if off
+
   vec3 position;
   vec4 colour;
 
