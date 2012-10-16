@@ -121,18 +121,12 @@ public:
   void Run();
 
 private:
-  template <class T>
-  void CreatePlane(T* pObject, size_t nTextureCoordinates);
-  template <class T>
-  void CreateCube(T* pObject, size_t nTextureCoordinates);
-  template <class T>
-  void CreateBox(T* pObject, size_t nTextureCoordinates);
-  template <class T>
-  void CreateSphere(T* pObject, size_t nTextureCoordinates, float fRadius);
-  template <class T>
-  void CreateTeapot(T* pObject, size_t nTextureCoordinates);
-  template <class T>
-  void CreateGear(T* pObject);
+  void CreatePlane(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates);
+  void CreateCube(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates);
+  void CreateBox(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates);
+  void CreateSphere(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates, float fRadius);
+  void CreateTeapot(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates);
+  void CreateGear(opengl::cStaticVertexBufferObject* pObject);
 
   void CreateTeapotVBO();
   void CreateStatueVBO();
@@ -272,8 +266,7 @@ cApplication::~cApplication()
   Destroy();
 }
 
-template <class T>
-void cApplication::CreatePlane(T* pObject, size_t nTextureCoordinates)
+void cApplication::CreatePlane(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates)
 {
   assert(pObject != nullptr);
 
@@ -290,8 +283,7 @@ void cApplication::CreatePlane(T* pObject, size_t nTextureCoordinates)
   pObject->Compile(system);
 }
 
-template <class T>
-void cApplication::CreateCube(T* pObject, size_t nTextureCoordinates)
+void cApplication::CreateCube(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates)
 {
   assert(pObject != nullptr);
 
@@ -307,8 +299,7 @@ void cApplication::CreateCube(T* pObject, size_t nTextureCoordinates)
   pObject->Compile(system);
 }
 
-template <class T>
-void cApplication::CreateBox(T* pObject, size_t nTextureCoordinates)
+void cApplication::CreateBox(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates)
 {
   assert(pObject != nullptr);
 
@@ -326,8 +317,7 @@ void cApplication::CreateBox(T* pObject, size_t nTextureCoordinates)
   pObject->Compile(system);
 }
 
-template <class T>
-void cApplication::CreateSphere(T* pObject, size_t nTextureCoordinates, float fRadius)
+void cApplication::CreateSphere(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates, float fRadius)
 {
   assert(pObject != nullptr);
 
@@ -343,8 +333,7 @@ void cApplication::CreateSphere(T* pObject, size_t nTextureCoordinates, float fR
   pObject->Compile(system);
 }
 
-template <class T>
-void cApplication::CreateTeapot(T* pObject, size_t nTextureCoordinates)
+void cApplication::CreateTeapot(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates)
 {
   assert(pObject != nullptr);
 
@@ -361,8 +350,7 @@ void cApplication::CreateTeapot(T* pObject, size_t nTextureCoordinates)
   pObject->Compile(system);
 }
 
-template <class T>
-void cApplication::CreateGear(T* pObject)
+void cApplication::CreateGear(opengl::cStaticVertexBufferObject* pObject)
 {
 }
 
