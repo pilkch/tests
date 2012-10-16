@@ -128,6 +128,8 @@ private:
   void CreateTeapot(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates);
   void CreateGear(opengl::cStaticVertexBufferObject* pObject);
 
+  void CreateNormalMappedCube();
+
   void CreateTeapotVBO();
   void CreateStatueVBO();
   void CreateScreenRectVBO();
@@ -167,8 +169,14 @@ private:
   opengl::cTextureCubeMap* pTextureCubeMap;
   opengl::cTexture* pTextureMarble;
 
+  opengl::cTexture* pTextureNormalMapDiffuse;
+  opengl::cTexture* pTextureNormalMapSpecular;
+  opengl::cTexture* pTextureNormalMapNormal;
+  opengl::cTexture* pTextureNormalMapHeight;
+
   opengl::cShader* pShaderCubeMap;
   opengl::cShader* pShaderLights;
+  opengl::cShader* pShaderParallaxNormalMap;
   opengl::cShader* pShaderScreenRect;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
@@ -200,6 +208,7 @@ private:
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectTeapot3;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectPointLight;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectParallaxNormalMap;
 };
 
 cApplication::cApplication() :
@@ -225,8 +234,14 @@ cApplication::cApplication() :
   pTextureCubeMap(nullptr),
   pTextureMarble(nullptr),
 
+  pTextureNormalMapDiffuse(nullptr),
+  pTextureNormalMapSpecular(nullptr),
+  pTextureNormalMapNormal(nullptr),
+  pTextureNormalMapHeight(nullptr),
+
   pShaderCubeMap(nullptr),
   pShaderLights(nullptr),
+  pShaderParallaxNormalMap(nullptr),
   pShaderScreenRect(nullptr),
 
   pStaticVertexBufferObject(nullptr),
@@ -258,6 +273,7 @@ cApplication::cApplication() :
   pStaticVertexBufferObjectTeapot3(nullptr),
 
   pStaticVertexBufferObjectPointLight(nullptr),
+  pStaticVertexBufferObjectParallaxNormalMap(nullptr)
 {
 }
 
@@ -352,6 +368,255 @@ void cApplication::CreateTeapot(opengl::cStaticVertexBufferObject* pObject, size
 
 void cApplication::CreateGear(opengl::cStaticVertexBufferObject* pObject)
 {
+}
+
+
+class cGeometryBuilder_v3_n3_t2_tangent4
+{
+public:
+  explicit cGeometryBuilder_v3_n3_t2_tangent4(opengl::cGeometryData& data);
+
+  void PushBackQuad(
+    const spitfire::math::cVec3& vertex0, const spitfire::math::cVec3& vertex1, const spitfire::math::cVec3& vertex2, const spitfire::math::cVec3& vertex3,
+    const spitfire::math::cVec3& normal,
+    const spitfire::math::cVec2& textureCoord0, const spitfire::math::cVec2& textureCoord1, const spitfire::math::cVec2& textureCoord2, const spitfire::math::cVec2& textureCoord3
+  );
+
+private:
+  spitfire::math::cVec4 CalculateTangentVectorForTriangle(
+    const spitfire::math::cVec3& pos1, const spitfire::math::cVec3& pos2, const spitfire::math::cVec3& pos3,
+    const spitfire::math::cVec2& texCoord1, const spitfire::math::cVec2& texCoord2, const spitfire::math::cVec2& texCoord3,
+    const spitfire::math::cVec3& normal
+  ) const;
+
+  void PushBackTriangle(
+    const spitfire::math::cVec3& vertex0, const spitfire::math::cVec3& vertex1, const spitfire::math::cVec3& vertex2,
+    const spitfire::math::cVec3& normal,
+    const spitfire::math::cVec2& textureCoord0, const spitfire::math::cVec2& textureCoord1, const spitfire::math::cVec2& textureCoord2,
+    const spitfire::math::cVec4& tangent
+  );
+  void PushBackVertex(const spitfire::math::cVec3& vertex, const spitfire::math::cVec3& normal, const spitfire::math::cVec2& textureCoord0, const spitfire::math::cVec4& tangent);
+
+  opengl::cGeometryData& data;
+};
+
+// Given the 3 vertices (position and texture coordinates) of a triangle
+// calculate and return the triangle's tangent vector.
+// http://www.dhpoware.com/demos/gl3ParallaxNormalMapping.html
+spitfire::math::cVec4 cGeometryBuilder_v3_n3_t2_tangent4::CalculateTangentVectorForTriangle(
+  const spitfire::math::cVec3& pos1, const spitfire::math::cVec3& pos2, const spitfire::math::cVec3& pos3,
+  const spitfire::math::cVec2& texCoord1, const spitfire::math::cVec2& texCoord2, const spitfire::math::cVec2& texCoord3,
+  const spitfire::math::cVec3& normal
+) const
+{
+  // Create 2 vectors in object space.
+  //
+  // edge1 is the vector from vertex positions pos1 to pos2.
+  // edge2 is the vector from vertex positions pos1 to pos3.
+  spitfire::math::cVec3 edge1(pos2 - pos1);
+  spitfire::math::cVec3 edge2(pos3 - pos1);
+
+  edge1.Normalise();
+  edge2.Normalise();
+
+  // Create 2 vectors in tangent (texture) space that point in the same
+  // direction as edge1 and edge2 (in object space).
+  //
+  // texEdge1 is the vector from texture coordinates texCoord1 to texCoord2.
+  // texEdge2 is the vector from texture coordinates texCoord1 to texCoord3.
+  spitfire::math::cVec2 texEdge1(texCoord2 - texCoord1);
+  spitfire::math::cVec2 texEdge2(texCoord3 - texCoord1);
+
+  texEdge1.Normalise();
+  texEdge2.Normalise();
+
+  // These 2 sets of vectors form the following system of equations:
+  //
+  //  edge1 = (texEdge1.x * tangent) + (texEdge1.y * bitangent)
+  //  edge2 = (texEdge2.x * tangent) + (texEdge2.y * bitangent)
+  //
+  // Using matrix notation this system looks like:
+  //
+  //  [ edge1 ]     [ texEdge1.x  texEdge1.y ]  [ tangent   ]
+  //  [       ]  =  [                        ]  [           ]
+  //  [ edge2 ]     [ texEdge2.x  texEdge2.y ]  [ bitangent ]
+  //
+  // The solution is:
+  //
+  //  [ tangent   ]        1     [ texEdge2.y  -texEdge1.y ]  [ edge1 ]
+  //  [           ]  =  -------  [                         ]  [       ]
+  //  [ bitangent ]      det A   [-texEdge2.x   texEdge1.x ]  [ edge2 ]
+  //
+  //  where:
+  //        [ texEdge1.x  texEdge1.y ]
+  //    A = [                        ]
+  //        [ texEdge2.x  texEdge2.y ]
+  //
+  //    det A = (texEdge1.x * texEdge2.y) - (texEdge1.y * texEdge2.x)
+  //
+  // From this solution the tangent space basis vectors are:
+  //
+  //    tangent = (1 / det A) * ( texEdge2.y * edge1 - texEdge1.y * edge2)
+  //  bitangent = (1 / det A) * (-texEdge2.x * edge1 + texEdge1.x * edge2)
+  //     normal = cross(tangent, bitangent)
+
+  float det = (texEdge1.x * texEdge2.y) - (texEdge1.y * texEdge2.x);
+
+  spitfire::math::cVec3 t;
+  spitfire::math::cVec3 b;
+  if (spitfire::math::IsApproximatelyZero(det)) {
+    t.Set(1.0f, 0.0f, 0.0f);
+    b.Set(0.0f, 1.0f, 0.0f);
+  } else {
+    det = 1.0f / det;
+
+    t.x = ((texEdge2.y * edge1.x) - (texEdge1.y * edge2.x)) * det;
+    t.y = ((texEdge2.y * edge1.y) - (texEdge1.y * edge2.y)) * det;
+    t.z = ((texEdge2.y * edge1.z) - (texEdge1.y * edge2.z)) * det;
+
+    b.x = ((-texEdge2.x * edge1.x) + (texEdge1.x * edge2.x)) * det;
+    b.y = ((-texEdge2.x * edge1.y) + (texEdge1.x * edge2.y)) * det;
+    b.z = ((-texEdge2.x * edge1.z) + (texEdge1.x * edge2.z)) * det;
+
+    t.Normalise();
+    b.Normalise();
+  }
+
+  // Calculate the handedness of the local tangent space.
+  // The bitangent vector is the cross product between the triangle face
+  // normal vector and the calculated tangent vector. The resulting bitangent
+  // vector should be the same as the bitangent vector calculated from the
+  // set of linear equations above. If they point in different directions
+  // then we need to invert the cross product calculated bitangent vector. We
+  // store this scalar multiplier in the tangent vector's 'w' component so
+  // that the correct bitangent vector can be generated in the normal mapping
+  // shader's vertex shader.
+
+  const spitfire::math::cVec3 bitangent = normal.CrossProduct(t);
+  float handedness = (bitangent.DotProduct(b) < 0.0f) ? -1.0f : 1.0f;
+
+  spitfire::math::cVec4 tangent;
+
+  tangent.x = t.x;
+  tangent.y = t.y;
+  tangent.z = t.z;
+  tangent.w = handedness;
+
+  return tangent;
+}
+
+inline cGeometryBuilder_v3_n3_t2_tangent4::cGeometryBuilder_v3_n3_t2_tangent4(opengl::cGeometryData& _data) :
+  data(_data)
+{
+  data.nVerticesPerPoint = 3;
+  data.nNormalsPerPoint = 3;
+  data.nTextureCoordinatesPerPoint = 2;
+  data.nFloatUserData0PerPoint = 4;
+}
+
+void cGeometryBuilder_v3_n3_t2_tangent4::PushBackVertex(const spitfire::math::cVec3& vertex, const spitfire::math::cVec3& normal, const spitfire::math::cVec2& textureCoord0, const spitfire::math::cVec4& tangent)
+{
+  data.vertices.push_back(vertex.x);
+  data.vertices.push_back(vertex.y);
+  data.vertices.push_back(vertex.z);
+  data.vertices.push_back(normal.x);
+  data.vertices.push_back(normal.y);
+  data.vertices.push_back(normal.z);
+  data.vertices.push_back(textureCoord0.x);
+  data.vertices.push_back(textureCoord0.y);
+  data.vertices.push_back(tangent.x);
+  data.vertices.push_back(tangent.y);
+  data.vertices.push_back(tangent.z);
+  data.vertices.push_back(tangent.w);
+  data.nVertexCount++;
+}
+
+void cGeometryBuilder_v3_n3_t2_tangent4::PushBackTriangle(
+  const spitfire::math::cVec3& vertex0, const spitfire::math::cVec3& vertex1, const spitfire::math::cVec3& vertex2,
+  const spitfire::math::cVec3& normal,
+  const spitfire::math::cVec2& textureCoord0, const spitfire::math::cVec2& textureCoord1, const spitfire::math::cVec2& textureCoord2,
+  const spitfire::math::cVec4& tangent
+)
+{
+  PushBackVertex(vertex0, normal, textureCoord0, tangent);
+  PushBackVertex(vertex1, normal, textureCoord1, tangent);
+  PushBackVertex(vertex2, normal, textureCoord2, tangent);
+}
+
+void cGeometryBuilder_v3_n3_t2_tangent4::PushBackQuad(
+  const spitfire::math::cVec3& vertex0, const spitfire::math::cVec3& vertex1, const spitfire::math::cVec3& vertex2, const spitfire::math::cVec3& vertex3,
+  const spitfire::math::cVec3& normal,
+  const spitfire::math::cVec2& textureCoord0, const spitfire::math::cVec2& textureCoord1, const spitfire::math::cVec2& textureCoord2, const spitfire::math::cVec2& textureCoord3
+)
+{
+  const spitfire::math::cVec4 tangent = CalculateTangentVectorForTriangle(
+    vertex0, vertex1, vertex2,
+    textureCoord0, textureCoord1, textureCoord2,
+    normal
+  );
+
+  PushBackTriangle(vertex0, vertex1, vertex2, normal, textureCoord0, textureCoord1, textureCoord2, tangent);
+  PushBackTriangle(vertex2, vertex3, vertex0, normal, textureCoord2, textureCoord3, textureCoord0, tangent);
+}
+
+void cApplication::CreateNormalMappedCube()
+{
+  assert(pStaticVertexBufferObjectParallaxNormalMap != nullptr);
+
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  // Build a cube with an extra field for the tangent on each vertex
+  cGeometryBuilder_v3_n3_t2_tangent4 builder(*pGeometryDataPtr);
+
+  const float fWidth = 1.0f;
+
+  const spitfire::math::cVec3 vMin(-fWidth * 0.5f, -fWidth * 0.5f, -fWidth * 0.5f);
+  const spitfire::math::cVec3 vMax(fWidth * 0.5f, fWidth * 0.5f, fWidth * 0.5f);
+
+  // Upper Square
+  builder.PushBackQuad(
+    spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z),
+    spitfire::math::cVec3(0.0f, 0.0f, 1.0f),
+    spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f)
+  );
+
+  // Bottom Square
+  builder.PushBackQuad(
+    spitfire::math::cVec3(vMin.x, vMin.y, vMin.z), spitfire::math::cVec3(vMin.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMin.y, vMin.z),
+    spitfire::math::cVec3(0.0f, 0.0f, -1.0f),
+    spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
+  );
+
+  // Side Squares
+  builder.PushBackQuad(
+    spitfire::math::cVec3(vMin.x, vMax.y, vMin.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMin.z),
+    spitfire::math::cVec3(0.0f, 1.0f, 0.0f),
+    spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f)
+  );
+
+  builder.PushBackQuad(
+    spitfire::math::cVec3(vMax.x, vMin.y, vMin.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMin.y, vMin.z),
+    spitfire::math::cVec3(0.0f, -1.0f, 0.0f),
+    spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
+  );
+
+  // Front
+  builder.PushBackQuad(
+    spitfire::math::cVec3(vMax.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMin.z),
+    spitfire::math::cVec3(0.0f, -1.0f, 0.0f),
+    spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f)
+  );
+
+  // Back
+  builder.PushBackQuad(
+    spitfire::math::cVec3(vMin.x, vMin.y, vMin.z), spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMin.z),
+    spitfire::math::cVec3(0.0f, 0.0f, 1.0f),
+    spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f)
+  );
+
+  pStaticVertexBufferObjectParallaxNormalMap->SetData(pGeometryDataPtr);
+
+  pStaticVertexBufferObjectParallaxNormalMap->Compile(system);
 }
 
 void cApplication::CreateTeapotVBO()
@@ -498,11 +763,26 @@ bool cApplication::Create()
   pTextureMarble = pContext->CreateTexture(TEXT("textures/marble.png"));
   assert(pTextureMarble != nullptr);
 
+  pTextureNormalMapDiffuse = pContext->CreateTexture(TEXT("textures/floor_tile_color_map.png"));
+  assert(pTextureNormalMapDiffuse != nullptr);
+
+  pTextureNormalMapSpecular = pContext->CreateTexture(TEXT("textures/floor_tile_gloss_map.png"));
+  assert(pTextureNormalMapSpecular != nullptr);
+
+  pTextureNormalMapNormal = pContext->CreateTexture(TEXT("textures/floor_tile_normal_map.png"));
+  assert(pTextureNormalMapNormal != nullptr);
+
+  pTextureNormalMapHeight = pContext->CreateTexture(TEXT("textures/floor_tile_height_map.png"));
+  assert(pTextureNormalMapHeight != nullptr);
+
   pShaderCubeMap = pContext->CreateShader(TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
   assert(pShaderCubeMap != nullptr);
 
   pShaderLights = pContext->CreateShader(TEXT("shaders/lights.vert"), TEXT("shaders/lights.frag"));
   assert(pShaderLights != nullptr);
+
+  pShaderParallaxNormalMap = pContext->CreateShader(TEXT("shaders/parallaxnormalmap.vert"), TEXT("shaders/parallaxnormalmap.frag"));
+  assert(pShaderParallaxNormalMap != nullptr);
 
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderScreenRect != nullptr);
@@ -564,6 +844,9 @@ bool cApplication::Create()
   pStaticVertexBufferObjectPointLight = pContext->CreateStaticVertexBufferObject();
   CreateSphere(pStaticVertexBufferObjectPointLight, 0, 0.3f);
 
+  pStaticVertexBufferObjectParallaxNormalMap = pContext->CreateStaticVertexBufferObject();
+  CreateNormalMappedCube();
+
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
   pWindow->SetInputEventListener(*this);
@@ -573,6 +856,11 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
+  if (pStaticVertexBufferObjectParallaxNormalMap != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectParallaxNormalMap);
+    pStaticVertexBufferObjectParallaxNormalMap = nullptr;
+  }
+
   if (pStaticVertexBufferObjectPointLight != nullptr) {
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectPointLight);
     pStaticVertexBufferObjectPointLight = nullptr;
@@ -679,6 +967,11 @@ void cApplication::Destroy()
     pShaderScreenRect = nullptr;
   }
 
+  if (pShaderParallaxNormalMap != nullptr) {
+    pContext->DestroyShader(pShaderParallaxNormalMap);
+    pShaderParallaxNormalMap = nullptr;
+  }
+
   if (pShaderLights != nullptr) {
     pContext->DestroyShader(pShaderLights);
     pShaderLights = nullptr;
@@ -687,6 +980,23 @@ void cApplication::Destroy()
   if (pShaderCubeMap != nullptr) {
     pContext->DestroyShader(pShaderCubeMap);
     pShaderCubeMap = nullptr;
+  }
+
+  if (pTextureNormalMapHeight != nullptr) {
+    pContext->DestroyTexture(pTextureNormalMapHeight);
+    pTextureNormalMapHeight = nullptr;
+  }
+  if (pTextureNormalMapNormal != nullptr) {
+    pContext->DestroyTexture(pTextureNormalMapNormal);
+    pTextureNormalMapNormal = nullptr;
+  }
+  if (pTextureNormalMapSpecular != nullptr) {
+    pContext->DestroyTexture(pTextureNormalMapSpecular);
+    pTextureNormalMapSpecular = nullptr;
+  }
+  if (pTextureNormalMapDiffuse != nullptr) {
+    pContext->DestroyTexture(pTextureNormalMapDiffuse);
+    pTextureNormalMapDiffuse = nullptr;
   }
 
   if (pTextureMarble != nullptr) {
@@ -854,10 +1164,20 @@ void cApplication::Run()
   assert(pTextureCubeMap->IsValid());
   assert(pTextureMarble != nullptr);
   assert(pTextureMarble->IsValid());
+  assert(pTextureNormalMapDiffuse != nullptr);
+  assert(pTextureNormalMapDiffuse->IsValid());
+  assert(pTextureNormalMapSpecular != nullptr);
+  assert(pTextureNormalMapSpecular->IsValid());
+  assert(pTextureNormalMapHeight != nullptr);
+  assert(pTextureNormalMapHeight->IsValid());
+  assert(pTextureNormalMapNormal != nullptr);
+  assert(pTextureNormalMapNormal->IsValid());
   assert(pShaderCubeMap != nullptr);
   assert(pShaderCubeMap->IsCompiledProgram());
   assert(pShaderLights != nullptr);
   assert(pShaderLights->IsCompiledProgram());
+  assert(pShaderParallaxNormalMap != nullptr);
+  assert(pShaderParallaxNormalMap->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
   assert(pStaticVertexBufferObject != nullptr);
@@ -912,6 +1232,9 @@ void cApplication::Run()
 
   assert(pStaticVertexBufferObjectPointLight != nullptr);
   assert(pStaticVertexBufferObjectPointLight->IsCompiled());
+  assert(pStaticVertexBufferObjectParallaxNormalMap != nullptr);
+  assert(pStaticVertexBufferObjectParallaxNormalMap->IsCompiled());
+
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
   const size_t n = inputDescription.size();
@@ -954,15 +1277,20 @@ void cApplication::Run()
 
   spitfire::math::cMat4 matObjectRotation;
 
+  // Cube mapped teapot
 
-  const spitfire::math::cVec3 positionCubeMappedTeapot(0.0f, (-1.0f * fSpacingY), 0.0f);
+  const spitfire::math::cVec3 positionCubeMappedTeapot(-fSpacingX, (-1.0f * fSpacingY), 0.0f);
   spitfire::math::cMat4 matTranslationCubeMappedTeapot;
   matTranslationCubeMappedTeapot.SetTranslation(positionCubeMappedTeapot);
 
+  // Parallax normal mapping
   const spitfire::math::cVec3 positionStatue(0.0f, (-2.0f * fSpacingY), 0.0f);
   spitfire::math::cMat4 matTranslationStatue;
   matTranslationStatue.SetTranslation(positionStatue);
 
+  const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, (-1.0f * fSpacingY), 0.0f);
+  spitfire::math::cMat4 matTranslationParallaxNormalMap;
+  matTranslationParallaxNormalMap.SetTranslation(parallaxNormalMapPosition);
 
   uint32_t T0 = 0;
   uint32_t Frames = 0;
@@ -1037,6 +1365,18 @@ void cApplication::Run()
     pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
   pContext->UnBindShader(*pShaderLights);
 
+  pContext->BindShader(*pShaderParallaxNormalMap);
+    // Directional light
+    pContext->SetShaderConstant("directionalLight.ambientColour", lightDirectionalAmbientColour);
+    pContext->SetShaderConstant("directionalLight.diffuseColour", lightDirectionalDiffuseColour);
+    pContext->SetShaderConstant("directionalLight.specularColour", lightDirectionalSpecularColour);
+
+    // Setup materials
+    pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
+    pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
+    pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
+  pContext->UnBindShader(*pShaderParallaxNormalMap);
 
   // Setup mouse
   pWindow->ShowCursor(false);
@@ -1089,6 +1429,15 @@ void cApplication::Run()
       pContext->SetShaderConstant("lightPointLight.bOn", bIsPointLightOn ? 1 : 0);
       pContext->SetShaderConstant("lightPointLight.position", lightPointPosition);
     pContext->UnBindShader(*pShaderLights);
+
+    // Set up the pallax normal map shader
+    pContext->BindShader(*pShaderParallaxNormalMap);
+      pContext->SetShaderConstant("matView", matView);
+
+      // Directional light
+      pContext->SetShaderConstant("directionalLight.direction", lightDirection);
+    pContext->UnBindShader(*pShaderParallaxNormalMap);
+
 
     // Update object rotation
     if (bIsRotating) fAngleRadians += float(currentTime - previousTime) * fRotationSpeed;
@@ -1184,6 +1533,32 @@ void cApplication::Run()
         pContext->UnBindShader(*pShaderLights);
 
         pContext->UnBindTexture(0, *pTextureMarble);
+      }
+
+
+      // Render the parallax normal map cube
+      {
+        pContext->BindTexture(0, *pTextureNormalMapDiffuse);
+        pContext->BindTexture(1, *pTextureNormalMapSpecular);
+        pContext->BindTexture(2, *pTextureNormalMapNormal);
+        pContext->BindTexture(3, *pTextureNormalMapHeight);
+
+        pContext->BindShader(*pShaderParallaxNormalMap);
+
+        pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectParallaxNormalMap);
+
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationParallaxNormalMap);
+
+        pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectParallaxNormalMap);
+
+        pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectParallaxNormalMap);
+
+        pContext->UnBindShader(*pShaderParallaxNormalMap);
+
+        pContext->UnBindTexture(3, *pTextureNormalMapHeight);
+        pContext->UnBindTexture(2, *pTextureNormalMapNormal);
+        pContext->UnBindTexture(1, *pTextureNormalMapSpecular);
+        pContext->UnBindTexture(0, *pTextureNormalMapDiffuse);
       }
 
 
