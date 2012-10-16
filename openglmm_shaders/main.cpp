@@ -1303,13 +1303,19 @@ void cApplication::Run()
   matTranslationCubeMappedTeapot.SetTranslation(positionCubeMappedTeapot);
 
   // Parallax normal mapping
-  const spitfire::math::cVec3 positionStatue(0.0f, (-2.0f * fSpacingY), 0.0f);
-  spitfire::math::cMat4 matTranslationStatue;
-  matTranslationStatue.SetTranslation(positionStatue);
-
   const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, (-1.0f * fSpacingY), 0.0f);
   spitfire::math::cMat4 matTranslationParallaxNormalMap;
   matTranslationParallaxNormalMap.SetTranslation(parallaxNormalMapPosition);
+
+  spitfire::math::cMat4 matTranslationStatue[9];
+  i = 0;
+  for (size_t y = 0; y < 3; y++) {
+    for (size_t x = 0; x < 3; x++) {
+      const spitfire::math::cVec3 position((-1.0f + float(x)) * fSpacingX, ((-2.0f - float(y)) * fSpacingY), 0.0f);
+      matTranslationStatue[i].SetTranslation(position);
+      i++;
+    }
+  }
 
   uint32_t T0 = 0;
   uint32_t Frames = 0;
@@ -1567,9 +1573,11 @@ void cApplication::Run()
 
         pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectStatue);
 
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationStatue * matObjectRotation);
+        for (size_t i = 0; i < 9; i++) {
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationStatue[i] * matObjectRotation);
 
-        pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectStatue);
+          pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectStatue);
+        }
 
         pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectStatue);
 
