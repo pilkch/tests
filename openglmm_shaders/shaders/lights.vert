@@ -3,7 +3,6 @@
 precision highp float;
 
 uniform mat4 matView;
-uniform mat4 matModel;
 uniform mat4 matModelView;
 uniform mat4 matModelViewProjection;
 uniform mat3 matNormal;
@@ -34,6 +33,24 @@ struct cLightPointLight
 };
 uniform cLightPointLight lightPointLight;
 
+struct cLightSpotLight
+{
+  int bOn; // 1 if on, 0 if off
+
+  vec3 position;
+  vec3 direction;
+  vec4 colour;
+
+  float fAmbient;
+
+  float fConstantAttenuation;
+  float fLinearAttenuation;
+  float fExpAttenuation;
+
+  float fConeCosineAngle;
+};
+uniform cLightSpotLight lightSpotLight;
+
 struct cMaterial
 {
   vec4 ambientColour;
@@ -54,6 +71,10 @@ smooth out vec3 vertOutPosition;
 smooth out vec2 vertOutTexCoord0;
 smooth out vec3 vertOutNormal;
 smooth out vec3 vertOutPointLightDirection;
+smooth out float vertOutPointLightDistance;
+out vec3 vertOutSpotLightDirection;
+smooth out vec3 vertOutSpotLightDirectionFromVertex;
+smooth out float vertOutSpotLightDistance;
 
 void main()
 {
@@ -64,10 +85,21 @@ void main()
   vec4 pos = matModelView * vec4(position, 1.0);
   vertOutPosition = pos.xyz / pos.w;
 
-  vec3 pointLightPosition = (matView * vec4(lightPointLight.position, 1.0)).xyz;
   vec3 vertOutWorldPosition = (matModelView * vec4(position, 1.0)).xyz;
 
+  vec3 pointLightPosition = (matView * vec4(lightPointLight.position, 1.0)).xyz;
   vertOutPointLightDirection = pointLightPosition - vertOutWorldPosition;
+
+  vertOutPointLightDistance = length(vertOutPointLightDirection);
+
+  // Direction that the spot light is pointing
+  vertOutSpotLightDirection = lightSpotLight.direction;
+
+  // Direction from our vertex to the spot light
+  vec3 spotLightDirectionFromVertex = lightSpotLight.position - vertOutWorldPosition;
+  vertOutSpotLightDirectionFromVertex = spotLightDirectionFromVertex;
+
+  vertOutSpotLightDistance = length(spotLightDirectionFromVertex);
 
   vertOutNormal = matNormal * normal;
   vertOutTexCoord0 = texCoord0;

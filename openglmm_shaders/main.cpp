@@ -147,6 +147,8 @@ private:
 
   bool bIsDirectionalLightOn;
   bool bIsPointLightOn;
+  bool bIsSpotLightOn;
+
   bool bIsRotating;
   bool bIsWireframe;
   bool bIsDone;
@@ -208,6 +210,7 @@ private:
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectTeapot3;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectPointLight;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectSpotLight;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectParallaxNormalMap;
 };
 
@@ -219,6 +222,8 @@ cApplication::cApplication() :
 
   bIsDirectionalLightOn(true),
   bIsPointLightOn(true),
+  bIsSpotLightOn(true),
+
   bIsRotating(true),
   bIsWireframe(false),
   bIsDone(false),
@@ -273,6 +278,7 @@ cApplication::cApplication() :
   pStaticVertexBufferObjectTeapot3(nullptr),
 
   pStaticVertexBufferObjectPointLight(nullptr),
+  pStaticVertexBufferObjectSpotLight(nullptr),
   pStaticVertexBufferObjectParallaxNormalMap(nullptr)
 {
 }
@@ -844,6 +850,9 @@ bool cApplication::Create()
   pStaticVertexBufferObjectPointLight = pContext->CreateStaticVertexBufferObject();
   CreateSphere(pStaticVertexBufferObjectPointLight, 0, 0.3f);
 
+  pStaticVertexBufferObjectSpotLight = pContext->CreateStaticVertexBufferObject();
+  CreateSphere(pStaticVertexBufferObjectSpotLight, 0, 0.3f);
+
   pStaticVertexBufferObjectParallaxNormalMap = pContext->CreateStaticVertexBufferObject();
   CreateNormalMappedCube();
 
@@ -861,6 +870,10 @@ void cApplication::Destroy()
     pStaticVertexBufferObjectParallaxNormalMap = nullptr;
   }
 
+  if (pStaticVertexBufferObjectSpotLight != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectSpotLight);
+    pStaticVertexBufferObjectSpotLight = nullptr;
+  }
   if (pStaticVertexBufferObjectPointLight != nullptr) {
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectPointLight);
     pStaticVertexBufferObjectPointLight = nullptr;
@@ -1128,6 +1141,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsPointLightOn = !bIsPointLightOn;
         break;
       }
+      case SDLK_4: {
+        bIsSpotLightOn = !bIsSpotLightOn;
+        break;
+      }
     }
   }
 }
@@ -1143,6 +1160,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("1 toggle wireframe");
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
+  description.push_back("4 toggle spot light");
   description.push_back("Esc quit");
 
   return description;
@@ -1232,6 +1250,8 @@ void cApplication::Run()
 
   assert(pStaticVertexBufferObjectPointLight != nullptr);
   assert(pStaticVertexBufferObjectPointLight->IsCompiled());
+  assert(pStaticVertexBufferObjectSpotLight != nullptr);
+  assert(pStaticVertexBufferObjectSpotLight->IsCompiled());
   assert(pStaticVertexBufferObjectParallaxNormalMap != nullptr);
   assert(pStaticVertexBufferObjectParallaxNormalMap->IsCompiled());
 
@@ -1278,7 +1298,6 @@ void cApplication::Run()
   spitfire::math::cMat4 matObjectRotation;
 
   // Cube mapped teapot
-
   const spitfire::math::cVec3 positionCubeMappedTeapot(-fSpacingX, (-1.0f * fSpacingY), 0.0f);
   spitfire::math::cMat4 matTranslationCubeMappedTeapot;
   matTranslationCubeMappedTeapot.SetTranslation(positionCubeMappedTeapot);
@@ -1312,6 +1331,17 @@ void cApplication::Run()
   const float lightPointConstantAttenuation = 0.3f;
   const float lightPointLinearAttenuation = 0.007f;
   const float lightPointExpAttenuation = 0.00008f;
+
+  // Blue spot light
+  const spitfire::math::cVec3 lightSpotPosition(0.0f, -16.0f, 1.0f);
+  const spitfire::math::cVec3 lightSpotDirection(0.0f, 1.0f, 0.0f);
+  const spitfire::math::cColour lightSpotColour(0.0f, 0.0f, 0.25f);
+  //const float lightSpotAmbient = 0.15f;
+  //const float lightSpotConstantAttenuation = 0.3f;
+  const float lightSpotLinearAttenuation = 0.002f;
+  //const float lightSpotExpAttenuation = 0.00008f;
+  const float fLightSpotLightConeAngle = 40.0f;
+  const float lightSpotConeCosineAngle = cosf(spitfire::math::DegreesToRadians(fLightSpotLightConeAngle));
 
   // Material
   const spitfire::math::cColour materialAmbientColour(1.0f, 1.0f, 1.0f);
@@ -1357,6 +1387,14 @@ void cApplication::Run()
     pContext->SetShaderConstant("lightPointLight.fConstantAttenuation", lightPointConstantAttenuation);
     pContext->SetShaderConstant("lightPointLight.fLinearAttenuation", lightPointLinearAttenuation);
     pContext->SetShaderConstant("lightPointLight.fExpAttenuation", lightPointExpAttenuation);
+
+    // Spot light
+    pContext->SetShaderConstant("lightSpotLight.colour", lightSpotColour);
+    //pContext->SetShaderConstant("lightSpotLight.fAmbient", lightSpotAmbient);
+    //pContext->SetShaderConstant("lightSpotLight.fConstantAttenuation", lightSpotConstantAttenuation);
+    pContext->SetShaderConstant("lightSpotLight.fLinearAttenuation", lightSpotLinearAttenuation);
+    //pContext->SetShaderConstant("lightSpotLight.fExpAttenuation", lightSpotExpAttenuation);
+    pContext->SetShaderConstant("lightSpotLight.fConeCosineAngle", lightSpotConeCosineAngle);
 
     // Setup materials
     pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
@@ -1428,6 +1466,11 @@ void cApplication::Run()
       // Point light
       pContext->SetShaderConstant("lightPointLight.bOn", bIsPointLightOn ? 1 : 0);
       pContext->SetShaderConstant("lightPointLight.position", lightPointPosition);
+
+      // Spot light
+      pContext->SetShaderConstant("lightSpotLight.bOn", bIsSpotLightOn ? 1 : 0);
+      pContext->SetShaderConstant("lightSpotLight.position", matView * lightSpotPosition);
+      pContext->SetShaderConstant("lightSpotLight.direction", matView * lightSpotDirection);
     pContext->UnBindShader(*pShaderLights);
 
     // Set up the pallax normal map shader
@@ -1576,6 +1619,19 @@ void cApplication::Run()
             pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectPointLight);
           pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectPointLight);
         }
+
+        {
+          pContext->SetShaderConstant("material.ambientColour", lightSpotColour);
+
+          spitfire::math::cMat4 matTransform;
+          matTransform.SetTranslation(lightSpotPosition);
+          pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectSpotLight);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
+            pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectSpotLight);
+          pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectSpotLight);
+        }
+
+        pContext->UnBindShader(*pShaderMetal);
       }
 
 
