@@ -26,7 +26,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE "-O2")
 SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 
 # Add definitions, compiler switches, etc.
-SET(CMAKE_CXX_FLAGS "-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wcast-qual -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wnon-virtual-dtor -Wmissing-include-dirs -Wuninitialized -Wc++0x-compat -std=c++0x -ffor-scope")
+SET(CMAKE_CXX_FLAGS "-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wnon-virtual-dtor -Wmissing-include-dirs -Wuninitialized -Wc++0x-compat -std=c++0x -ffor-scope")
 
 
 IF("${CMAKE_SYSTEM}" MATCHES "Linux")
