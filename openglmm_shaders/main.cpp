@@ -1320,7 +1320,8 @@ void cApplication::Run()
   uint32_t T0 = 0;
   uint32_t Frames = 0;
 
-  uint32_t previousTime = SDL_GetTicks();
+  uint32_t previousUpdateInputTime = SDL_GetTicks();
+  uint32_t previousUpdateTime = SDL_GetTicks();
   uint32_t currentTime = SDL_GetTicks();
 
 
@@ -1422,27 +1423,46 @@ void cApplication::Run()
     pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
   pContext->UnBindShader(*pShaderParallaxNormalMap);
 
+
+  const uint32_t uiUpdateInputDelta = uint32_t(1000.0f / 120.0f);
+  const uint32_t uiUpdateDelta = uint32_t(1000.0f / 60.0f);
+
   // Setup mouse
   pWindow->ShowCursor(false);
   pWindow->WarpCursorToMiddleOfScreen();
 
   while (!bIsDone) {
-    // Update window events
-    pWindow->UpdateEvents();
-
-    // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
-    pWindow->WarpCursorToMiddleOfScreen();
-
     // Update state
-    previousTime = currentTime;
     currentTime = SDL_GetTicks();
 
-    // Update the camera
-    const float fDistance = 0.01f;
-    if (bIsMovingForward) camera.MoveY(fDistance);
-    if (bIsMovingBackward) camera.MoveY(-fDistance);
-    if (bIsMovingLeft) camera.MoveX(-fDistance);
-    if (bIsMovingRight) camera.MoveX(fDistance);
+    if ((currentTime - previousUpdateInputTime) > uiUpdateInputDelta) {
+      // Update window events
+      pWindow->UpdateEvents();
+
+      // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
+      pWindow->WarpCursorToMiddleOfScreen();
+
+      previousUpdateInputTime = currentTime;
+    }
+
+    if ((currentTime - previousUpdateTime) > uiUpdateDelta) {
+      // Update the camera
+      const float fDistance = 0.1f;
+      if (bIsMovingForward) camera.MoveY(fDistance);
+      if (bIsMovingBackward) camera.MoveY(-fDistance);
+      if (bIsMovingLeft) camera.MoveX(-fDistance);
+      if (bIsMovingRight) camera.MoveX(fDistance);
+
+      // Update object rotation
+      if (bIsRotating) fAngleRadians += float(uiUpdateDelta) * fRotationSpeed;
+
+      rotation.SetFromAxisAngle(spitfire::math::v3Up, fAngleRadians);
+
+      matObjectRotation.SetRotation(rotation);
+
+      previousUpdateTime = currentTime;
+    }
+
 
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
@@ -1486,14 +1506,6 @@ void cApplication::Run()
       // Directional light
       pContext->SetShaderConstant("directionalLight.direction", lightDirection);
     pContext->UnBindShader(*pShaderParallaxNormalMap);
-
-
-    // Update object rotation
-    if (bIsRotating) fAngleRadians += float(currentTime - previousTime) * fRotationSpeed;
-
-    rotation.SetFromAxisAngle(spitfire::math::v3Up, fAngleRadians);
-
-    matObjectRotation.SetRotation(rotation);
 
     {
       // Render the scene into the frame buffer object
