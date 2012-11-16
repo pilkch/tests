@@ -7,6 +7,19 @@
 .*.swp
 *.cmake
 *.kdev4
+*.exe
+*.idb
+*.ilk
+*.lastbuildstate
+*.log
+*.obj
+*.pdb
+*.sdf
+*.sln
+*.suo
+*.tlog
+*.vcxproj.user
+stdout.txt
 *.pbxuser
 *.perspectivev3
 *.mode1v3
@@ -23,6 +36,7 @@ openglmm_font/CMakeFiles
 openglmm_gears/openglmm_gears
 openglmm_gears/build
 openglmm_gears/CMakeFiles
+openglmm_gears/log
 openglmm_geometry/openglmm_geometry
 openglmm_geometry/build
 openglmm_geometry/CMakeFiles
