@@ -542,9 +542,8 @@ bool cApplication::Create()
     return false;
   }
 
-  // Set our required resolution
-  resolution.width = 1024;
-  resolution.height = 768;
+  // Override the resolution
+  opengl::cSystem::GetWindowedTestResolution16By9(resolution.width, resolution.height);
   resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
 
   pWindow = system.CreateWindow(TEXT("openglmm_heightmap"), resolution, false);
