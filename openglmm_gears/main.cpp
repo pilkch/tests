@@ -10,15 +10,9 @@
 #include <vector>
 #include <list>
 
-// OpenGL headers
-//#include <GL/GLee.h>
-//#include <GL/glu.h>
-
-// SDL headers
-//#include <SDL/SDL_image.h>
-
 // Spitfire headers
 #include <spitfire/spitfire.h>
+#include <spitfire/util/log.h>
 
 #include <spitfire/math/math.h>
 #include <spitfire/math/cVec2.h>
@@ -52,6 +46,9 @@ public:
 private:
   void CreateGear(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fInnerRadius, float fOuterRadius, float fWidth, size_t nTeeth, float fToothDepth);
   void CreateSphere(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fRadius, size_t nSegments);
+
+  bool LoadResources();
+  void DestroyResources();
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
@@ -95,6 +92,8 @@ cApplication::~cApplication()
 
 bool cApplication::Create()
 {
+  LOG<<"cApplication::Create "<<std::endl;
+
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
 
   opengl::cResolution resolution = capabilities.GetCurrentResolution();
@@ -120,25 +119,10 @@ bool cApplication::Create()
     return false;
   }
 
-  pShader = pContext->CreateShader(TEXT("shaders/gear.vert"), TEXT("shaders/gear.frag"));
-  if (pShader == nullptr) {
-    std::cout<<"Shader could not be created"<<std::endl;
+  if (!LoadResources()) {
+    LOGERROR<<"Resources could not be loaded"<<std::endl;
     return false;
   }
-
-  pGearVBO1 = pContext->CreateStaticVertexBufferObject();
-  pGearVBO2 = pContext->CreateStaticVertexBufferObject();
-  pGearVBO3 = pContext->CreateStaticVertexBufferObject();
-  if ((pGearVBO1 == nullptr) || (pGearVBO2 == nullptr) || (pGearVBO3 == nullptr)) {
-    std::cout<<"VBO could not be created"<<std::endl;
-    return false;
-  }
-
-  // Make the gears
-  CreateGear(pGearVBO1, 1.0f, 4.0f, 1.0f, 20, 0.7f);
-  CreateGear(pGearVBO2, 0.5f, 2.0f, 2.0f, 10, 0.7f);
-  CreateGear(pGearVBO3, 1.3f, 2.0f, 0.5f, 10, 0.7f);
-  //CreateSphere(pGearVBO3, 1.3f, 32);
 
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
@@ -149,23 +133,7 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
-  if (pGearVBO3 != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pGearVBO3);
-    pGearVBO3 = nullptr;
-  }
-  if (pGearVBO2 != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pGearVBO2);
-    pGearVBO2 = nullptr;
-  }
-  if (pGearVBO1 != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pGearVBO1);
-    pGearVBO1 = nullptr;
-  }
-
-  if (pShader != nullptr) {
-    pContext->DestroyShader(pShader);
-    pShader = nullptr;
-  }
+  DestroyResources();
 
   pContext = nullptr;
 
@@ -179,7 +147,16 @@ void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
 {
   std::cout<<"cApplication::_OnWindowEvent"<<std::endl;
 
-  if (event.IsQuit()) {
+  // On Windows the driver is liable to invalidate the resources when the window is resized, so we need to handle destroying and reloading them ourselves
+  if (event.IsAboutToResize()) {
+    #ifdef __WIN__
+    DestroyResources();
+    #endif
+  } else if (event.IsResized()) {
+    #ifdef __WIN__
+    LoadResources();
+    #endif
+  } else if (event.IsQuit()) {
     std::cout<<"cApplication::_OnWindowEvent Quiting"<<std::endl;
     bIsDone = true;
   }
@@ -187,6 +164,8 @@ void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
 
 void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
 {
+  (void)event;
+
   // These a little too numerous to log every single one
   //std::cout<<"cApplication::_OnMouseEvent"<<std::endl;
 }
@@ -254,16 +233,29 @@ void cApplication::CreateSphere(opengl::cStaticVertexBufferObject* pStaticVertex
   pStaticVertexBufferObject->Compile(system);
 }
 
-void cApplication::Run()
+bool cApplication::LoadResources()
 {
-  assert(pContext != nullptr);
-  assert(pContext->IsValid());
+  pShader = pContext->CreateShader(TEXT("shaders/gear.vert"), TEXT("shaders/gear.frag"));
+  if (pShader == nullptr) {
+    LOGERROR<<"cApplication::LoadResources Shader could not be created"<<std::endl;
+    return false;
+  }
 
-  // Print the input instructions
-  const std::vector<std::string> inputDescription = GetInputDescription();
-  const size_t n = inputDescription.size();
-  for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
+  pGearVBO1 = pContext->CreateStaticVertexBufferObject();
+  pGearVBO2 = pContext->CreateStaticVertexBufferObject();
+  pGearVBO3 = pContext->CreateStaticVertexBufferObject();
+  if ((pGearVBO1 == nullptr) || (pGearVBO2 == nullptr) || (pGearVBO3 == nullptr)) {
+    LOGERROR<<"cApplication::LoadResources VBO could not be created"<<std::endl;
+    return false;
+  }
 
+  // Make the gears
+  CreateGear(pGearVBO1, 1.0f, 4.0f, 1.0f, 20, 0.7f);
+  CreateGear(pGearVBO2, 0.5f, 2.0f, 2.0f, 10, 0.7f);
+  CreateGear(pGearVBO3, 1.3f, 2.0f, 0.5f, 10, 0.7f);
+  //CreateSphere(pGearVBO3, 1.3f, 32);
+
+  
   // Light
   const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
   const spitfire::math::cColour lightAmbientColour(0.2f, 0.2f, 0.2f);
@@ -274,7 +266,8 @@ void cApplication::Run()
   const spitfire::math::cColour materialAmbientColour(0.0f, 0.0f, 0.0f);
   const spitfire::math::cColour materialSpecularColour(1.0f, 1.0f, 1.0f);
   const float fMaterialShininess = 50.0f;
-
+  
+  LOG<<"cApplication::LoadResources Setting shader constants "<<opengl::cSystem::GetErrorString()<<std::endl;
   // Set our shader constants
   pContext->BindShader(*pShader);
 
@@ -291,6 +284,42 @@ void cApplication::Run()
 
   pContext->UnBindShader(*pShader);
 
+  return true;
+}
+
+void cApplication::DestroyResources()
+{
+  if (pGearVBO3 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pGearVBO3);
+    pGearVBO3 = nullptr;
+  }
+  if (pGearVBO2 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pGearVBO2);
+    pGearVBO2 = nullptr;
+  }
+  if (pGearVBO1 != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pGearVBO1);
+    pGearVBO1 = nullptr;
+  }
+
+  if (pShader != nullptr) {
+    pContext->DestroyShader(pShader);
+    pShader = nullptr;
+  }
+}
+
+void cApplication::Run()
+{
+  LOG<<"cApplication::Run "<<opengl::cSystem::GetErrorString()<<std::endl;
+
+  assert(pContext != nullptr);
+  assert(pContext->IsValid());
+
+  // Print the input instructions
+  const std::vector<std::string> inputDescription = GetInputDescription();
+  const size_t n = inputDescription.size();
+  for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
+
   const spitfire::math::cColour red(0.8f, 0.1f, 0.0f);
   const spitfire::math::cColour green(0.0f, 0.8f, 0.2f);
   const spitfire::math::cColour blue(0.2f, 0.2f, 1.0f);
@@ -304,7 +333,8 @@ void cApplication::Run()
   uint32_t Frames = 0;
 
   uint32_t currentTime = 0;
-
+  
+  LOG<<"cApplication::Run Entering main loop "<<opengl::cSystem::GetErrorString()<<std::endl;
   while (!bIsDone) {
     // Update window events
     pWindow->UpdateEvents();
@@ -316,7 +346,7 @@ void cApplication::Run()
     angle = currentTime / 10.0f;
 
 
-    const spitfire::math::cColour clearColour(spitfire::math::random(1.0f), spitfire::math::random(1.0f), spitfire::math::random(1.0f));
+    const spitfire::math::cColour clearColour(0.0f, 0.0f, 0.0f);
     pContext->SetClearColour(clearColour);
 
 
@@ -348,6 +378,7 @@ void cApplication::Run()
       matLocalRotationZ.SetRotationZ(spitfire::math::DegreesToRadians(angle));
 
       pContext->BindShader(*pShader);
+
 
       pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
 
@@ -416,8 +447,8 @@ void cApplication::Run()
     {
       uint32_t t = SDL_GetTicks();
       if (t - T0 >= 1000) {
-          float fps = Frames;
-          printf("%g FPS\n", fps);
+          float fps = float(Frames);
+          LOG<<fps<<" FPS"<<std::endl;
           T0 = t;
           Frames = 0;
       }
@@ -429,6 +460,9 @@ void cApplication::Run()
 
 int main(int argc, char** argv)
 {
+  (void)argc;
+  (void)argv;
+
   bool bIsSuccess = true;
 
   cApplication application;
