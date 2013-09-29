@@ -40,6 +40,7 @@ ENDIF()
 
 ADD_DEFINITIONS("-DBUILD_LIBOPENGLMM_OPENGL_VERSION=330")
 ADD_DEFINITIONS("-DBUILD_LIBOPENGLMM_OPENGL_STRICT")
+ADD_DEFINITIONS("-DBUILD_LIBOPENGLMM_WINDOW_SDL")
 
 INCLUDE_DIRECTORIES(${LIBRARY_INCLUDE})
 
@@ -110,8 +111,10 @@ SET(OUTPUT_LIBRARY_LIBXDGMM_SOURCE_FILES ${OUTPUT_FILES})
 
 SET(LIBRARY_SPITFIRE_SOURCE_DIRECTORY spitfire/)
 SET(LIBRARY_SPITFIRE_SOURCE_FILES
+spitfire.cpp
 math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat3.cpp math/cMat4.cpp math/cQuaternion.cpp math/math.cpp math/cColour.cpp
-storage/file.cpp storage/filesystem.cpp util/string.cpp util/thread.cpp)
+storage/file.cpp storage/filesystem.cpp
+util/datetime.cpp util/string.cpp util/thread.cpp)
 
 IF(WIN32)
   SET(LIBRARY_SPITFIRE_SOURCE_FILES ${LIBRARY_SPITFIRE_SOURCE_FILES})
@@ -145,17 +148,21 @@ SET(OUTPUT_LIBRARY_SOURCE_FILES ${OUTPUT_FILES})
 ADD_EXECUTABLE(${PROJECT_NAME} main.cpp ${OUTPUT_LIBRARY_SOURCE_FILES} ${PROJECT_SOURCE_FILES})
 
 
+FIND_PACKAGE(Boost REQUIRED)
+INCLUDE_DIRECTORIES(${BOOST_INCLUDE_DIR})
 
-SET(LIBRARIES
-  OpenGL
-  SDL
-  SDL_image
-  SDL_ttf
-)
+
+#SET(LIBRARIES
+#  OpenGL
+#  SDL
+#  SDL_image
+#  SDL_ttf
+#)
 
 
 # Some of the libraries have different names than their Find*.cmake name
 SET(LIBRARIES_LINKED
+  boost_date_time
   boost_filesystem
   boost_iostreams
   boost_locale
@@ -169,9 +176,9 @@ SET(LIBRARIES_LINKED
 )
 
 
-FOREACH(LIBRARY_FILE ${LIBRARIES})
-  Find_Package(${LIBRARY_FILE} REQUIRED)
-ENDFOREACH(LIBRARY_FILE)
+#FOREACH(LIBRARY_FILE ${LIBRARIES})
+#  Find_Package(${LIBRARY_FILE} REQUIRED)
+#ENDFOREACH(LIBRARY_FILE)
 
 #need to link to some other libraries ? just add them here
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${LIBRARIES_LINKED})
