@@ -92,13 +92,13 @@ cApplication::~cApplication()
 
 bool cApplication::Create()
 {
-  LOG<<"cApplication::Create "<<std::endl;
+  LOG<<"cApplication::Create"<<std::endl;
 
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
 
   opengl::cResolution resolution = capabilities.GetCurrentResolution();
-  if ((resolution.width < 300) || (resolution.height < 300) || (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8)) {
-    std::cout<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
+  if ((resolution.width < 300) || (resolution.height < 300) || ((resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8) && (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8))) {
+    LOGERROR<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
     return false;
   }
 
@@ -109,13 +109,13 @@ bool cApplication::Create()
 
   pWindow = system.CreateWindow(TEXT("openglmm_gears"), resolution, false);
   if (pWindow == nullptr) {
-    std::cout<<"Window could not be created"<<std::endl;
+    LOGERROR<<"Window could not be created"<<std::endl;
     return false;
   }
 
   pContext = pWindow->GetContext();
   if (pContext == nullptr) {
-    std::cout<<"Context could not be created"<<std::endl;
+    LOGERROR<<"Context could not be created"<<std::endl;
     return false;
   }
 
@@ -440,7 +440,7 @@ void cApplication::Run()
       pContext->UnBindShader(*pShader);
     }
 
-    pContext->EndRenderToScreen();
+    pContext->EndRenderToScreen(*pWindow);
 
     // Calculate our frames per second
     Frames++;
