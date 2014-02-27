@@ -134,7 +134,7 @@ private:
 
   void CreateTeapotVBO();
   void CreateStatueVBO();
-  void CreateScreenRectVBO();
+  void CreateScreenRectVBO(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float_t fWidth, float_t fHeight);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
@@ -165,7 +165,8 @@ private:
 
   cFreeLookCamera camera;
 
-  opengl::cTextureFrameBufferObject* pTextureFrameBufferObject;
+  opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectTeapot;
+  opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreen;
 
   opengl::cTexture* pTextureDiffuse;
   opengl::cTexture* pTextureLightMap;
@@ -185,7 +186,8 @@ private:
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectStatue;
-  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenRect;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenRectScreen;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenRectTeapot;
 
 
   opengl::cShader* pShaderCrate;
@@ -233,7 +235,8 @@ cApplication::cApplication() :
   pWindow(nullptr),
   pContext(nullptr),
 
-  pTextureFrameBufferObject(nullptr),
+  pTextureFrameBufferObjectTeapot(nullptr),
+  pTextureFrameBufferObjectScreen(nullptr),
 
   pTextureDiffuse(nullptr),
   pTextureLightMap(nullptr),
@@ -253,7 +256,8 @@ cApplication::cApplication() :
 
   pStaticVertexBufferObject(nullptr),
   pStaticVertexBufferObjectStatue(nullptr),
-  pStaticVertexBufferObjectScreenRect(nullptr),
+  pStaticVertexBufferObjectScreenRectScreen(nullptr),
+  pStaticVertexBufferObjectScreenRectTeapot(nullptr),
 
 
   pShaderCrate(nullptr),
@@ -690,17 +694,15 @@ void cApplication::CreateStatueVBO()
   pStaticVertexBufferObjectStatue->Compile(system);
 }
 
-void cApplication::CreateScreenRectVBO()
+void cApplication::CreateScreenRectVBO(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float_t fWidth, float_t fHeight)
 {
-  assert(pStaticVertexBufferObjectScreenRect != nullptr);
+  assert(pStaticVertexBufferObject != nullptr);
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   const float fTextureWidth = float(resolution.width);
   const float fTextureHeight = float(resolution.height);
 
-  const float_t fWidth = 0.250f;
-  const float_t fHeight = 0.250f;
   const float_t fHalfWidth = fWidth * 0.5f;
   const float_t fHalfHeight = fHeight * 0.5f;
   const spitfire::math::cVec2 vMin(-fHalfWidth, -fHalfHeight);
@@ -716,9 +718,9 @@ void cApplication::CreateScreenRectVBO()
   builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
   builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(fTextureWidth, fTextureHeight));
 
-  pStaticVertexBufferObjectScreenRect->SetData(pGeometryDataPtr);
+  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObjectScreenRect->Compile2D(system);
+  pStaticVertexBufferObject->Compile2D(system);
 }
 
 bool cApplication::Create()
@@ -748,8 +750,11 @@ bool cApplication::Create()
     return false;
   }
 
-  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(resolution.width, resolution.height, opengl::PIXELFORMAT::R8G8B8A8);
-  assert(pTextureFrameBufferObject != nullptr);
+  pTextureFrameBufferObjectTeapot = pContext->CreateTextureFrameBufferObject(resolution.width, resolution.height, opengl::PIXELFORMAT::R8G8B8A8);
+  assert(pTextureFrameBufferObjectTeapot != nullptr);
+
+  pTextureFrameBufferObjectScreen = pContext->CreateTextureFrameBufferObject(resolution.width, resolution.height, opengl::PIXELFORMAT::R8G8B8A8);
+  assert(pTextureFrameBufferObjectScreen != nullptr);
 
   pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
   assert(pTextureDiffuse != nullptr);
@@ -803,9 +808,13 @@ bool cApplication::Create()
   assert(pStaticVertexBufferObjectStatue != nullptr);
   CreateStatueVBO();
 
-  pStaticVertexBufferObjectScreenRect = pContext->CreateStaticVertexBufferObject();
-  assert(pStaticVertexBufferObjectScreenRect != nullptr);
-  CreateScreenRectVBO();
+  pStaticVertexBufferObjectScreenRectScreen = pContext->CreateStaticVertexBufferObject();
+  assert(pStaticVertexBufferObjectScreenRectScreen != nullptr);
+  CreateScreenRectVBO(pStaticVertexBufferObjectScreenRectScreen, 1.0f, 1.0f);
+
+  pStaticVertexBufferObjectScreenRectTeapot = pContext->CreateStaticVertexBufferObject();
+  assert(pStaticVertexBufferObjectScreenRectTeapot != nullptr);
+  CreateScreenRectVBO(pStaticVertexBufferObjectScreenRectTeapot, 0.25f, 0.25f);
 
 
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
@@ -962,9 +971,13 @@ void cApplication::Destroy()
   }
 
 
-  if (pStaticVertexBufferObjectScreenRect != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectScreenRect);
-    pStaticVertexBufferObjectScreenRect = nullptr;
+  if (pStaticVertexBufferObjectScreenRectTeapot != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectScreenRectTeapot);
+    pStaticVertexBufferObjectScreenRectTeapot = nullptr;
+  }
+  if (pStaticVertexBufferObjectScreenRectScreen != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectScreenRectScreen);
+    pStaticVertexBufferObjectScreenRectScreen = nullptr;
   }
 
   if (pStaticVertexBufferObjectStatue != nullptr) {
@@ -1035,9 +1048,13 @@ void cApplication::Destroy()
     pTextureDiffuse = nullptr;
   }
 
-  if (pTextureFrameBufferObject != nullptr) {
-    pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObject);
-    pTextureFrameBufferObject = nullptr;
+  if (pTextureFrameBufferObjectTeapot != nullptr) {
+    pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectTeapot);
+    pTextureFrameBufferObjectTeapot = nullptr;
+  }
+  if (pTextureFrameBufferObjectScreen != nullptr) {
+    pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectScreen);
+    pTextureFrameBufferObjectScreen = nullptr;
   }
 
   pContext = nullptr;
@@ -1204,8 +1221,10 @@ void cApplication::Run()
   assert(pStaticVertexBufferObject->IsCompiled());
   assert(pStaticVertexBufferObjectStatue != nullptr);
   assert(pStaticVertexBufferObjectStatue->IsCompiled());
-  assert(pStaticVertexBufferObjectScreenRect != nullptr);
-  assert(pStaticVertexBufferObjectScreenRect->IsCompiled());
+  assert(pStaticVertexBufferObjectScreenRectScreen != nullptr);
+  assert(pStaticVertexBufferObjectScreenRectScreen->IsCompiled());
+  assert(pStaticVertexBufferObjectScreenRectTeapot != nullptr);
+  assert(pStaticVertexBufferObjectScreenRectTeapot->IsCompiled());
 
 
   assert(pShaderCrate != nullptr);
@@ -1510,11 +1529,11 @@ void cApplication::Run()
     pContext->UnBindShader(*pShaderParallaxNormalMap);
 
     {
-      // Render the scene into the frame buffer object
+      // Render a few items from the scene into the frame buffer object for use later
       const spitfire::math::cColour clearColour(0.0f, 1.0f, 0.0f);
       pContext->SetClearColour(clearColour);
 
-      pContext->BeginRenderToTexture(*pTextureFrameBufferObject);
+      pContext->BeginRenderToTexture(*pTextureFrameBufferObjectTeapot);
 
       if (bIsWireframe) pContext->EnableWireframe();
 
@@ -1542,15 +1561,15 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->DisableWireframe();
 
-      pContext->EndRenderToTexture(*pTextureFrameBufferObject);
+      pContext->EndRenderToTexture(*pTextureFrameBufferObjectTeapot);
     }
 
     {
-      // Render the scene with the new texture
+      // Render the scene into a texture for later
       const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
       pContext->SetClearColour(clearColour);
 
-      pContext->BeginRenderToScreen();
+      pContext->BeginRenderToTexture(*pTextureFrameBufferObjectScreen);
 
       if (bIsWireframe) pContext->EnableWireframe();
 
@@ -1801,32 +1820,69 @@ void cApplication::Run()
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
+      pContext->EndRenderToTexture(*pTextureFrameBufferObjectScreen);
+    }
 
+    {
+      // Render the frame buffer objects to the screen
+      const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
+      pContext->SetClearColour(clearColour);
 
-      // Now draw an overlay of our rendered texture
+      pContext->BeginRenderToScreen();
+
+      if (bIsWireframe) pContext->EnableWireframe();
+
+      // Now draw an overlay of our rendered textures
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
-      // Move the rectangle into the bottom right hand corner of the screen
-      spitfire::math::cMat4 matModelView2D;
-      matModelView2D.SetTranslation(0.75f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), 0.0f);
-
-      pContext->BindTexture(0, *pTextureFrameBufferObject);
-
-      pContext->BindShader(*pShaderScreenRect);
-
-      pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRect);
-
+      // Draw the screen texture
       {
-        pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
+        spitfire::math::cMat4 matModelView2D;
+        matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
 
-        pContext->DrawStaticVertexBufferObjectTriangles2D(*pStaticVertexBufferObjectScreenRect);
+        pContext->BindTexture(0, *pTextureFrameBufferObjectScreen);
+
+        pContext->BindShader(*pShaderScreenRect);
+
+        pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRectScreen);
+
+        {
+          pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
+
+          pContext->DrawStaticVertexBufferObjectTriangles2D(*pStaticVertexBufferObjectScreenRectScreen);
+        }
+
+        pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRectScreen);
+
+        pContext->UnBindShader(*pShaderScreenRect);
+
+        pContext->UnBindTexture(0, *pTextureFrameBufferObjectScreen);
       }
 
-      pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRect);
+      // Draw the teapot texture
+      {
+        // Move the rectangle into the bottom right hand corner of the screen
+        spitfire::math::cMat4 matModelView2D;
+        matModelView2D.SetTranslation(0.75f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), 0.0f);
 
-      pContext->UnBindShader(*pShaderScreenRect);
+        pContext->BindTexture(0, *pTextureFrameBufferObjectTeapot);
 
-      pContext->UnBindTexture(0, *pTextureFrameBufferObject);
+        pContext->BindShader(*pShaderScreenRect);
+
+        pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRectTeapot);
+
+        {
+          pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
+
+          pContext->DrawStaticVertexBufferObjectTriangles2D(*pStaticVertexBufferObjectScreenRectTeapot);
+        }
+
+        pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRectTeapot);
+
+        pContext->UnBindShader(*pShaderScreenRect);
+
+        pContext->UnBindTexture(0, *pTextureFrameBufferObjectTeapot);
+      }
 
       pContext->EndRenderMode2D();
 
