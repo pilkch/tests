@@ -153,6 +153,9 @@ private:
 
   bool bIsRotating;
   bool bIsWireframe;
+
+  bool bIsPostEffectSepia;
+
   bool bIsDone;
 
   opengl::cSystem system;
@@ -183,6 +186,7 @@ private:
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderParallaxNormalMap;
   opengl::cShader* pShaderScreenRect;
+  opengl::cShader* pShaderScreenRectSepia;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectStatue;
@@ -230,6 +234,9 @@ cApplication::cApplication() :
 
   bIsRotating(true),
   bIsWireframe(false),
+
+  bIsPostEffectSepia(false),
+
   bIsDone(false),
 
   pWindow(nullptr),
@@ -253,6 +260,7 @@ cApplication::cApplication() :
   pShaderLights(nullptr),
   pShaderParallaxNormalMap(nullptr),
   pShaderScreenRect(nullptr),
+  pShaderScreenRectSepia(nullptr),
 
   pStaticVertexBufferObject(nullptr),
   pStaticVertexBufferObjectStatue(nullptr),
@@ -800,6 +808,9 @@ bool cApplication::Create()
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderScreenRect != nullptr);
 
+  pShaderScreenRectSepia = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/sepia.frag"));
+  assert(pShaderScreenRectSepia != nullptr);
+
   pStaticVertexBufferObject = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObject != nullptr);
   CreateTeapotVBO();
@@ -990,6 +1001,10 @@ void cApplication::Destroy()
     pStaticVertexBufferObject = nullptr;
   }
 
+  if (pShaderScreenRectSepia != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectSepia);
+    pShaderScreenRectSepia = nullptr;
+  }
   if (pShaderScreenRect != nullptr) {
     pContext->DestroyShader(pShaderScreenRect);
     pShaderScreenRect = nullptr;
@@ -1148,6 +1163,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsMovingRight = false;
         break;
       }
+      case SDLK_y: {
+        bIsPostEffectSepia = !bIsPostEffectSepia;
+        break;
+      }
       case SDLK_1: {
         bIsWireframe = !bIsWireframe;
         break;
@@ -1180,6 +1199,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
   description.push_back("4 toggle spot light");
+  description.push_back("Y sepia shader");
   description.push_back("Esc quit");
 
   return description;
@@ -1217,6 +1237,8 @@ void cApplication::Run()
   assert(pShaderParallaxNormalMap->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
+  assert(pShaderScreenRectSepia != nullptr);
+  assert(pShaderScreenRectSepia->IsCompiledProgram());
   assert(pStaticVertexBufferObject != nullptr);
   assert(pStaticVertexBufferObject->IsCompiled());
   assert(pStaticVertexBufferObjectStatue != nullptr);
@@ -1837,12 +1859,14 @@ void cApplication::Run()
 
       // Draw the screen texture
       {
+        opengl::cShader* pShader = (bIsPostEffectSepia ? pShaderScreenRectSepia : pShaderScreenRect);
+
         spitfire::math::cMat4 matModelView2D;
         matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
 
         pContext->BindTexture(0, *pTextureFrameBufferObjectScreen);
 
-        pContext->BindShader(*pShaderScreenRect);
+        pContext->BindShader(*pShader);
 
         pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRectScreen);
 
@@ -1854,7 +1878,7 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectScreenRectScreen);
 
-        pContext->UnBindShader(*pShaderScreenRect);
+        pContext->UnBindShader(*pShader);
 
         pContext->UnBindTexture(0, *pTextureFrameBufferObjectScreen);
       }
