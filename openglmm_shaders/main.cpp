@@ -15,7 +15,7 @@
 #include <GL/glu.h>
 
 // SDL headers
-#include <SDL/SDL_image.h>
+#include <SDL2/SDL_image.h>
 
 // Spitfire headers
 #include <spitfire/spitfire.h>
@@ -29,6 +29,8 @@
 #include <spitfire/math/cMat4.h>
 #include <spitfire/math/cQuaternion.h>
 #include <spitfire/math/cColour.h>
+
+#include <spitfire/util/log.h>
 
 // Breathe headers
 #include <breathe/render/model/cFileFormatOBJ.h>
@@ -724,8 +726,8 @@ bool cApplication::Create()
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
 
   resolution = capabilities.GetCurrentResolution();
-  if ((resolution.width < 720) || (resolution.height < 480) || (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8)) {
-    std::cout<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
+  if ((resolution.width < 720) || (resolution.height < 480) || ((resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8) && (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8))) {
+    LOGERROR<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
     return false;
   }
 
@@ -736,13 +738,13 @@ bool cApplication::Create()
   // Set our required resolution
   pWindow = system.CreateWindow(TEXT("OpenGLmm Shaders Test"), resolution, false);
   if (pWindow == nullptr) {
-    std::cout<<"Window could not be created"<<std::endl;
+    LOGERROR<<"Window could not be created"<<std::endl;
     return false;
   }
 
   pContext = pWindow->GetContext();
   if (pContext == nullptr) {
-    std::cout<<"Context could not be created"<<std::endl;
+    LOGERROR<<"Context could not be created"<<std::endl;
     return false;
   }
 
@@ -1048,10 +1050,10 @@ void cApplication::Destroy()
 
 void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
 {
-  std::cout<<"cApplication::_OnWindowEvent"<<std::endl;
+  LOG<<"cApplication::_OnWindowEvent"<<std::endl;
 
   if (event.IsQuit()) {
-    std::cout<<"cApplication::_OnWindowEvent Quiting"<<std::endl;
+    LOG<<"cApplication::_OnWindowEvent Quiting"<<std::endl;
     bIsDone = true;
   }
 }
@@ -1059,10 +1061,10 @@ void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
 void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
 {
   // These a little too numerous to log every single one
-  //std::cout<<"cApplication::_OnMouseEvent"<<std::endl;
+  //LOG<<"cApplication::_OnMouseEvent"<<std::endl;
 
   if (event.IsMouseMove()) {
-    //std::cout<<"cApplication::_OnMouseEvent Mouse move"<<std::endl;
+    //LOG<<"cApplication::_OnMouseEvent Mouse move"<<std::endl;
 
     if (fabs(event.GetX() - (pWindow->GetWidth() * 0.5f)) > 0.5f) {
       camera.RotateZ(-0.08f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
@@ -1076,11 +1078,11 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
 
 void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
 {
-  std::cout<<"cApplication::_OnKeyboardEvent"<<std::endl;
+  //LOG<<"cApplication::_OnKeyboardEvent"<<std::endl;
   if (event.IsKeyDown()) {
     switch (event.GetKeyCode()) {
       case SDLK_ESCAPE: {
-        std::cout<<"cApplication::_OnKeyboardEvent Escape key pressed, quiting"<<std::endl;
+        LOG<<"cApplication::_OnKeyboardEvent Escape key pressed, quiting"<<std::endl;
         bIsDone = true;
         break;
       }
@@ -1101,7 +1103,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_SPACE: {
-        std::cout<<"cApplication::_OnKeyboardEvent spacebar down"<<std::endl;
+        LOG<<"cApplication::_OnKeyboardEvent spacebar down"<<std::endl;
         bIsRotating = false;
         break;
       }
@@ -1109,7 +1111,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
   } else if (event.IsKeyUp()) {
     switch (event.GetKeyCode()) {
       case SDLK_SPACE: {
-        std::cout<<"cApplication::_OnKeyboardEvent spacebar up"<<std::endl;
+        LOG<<"cApplication::_OnKeyboardEvent spacebar up"<<std::endl;
         bIsRotating = true;
         break;
       }
@@ -1168,7 +1170,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
 
 void cApplication::Run()
 {
-  std::cout<<"cApplication::Run"<<std::endl;
+  LOG<<"cApplication::Run"<<std::endl;
 
   assert(pContext != nullptr);
   assert(pContext->IsValid());
@@ -1258,7 +1260,7 @@ void cApplication::Run()
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
   const size_t n = inputDescription.size();
-  for (size_t i = 0; i < n; i++) std::cout<<inputDescription[i]<<std::endl;
+  for (size_t i = 0; i < n; i++) LOG<<inputDescription[i]<<std::endl;
 
   // Set up the camera
   camera.SetPosition(spitfire::math::cVec3(-6.5f, 2.5f, 7.0f));
@@ -1830,7 +1832,7 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->DisableWireframe();
 
-      pContext->EndRenderToScreen();
+      pContext->EndRenderToScreen(*pWindow);
     }
 
     // Gather our frames per second
@@ -1840,7 +1842,7 @@ void cApplication::Run()
       if (t - T0 >= 5000) {
         float seconds = (t - T0) / 1000.0f;
         float fps = Frames / seconds;
-        std::cout<<Frames<<" frames in "<<seconds<<" seconds = "<<fps<<" FPS"<<std::endl;
+        LOG<<Frames<<" frames in "<<seconds<<" seconds = "<<fps<<" FPS"<<std::endl;
         T0 = t;
         Frames = 0;
       }
