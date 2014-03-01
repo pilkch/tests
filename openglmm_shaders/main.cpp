@@ -153,8 +153,13 @@ private:
 
   bool bIsRotating;
   bool bIsWireframe;
-
-  bool bIsPostEffectSepia;
+  
+  enum POSTEFFECT {
+    NONE,
+    SEPIA,
+    NOIR,
+  };
+  POSTEFFECT postEffect;
 
   bool bIsDone;
 
@@ -187,6 +192,7 @@ private:
   opengl::cShader* pShaderParallaxNormalMap;
   opengl::cShader* pShaderScreenRect;
   opengl::cShader* pShaderScreenRectSepia;
+  opengl::cShader* pShaderScreenRectNoir;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectStatue;
@@ -235,7 +241,7 @@ cApplication::cApplication() :
   bIsRotating(true),
   bIsWireframe(false),
 
-  bIsPostEffectSepia(false),
+  postEffect(POSTEFFECT::NONE),
 
   bIsDone(false),
 
@@ -261,6 +267,7 @@ cApplication::cApplication() :
   pShaderParallaxNormalMap(nullptr),
   pShaderScreenRect(nullptr),
   pShaderScreenRectSepia(nullptr),
+  pShaderScreenRectNoir(nullptr),
 
   pStaticVertexBufferObject(nullptr),
   pStaticVertexBufferObjectStatue(nullptr),
@@ -805,11 +812,14 @@ bool cApplication::Create()
   pShaderParallaxNormalMap = pContext->CreateShader(TEXT("shaders/parallaxnormalmap.vert"), TEXT("shaders/parallaxnormalmap.frag"));
   assert(pShaderParallaxNormalMap != nullptr);
 
-  pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
+  pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(pShaderScreenRect != nullptr);
 
-  pShaderScreenRectSepia = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/sepia.frag"));
+  pShaderScreenRectSepia = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/sepia.frag"));
   assert(pShaderScreenRectSepia != nullptr);
+
+  pShaderScreenRectNoir = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/noir.frag"));
+  assert(pShaderScreenRectNoir != nullptr);
 
   pStaticVertexBufferObject = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObject != nullptr);
@@ -1000,7 +1010,11 @@ void cApplication::Destroy()
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObject);
     pStaticVertexBufferObject = nullptr;
   }
-
+  
+  if (pShaderScreenRectNoir != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectNoir);
+    pShaderScreenRectNoir = nullptr;
+  }
   if (pShaderScreenRectSepia != nullptr) {
     pContext->DestroyShader(pShaderScreenRectSepia);
     pShaderScreenRectSepia = nullptr;
@@ -1164,7 +1178,9 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_y: {
-        bIsPostEffectSepia = !bIsPostEffectSepia;
+        if (postEffect == POSTEFFECT::NONE) postEffect = POSTEFFECT::SEPIA;
+        else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::NOIR;
+        else postEffect = POSTEFFECT::NONE;
         break;
       }
       case SDLK_1: {
@@ -1199,7 +1215,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
   description.push_back("4 toggle spot light");
-  description.push_back("Y sepia shader");
+  description.push_back("Y switch shader (None, sepia, noir)");
   description.push_back("Esc quit");
 
   return description;
@@ -1239,6 +1255,8 @@ void cApplication::Run()
   assert(pShaderScreenRect->IsCompiledProgram());
   assert(pShaderScreenRectSepia != nullptr);
   assert(pShaderScreenRectSepia->IsCompiledProgram());
+  assert(pShaderScreenRectNoir != nullptr);
+  assert(pShaderScreenRectNoir->IsCompiledProgram());
   assert(pStaticVertexBufferObject != nullptr);
   assert(pStaticVertexBufferObject->IsCompiled());
   assert(pStaticVertexBufferObjectStatue != nullptr);
@@ -1859,7 +1877,9 @@ void cApplication::Run()
 
       // Draw the screen texture
       {
-        opengl::cShader* pShader = (bIsPostEffectSepia ? pShaderScreenRectSepia : pShaderScreenRect);
+        opengl::cShader* pShader = pShaderScreenRect;
+        if (postEffect == POSTEFFECT::SEPIA) pShader = pShaderScreenRectSepia;
+        else if (postEffect == POSTEFFECT::NOIR) pShader = pShaderScreenRectNoir;
 
         spitfire::math::cMat4 matModelView2D;
         matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
