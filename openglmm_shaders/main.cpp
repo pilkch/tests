@@ -1870,8 +1870,6 @@ void cApplication::Run()
 
       pContext->BeginRenderToScreen();
 
-      if (bIsWireframe) pContext->EnableWireframe();
-
       // Now draw an overlay of our rendered textures
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
@@ -1929,8 +1927,6 @@ void cApplication::Run()
       }
 
       pContext->EndRenderMode2D();
-
-      if (bIsWireframe) pContext->DisableWireframe();
 
       pContext->EndRenderToScreen(*pWindow);
     }
