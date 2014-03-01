@@ -7,15 +7,6 @@ smooth in vec2 vertOutTexCoord;
 
 out vec4 fragmentColor;
 
-/*void main()
-{
-  vec4 texture0 = texture(texUnit0, vertOutTexCoord);
-  float fLuminosity = (0.2126 * texture0.r) + (0.7152 * texture0.g) + (0.0722 * texture0.b);
-
-  fragmentColor = vec4(fLuminosity, fLuminosity, fLuminosity, texture0.a);
-}*/
-
-
 void main()
 {
   vec4 color = texture(texUnit0, vertOutTexCoord);

@@ -30,6 +30,7 @@
 #include <spitfire/math/cQuaternion.h>
 #include <spitfire/math/cColour.h>
 
+#include <spitfire/storage/filesystem.h>
 #include <spitfire/util/log.h>
 
 // Breathe headers
@@ -172,11 +173,12 @@ private:
 
   bool bIsRotating;
   bool bIsWireframe;
-  
+
   enum POSTEFFECT {
     NONE,
     SEPIA,
     NOIR,
+    MATRIX,
   };
   POSTEFFECT postEffect;
 
@@ -213,6 +215,7 @@ private:
   opengl::cShader* pShaderScreenRect;
   opengl::cShader* pShaderScreenRectSepia;
   opengl::cShader* pShaderScreenRectNoir;
+  opengl::cShader* pShaderScreenRectMatrix;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectStatue;
@@ -291,6 +294,7 @@ cApplication::cApplication() :
   pShaderScreenRect(nullptr),
   pShaderScreenRectSepia(nullptr),
   pShaderScreenRectNoir(nullptr),
+  pShaderScreenRectMatrix(nullptr),
 
   pStaticVertexBufferObject(nullptr),
   pStaticVertexBufferObjectStatue(nullptr),
@@ -882,6 +886,9 @@ bool cApplication::Create()
   pShaderScreenRectNoir = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/noir.frag"));
   assert(pShaderScreenRectNoir != nullptr);
 
+  pShaderScreenRectMatrix = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/matrix.frag"));
+  assert(pShaderScreenRectMatrix != nullptr);
+
   pStaticVertexBufferObject = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObject != nullptr);
   CreateTeapotVBO();
@@ -1086,6 +1093,10 @@ void cApplication::Destroy()
     pStaticVertexBufferObject = nullptr;
   }
   
+  if (pShaderScreenRectMatrix != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectMatrix);
+    pShaderScreenRectMatrix = nullptr;
+  }
   if (pShaderScreenRectNoir != nullptr) {
     pContext->DestroyShader(pShaderScreenRectNoir);
     pShaderScreenRectNoir = nullptr;
@@ -1278,6 +1289,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
       case SDLK_y: {
         if (postEffect == POSTEFFECT::NONE) postEffect = POSTEFFECT::SEPIA;
         else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::NOIR;
+        else if (postEffect == POSTEFFECT::NOIR) postEffect = POSTEFFECT::MATRIX;
         else postEffect = POSTEFFECT::NONE;
         break;
       }
@@ -1313,7 +1325,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
   description.push_back("4 toggle spot light");
-  description.push_back("Y switch shader (None, sepia, noir)");
+  description.push_back("Y switch shader (None, sepia, noir, matrix)");
   description.push_back("Esc quit");
 
   return description;
@@ -1357,6 +1369,8 @@ void cApplication::Run()
   assert(pShaderScreenRectSepia->IsCompiledProgram());
   assert(pShaderScreenRectNoir != nullptr);
   assert(pShaderScreenRectNoir->IsCompiledProgram());
+  assert(pShaderScreenRectMatrix != nullptr);
+  assert(pShaderScreenRectMatrix->IsCompiledProgram());
   assert(pStaticVertexBufferObject != nullptr);
   assert(pStaticVertexBufferObject->IsCompiled());
   assert(pStaticVertexBufferObjectStatue != nullptr);
@@ -2016,6 +2030,7 @@ void cApplication::Run()
         opengl::cShader* pShader = pShaderScreenRect;
         if (postEffect == POSTEFFECT::SEPIA) pShader = pShaderScreenRectSepia;
         else if (postEffect == POSTEFFECT::NOIR) pShader = pShaderScreenRectNoir;
+        else if (postEffect == POSTEFFECT::MATRIX) pShader = pShaderScreenRectMatrix;
 
         spitfire::math::cMat4 matModelView2D;
         matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
