@@ -179,6 +179,7 @@ private:
     SEPIA,
     NOIR,
     MATRIX,
+    TEAL_AND_ORANGE
   };
   POSTEFFECT postEffect;
 
@@ -216,6 +217,7 @@ private:
   opengl::cShader* pShaderScreenRectSepia;
   opengl::cShader* pShaderScreenRectNoir;
   opengl::cShader* pShaderScreenRectMatrix;
+  opengl::cShader* pShaderScreenRectTealAndOrange;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectStatue;
@@ -295,6 +297,7 @@ cApplication::cApplication() :
   pShaderScreenRectSepia(nullptr),
   pShaderScreenRectNoir(nullptr),
   pShaderScreenRectMatrix(nullptr),
+  pShaderScreenRectTealAndOrange(nullptr),
 
   pStaticVertexBufferObject(nullptr),
   pStaticVertexBufferObjectStatue(nullptr),
@@ -889,6 +892,9 @@ bool cApplication::Create()
   pShaderScreenRectMatrix = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/matrix.frag"));
   assert(pShaderScreenRectMatrix != nullptr);
 
+  pShaderScreenRectTealAndOrange = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/tealandorange.frag"));
+  assert(pShaderScreenRectTealAndOrange != nullptr);
+
   pStaticVertexBufferObject = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObject != nullptr);
   CreateTeapotVBO();
@@ -1092,7 +1098,11 @@ void cApplication::Destroy()
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObject);
     pStaticVertexBufferObject = nullptr;
   }
-  
+
+  if (pShaderScreenRectTealAndOrange != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectTealAndOrange);
+    pShaderScreenRectTealAndOrange = nullptr;
+  }
   if (pShaderScreenRectMatrix != nullptr) {
     pContext->DestroyShader(pShaderScreenRectMatrix);
     pShaderScreenRectMatrix = nullptr;
@@ -1290,7 +1300,16 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         if (postEffect == POSTEFFECT::NONE) postEffect = POSTEFFECT::SEPIA;
         else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::NOIR;
         else if (postEffect == POSTEFFECT::NOIR) postEffect = POSTEFFECT::MATRIX;
+        else if (postEffect == POSTEFFECT::MATRIX) postEffect = POSTEFFECT::TEAL_AND_ORANGE;
         else postEffect = POSTEFFECT::NONE;
+        break;
+      }
+      case SDLK_u: {
+        if (postEffect == POSTEFFECT::TEAL_AND_ORANGE) postEffect = POSTEFFECT::MATRIX;
+        else if (postEffect == POSTEFFECT::MATRIX) postEffect = POSTEFFECT::NOIR;
+        else if (postEffect == POSTEFFECT::NOIR) postEffect = POSTEFFECT::SEPIA;
+        else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::NONE;
+        else postEffect = POSTEFFECT::TEAL_AND_ORANGE;
         break;
       }
       case SDLK_1: {
@@ -1325,7 +1344,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
   description.push_back("4 toggle spot light");
-  description.push_back("Y switch shader (None, sepia, noir, matrix)");
+  description.push_back("Y/U switch shader (None, sepia, noir, matrix, teal and orange)");
   description.push_back("Esc quit");
 
   return description;
@@ -1371,6 +1390,8 @@ void cApplication::Run()
   assert(pShaderScreenRectNoir->IsCompiledProgram());
   assert(pShaderScreenRectMatrix != nullptr);
   assert(pShaderScreenRectMatrix->IsCompiledProgram());
+  assert(pShaderScreenRectTealAndOrange != nullptr);
+  assert(pShaderScreenRectTealAndOrange->IsCompiledProgram());
   assert(pStaticVertexBufferObject != nullptr);
   assert(pStaticVertexBufferObject->IsCompiled());
   assert(pStaticVertexBufferObjectStatue != nullptr);
@@ -2031,6 +2052,7 @@ void cApplication::Run()
         if (postEffect == POSTEFFECT::SEPIA) pShader = pShaderScreenRectSepia;
         else if (postEffect == POSTEFFECT::NOIR) pShader = pShaderScreenRectNoir;
         else if (postEffect == POSTEFFECT::MATRIX) pShader = pShaderScreenRectMatrix;
+        else if (postEffect == POSTEFFECT::TEAL_AND_ORANGE) pShader = pShaderScreenRectTealAndOrange;
 
         spitfire::math::cMat4 matModelView2D;
         matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
