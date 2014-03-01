@@ -3,8 +3,10 @@
 uniform mat4 matModelViewProjection;
 
 #define POSITION 0
-#define TEXCOORD0 1
+#define NORMAL 1
+#define TEXCOORD0 2
 layout(location = POSITION) in vec3 position;
+layout(location = NORMAL) in vec3 normal;
 layout(location = TEXCOORD0) in vec2 texCoord0;
 
 // Color to fragment program

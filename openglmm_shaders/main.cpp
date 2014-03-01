@@ -111,6 +111,23 @@ spitfire::math::cMat4 cFreeLookCamera::CalculateViewMatrix() const
   return (-rotation).GetMatrix() * matTranslation;
 }
 
+
+class cTextureVBOPair
+{
+public:
+  cTextureVBOPair();
+
+  opengl::cTexture* pTexture;
+  opengl::cStaticVertexBufferObject* pVBO;
+};
+
+cTextureVBOPair::cTextureVBOPair() :
+  pTexture(nullptr),
+  pVBO(nullptr)
+{
+}
+
+
 class cApplication : public opengl::cWindowEventListener, public opengl::cInputEventListener
 {
 public:
@@ -129,6 +146,8 @@ private:
   void CreateSphere(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates, float fRadius);
   void CreateTeapot(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates);
   void CreateGear(opengl::cStaticVertexBufferObject* pObject);
+  
+  void CreateTestImage(opengl::cStaticVertexBufferObject* pObject, size_t nTextureWidth, size_t nTextureHeight);
 
   void CreateNormalMappedCube();
 
@@ -190,6 +209,7 @@ private:
   opengl::cShader* pShaderCubeMap;
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderParallaxNormalMap;
+  opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
   opengl::cShader* pShaderScreenRectSepia;
   opengl::cShader* pShaderScreenRectNoir;
@@ -226,6 +246,8 @@ private:
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectPointLight;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectSpotLight;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectParallaxNormalMap;
+
+  std::vector<cTextureVBOPair*> testImages;
 };
 
 cApplication::cApplication() :
@@ -265,6 +287,7 @@ cApplication::cApplication() :
   pShaderCubeMap(nullptr),
   pShaderLights(nullptr),
   pShaderParallaxNormalMap(nullptr),
+  pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
   pShaderScreenRectSepia(nullptr),
   pShaderScreenRectNoir(nullptr),
@@ -738,6 +761,41 @@ void cApplication::CreateScreenRectVBO(opengl::cStaticVertexBufferObject* pStati
   pStaticVertexBufferObject->Compile2D(system);
 }
 
+void cApplication::CreateTestImage(opengl::cStaticVertexBufferObject* pObject, size_t nTextureWidth, size_t nTextureHeight)
+{
+  assert(pObject != nullptr);
+
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fTextureWidth = float(nTextureWidth);
+  const float fTextureHeight = float(nTextureHeight);
+
+  const float fRatioWidthOverHeight = (fTextureWidth / fTextureHeight);
+
+  const float fWidth = 1.0f;
+  const float fHeight = fWidth / fRatioWidthOverHeight;
+
+  const float_t fHalfWidth = fWidth * 0.5f;
+  const float_t fHalfHeight = fHeight * 0.5f;
+  const spitfire::math::cVec3 vMin(-fHalfWidth, 0.0f, -fHalfHeight);
+  const spitfire::math::cVec3 vMax(fHalfWidth, 0.0f, fHalfHeight);
+  const spitfire::math::cVec3 vNormal(0.0f, -1.0f, 0.0f);
+
+  opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
+
+  // Front facing rectangle
+  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(fTextureWidth, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(fTextureWidth, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(0.0f, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(fTextureWidth, fTextureHeight));
+
+  pObject->SetData(pGeometryDataPtr);
+
+  pObject->Compile(system);
+}
+
 bool cApplication::Create()
 {
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
@@ -812,6 +870,9 @@ bool cApplication::Create()
   pShaderParallaxNormalMap = pContext->CreateShader(TEXT("shaders/parallaxnormalmap.vert"), TEXT("shaders/parallaxnormalmap.frag"));
   assert(pShaderParallaxNormalMap != nullptr);
 
+  pShaderPassThrough = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
+  assert(pShaderPassThrough != nullptr);
+
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(pShaderScreenRect != nullptr);
 
@@ -836,6 +897,20 @@ bool cApplication::Create()
   pStaticVertexBufferObjectScreenRectTeapot = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObjectScreenRectTeapot != nullptr);
   CreateScreenRectVBO(pStaticVertexBufferObjectScreenRectTeapot, 0.25f, 0.25f);
+
+
+  const spitfire::string_t sTestImagesPath = TEXT("textures/testimages/");
+  for (spitfire::filesystem::cFolderIterator iter(sTestImagesPath); iter.IsValid(); iter.Next()) {
+    if (iter.IsFile()) {
+      cTextureVBOPair* pPair = new cTextureVBOPair;
+      pPair->pTexture = pContext->CreateTexture(iter.GetFullPath());
+      assert(pPair->pTexture != nullptr);
+      pPair->pVBO = pContext->CreateStaticVertexBufferObject();
+      assert(pPair->pVBO != nullptr);
+      CreateTestImage(pPair->pVBO, pPair->pTexture->GetWidth(), pPair->pTexture->GetHeight());
+      testImages.push_back(pPair);
+    }
+  }
 
 
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
@@ -1023,6 +1098,10 @@ void cApplication::Destroy()
     pContext->DestroyShader(pShaderScreenRect);
     pShaderScreenRect = nullptr;
   }
+  if (pShaderPassThrough != nullptr) {
+    pContext->DestroyShader(pShaderPassThrough);
+    pShaderPassThrough = nullptr;
+  }
 
   if (pShaderParallaxNormalMap != nullptr) {
     pContext->DestroyShader(pShaderParallaxNormalMap);
@@ -1085,6 +1164,25 @@ void cApplication::Destroy()
     pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectScreen);
     pTextureFrameBufferObjectScreen = nullptr;
   }
+
+
+  const size_t n = testImages.size();
+  for (size_t i = 0; i < n; i++) {
+    if (testImages[i]->pTexture != nullptr) {
+      pContext->DestroyTexture(testImages[i]->pTexture);
+      testImages[i]->pTexture = nullptr;
+    }
+
+    if (testImages[i]->pVBO != nullptr) {
+      pContext->DestroyStaticVertexBufferObject(testImages[i]->pVBO);
+      testImages[i]->pVBO = nullptr;
+    }
+
+    delete testImages[i];
+  }
+
+  testImages.clear();
+
 
   pContext = nullptr;
 
@@ -1251,6 +1349,8 @@ void cApplication::Run()
   assert(pShaderLights->IsCompiledProgram());
   assert(pShaderParallaxNormalMap != nullptr);
   assert(pShaderParallaxNormalMap->IsCompiledProgram());
+  assert(pShaderPassThrough != nullptr);
+  assert(pShaderPassThrough->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
   assert(pShaderScreenRectSepia != nullptr);
@@ -1377,6 +1477,18 @@ void cApplication::Run()
       i++;
     }
   }
+
+  std::vector<spitfire::math::cMat4> matTranslationTestImages;
+  {
+    const size_t n = testImages.size();
+    for (size_t i = 0; i < n; i++) {
+      const spitfire::math::cVec3 position((-1.0f + float(i)) * fSpacingX, -5.0f * fSpacingY, 0.0f);
+      spitfire::math::cMat4 matTranslation;
+      matTranslation.SetTranslation(position);
+      matTranslationTestImages.push_back(matTranslation);
+    }
+  }
+
 
   uint32_t T0 = 0;
   uint32_t Frames = 0;
@@ -1859,6 +1971,32 @@ void cApplication::Run()
 
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
+
+
+      // Render the test images
+      {
+        const size_t n = testImages.size();
+        for (size_t i = 0; i < n; i++) {
+          cTextureVBOPair* pPair = testImages[i];
+
+          pContext->BindTexture(0, *(pPair->pTexture));
+
+          pContext->BindShader(*pShaderPassThrough);
+
+          pContext->BindStaticVertexBufferObject(*(pPair->pVBO));
+
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationTestImages[i]);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(*(pPair->pVBO));
+
+          pContext->UnBindStaticVertexBufferObject(*(pPair->pVBO));
+
+          pContext->UnBindShader(*pShaderPassThrough);
+
+          pContext->UnBindTexture(0, *(pPair->pTexture));
+        }
+      }
+
 
       pContext->EndRenderToTexture(*pTextureFrameBufferObjectScreen);
     }
