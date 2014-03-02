@@ -59,19 +59,30 @@ vec3 RGBtoHSL(vec3 colourRGB)
   return vec3(hue, sat, lum);
 }
 
+float GetHueOfColour(vec3 colour)
+{
+  vec3 colourHSL = RGBtoHSL(colour.rgb);
+
+  return colourHSL.r;
+}
+
 void main()
 {
-  vec4 color = texture(texUnit0, vertOutTexCoord);
+  vec4 colour = texture(texUnit0, vertOutTexCoord);
 
-  vec3 colourHSL = RGBtoHSL(color.rgb);
+  float fHue = GetHueOfColour(colour.rgb);
 
-  float fHue = colourHSL.r;
+  // Teal
+  float fTealHue = GetHueOfColour(vec3(0, 1.0, 1.0));
+  float fTealDistance = abs(fTealHue - fHue);
 
-  // Use more of this colour if it is close to teal or orange
-  if (
-    ((fHue >= 0.49) && (fHue <= 0.72)) ||    // Teal
-    ((fHue >= 0.069) && (fHue <= 0.152))     // Orange
-  ) color.rgb *= 1.15;
+  // Orange
+  float fOrangeHue = GetHueOfColour(vec3(1.0, 0.5, 0.0));
+  float fOrangeDistance = abs(fOrangeHue - fHue);
 
-  fragmentColor = color;
+  // Make the colour either more teal or more orange depending on which this colour is closer to
+  if (fTealDistance < fOrangeDistance) colour.rgb = mix(colour.rgb, vec3(0, 1.0, 1.0), 0.25);
+  else colour.rgb = mix(colour.rgb, vec3(1.0, 0.5, 0.0), 0.25);
+
+  fragmentColor = colour;
 }
