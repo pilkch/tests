@@ -1645,7 +1645,7 @@ void cApplication::Run()
 
     if ((currentTime - previousUpdateInputTime) > uiUpdateInputDelta) {
       // Update window events
-      pWindow->UpdateEvents();
+      pWindow->ProcessEvents();
 
       // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
       pWindow->WarpCursorToMiddleOfScreen();
