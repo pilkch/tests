@@ -51,3 +51,9 @@ size_test/*
 source_cleaner/*
 xdgmm/*
 
+log/index.html
+*.filters
+*.opensdf
+openglmm_shaders/project/log/index.html
+openglmm_shaders/log/index.html
+*.unsuccessfulbuild
