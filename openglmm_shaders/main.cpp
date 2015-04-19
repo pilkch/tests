@@ -47,6 +47,9 @@
 #include <libopenglmm/cVertexBufferObject.h>
 #include <libopenglmm/cWindow.h>
 
+// Test various lights, unfortunately it is a very large model which takes ages to load, so it is disabled by default
+//#define BUILD_LARGE_STATUE_MODEL
+
 class cFreeLookCamera
 {
 public:
@@ -153,7 +156,9 @@ private:
   void CreateNormalMappedCube();
 
   void CreateTeapotVBO();
+  #ifdef BUILD_LARGE_STATUE_MODEL
   void CreateStatueVBO();
+  #endif
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float_t fWidth, float_t fHeight);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
@@ -220,7 +225,9 @@ private:
   opengl::cShader* pShaderScreenRectTealAndOrange;
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObject;
+  #ifdef BUILD_LARGE_STATUE_MODEL
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectStatue;
+  #endif
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenRectScreen;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectScreenRectTeapot;
 
@@ -300,7 +307,9 @@ cApplication::cApplication() :
   pShaderScreenRectTealAndOrange(nullptr),
 
   pStaticVertexBufferObject(nullptr),
+  #ifdef BUILD_LARGE_STATUE_MODEL
   pStaticVertexBufferObjectStatue(nullptr),
+  #endif
   pStaticVertexBufferObjectScreenRectScreen(nullptr),
   pStaticVertexBufferObjectScreenRectTeapot(nullptr),
 
@@ -693,6 +702,7 @@ void cApplication::CreateTeapotVBO()
   pStaticVertexBufferObject->Compile();
 }
 
+#ifdef BUILD_LARGE_STATUE_MODEL
 void cApplication::CreateStatueVBO()
 {
   assert(pStaticVertexBufferObjectStatue != nullptr);
@@ -738,6 +748,7 @@ void cApplication::CreateStatueVBO()
 
   pStaticVertexBufferObjectStatue->Compile();
 }
+#endif
 
 void cApplication::CreateScreenRectVBO(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float_t fWidth, float_t fHeight)
 {
@@ -899,9 +910,11 @@ bool cApplication::Create()
   assert(pStaticVertexBufferObject != nullptr);
   CreateTeapotVBO();
 
+  #ifdef BUILD_LARGE_STATUE_MODEL
   pStaticVertexBufferObjectStatue = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObjectStatue != nullptr);
   CreateStatueVBO();
+  #endif
 
   pStaticVertexBufferObjectScreenRectScreen = pContext->CreateStaticVertexBufferObject();
   assert(pStaticVertexBufferObjectScreenRectScreen != nullptr);
@@ -1089,10 +1102,12 @@ void cApplication::Destroy()
     pStaticVertexBufferObjectScreenRectScreen = nullptr;
   }
 
+  #ifdef BUILD_LARGE_STATUE_MODEL
   if (pStaticVertexBufferObjectStatue != nullptr) {
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectStatue);
     pStaticVertexBufferObjectStatue = nullptr;
   }
+  #endif
 
   if (pStaticVertexBufferObject != nullptr) {
     pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObject);
@@ -1396,8 +1411,10 @@ void cApplication::Run()
   assert(pShaderScreenRectTealAndOrange->IsCompiledProgram());
   assert(pStaticVertexBufferObject != nullptr);
   assert(pStaticVertexBufferObject->IsCompiled());
+  #ifdef BUILD_LARGE_STATUE_MODEL
   assert(pStaticVertexBufferObjectStatue != nullptr);
   assert(pStaticVertexBufferObjectStatue->IsCompiled());
+  #endif
   assert(pStaticVertexBufferObjectScreenRectScreen != nullptr);
   assert(pStaticVertexBufferObjectScreenRectScreen->IsCompiled());
   assert(pStaticVertexBufferObjectScreenRectTeapot != nullptr);
@@ -1505,6 +1522,7 @@ void cApplication::Run()
   spitfire::math::cMat4 matTranslationParallaxNormalMap;
   matTranslationParallaxNormalMap.SetTranslation(parallaxNormalMapPosition);
 
+  #ifdef BUILD_LARGE_STATUE_MODEL
   spitfire::math::cMat4 matTranslationStatue[9];
   i = 0;
   for (size_t y = 0; y < 3; y++) {
@@ -1514,6 +1532,7 @@ void cApplication::Run()
       i++;
     }
   }
+  #endif
 
   std::vector<spitfire::math::cMat4> matTranslationTestImages;
   {
@@ -1786,7 +1805,7 @@ void cApplication::Run()
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
-
+      #ifdef BUILD_LARGE_STATUE_MODEL
       // Render the statues
       {
         pContext->BindTexture(0, *pTextureMarble);
@@ -1807,6 +1826,7 @@ void cApplication::Run()
 
         pContext->UnBindTexture(0, *pTextureMarble);
       }
+      #endif
 
 
       // Render the parallax normal map cube
