@@ -353,7 +353,7 @@ void cApplication::CreatePlane(opengl::cStaticVertexBufferObject* pObject, size_
 
   pObject->SetData(pGeometryDataPtr);
 
-  pObject->Compile(system);
+  pObject->Compile();
 }
 
 void cApplication::CreateCube(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates)
@@ -369,7 +369,7 @@ void cApplication::CreateCube(opengl::cStaticVertexBufferObject* pObject, size_t
 
   pObject->SetData(pGeometryDataPtr);
 
-  pObject->Compile(system);
+  pObject->Compile();
 }
 
 void cApplication::CreateBox(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates)
@@ -387,7 +387,7 @@ void cApplication::CreateBox(opengl::cStaticVertexBufferObject* pObject, size_t 
 
   pObject->SetData(pGeometryDataPtr);
 
-  pObject->Compile(system);
+  pObject->Compile();
 }
 
 void cApplication::CreateSphere(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates, float fRadius)
@@ -403,7 +403,7 @@ void cApplication::CreateSphere(opengl::cStaticVertexBufferObject* pObject, size
 
   pObject->SetData(pGeometryDataPtr);
 
-  pObject->Compile(system);
+  pObject->Compile();
 }
 
 void cApplication::CreateTeapot(opengl::cStaticVertexBufferObject* pObject, size_t nTextureCoordinates)
@@ -420,7 +420,7 @@ void cApplication::CreateTeapot(opengl::cStaticVertexBufferObject* pObject, size
 
   pObject->SetData(pGeometryDataPtr);
 
-  pObject->Compile(system);
+  pObject->Compile();
 }
 
 void cApplication::CreateGear(opengl::cStaticVertexBufferObject* pObject)
@@ -673,7 +673,7 @@ void cApplication::CreateNormalMappedCube()
 
   pStaticVertexBufferObjectParallaxNormalMap->SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObjectParallaxNormalMap->Compile(system);
+  pStaticVertexBufferObjectParallaxNormalMap->Compile();
 }
 
 void cApplication::CreateTeapotVBO()
@@ -690,7 +690,7 @@ void cApplication::CreateTeapotVBO()
 
   pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObject->Compile(system);
+  pStaticVertexBufferObject->Compile();
 }
 
 void cApplication::CreateStatueVBO()
@@ -736,7 +736,7 @@ void cApplication::CreateStatueVBO()
 
   pStaticVertexBufferObjectStatue->SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObjectStatue->Compile(system);
+  pStaticVertexBufferObjectStatue->Compile();
 }
 
 void cApplication::CreateScreenRectVBO(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float_t fWidth, float_t fHeight)
@@ -765,7 +765,7 @@ void cApplication::CreateScreenRectVBO(opengl::cStaticVertexBufferObject* pStati
 
   pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObject->Compile2D(system);
+  pStaticVertexBufferObject->Compile2D();
 }
 
 void cApplication::CreateTestImage(opengl::cStaticVertexBufferObject* pObject, size_t nTextureWidth, size_t nTextureHeight)
@@ -800,7 +800,7 @@ void cApplication::CreateTestImage(opengl::cStaticVertexBufferObject* pObject, s
 
   pObject->SetData(pGeometryDataPtr);
 
-  pObject->Compile(system);
+  pObject->Compile();
 }
 
 bool cApplication::Create()
@@ -1297,6 +1297,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_y: {
+        // Cycle backwards through the post render effects
         if (postEffect == POSTEFFECT::NONE) postEffect = POSTEFFECT::SEPIA;
         else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::NOIR;
         else if (postEffect == POSTEFFECT::NOIR) postEffect = POSTEFFECT::MATRIX;
@@ -1304,7 +1305,8 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         else postEffect = POSTEFFECT::NONE;
         break;
       }
-      case SDLK_u: {
+      case SDLK_t: {
+        // Cycle backwards through the post render effects
         if (postEffect == POSTEFFECT::TEAL_AND_ORANGE) postEffect = POSTEFFECT::MATRIX;
         else if (postEffect == POSTEFFECT::MATRIX) postEffect = POSTEFFECT::NOIR;
         else if (postEffect == POSTEFFECT::NOIR) postEffect = POSTEFFECT::SEPIA;
