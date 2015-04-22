@@ -131,21 +131,6 @@ cTextureVBOPair::cTextureVBOPair() :
 {
 }
 
-class cShaderVBOPair
-{
-public:
-  cShaderVBOPair();
-
-  opengl::cShader* pShader;
-  opengl::cStaticVertexBufferObject* pVBO;
-};
-
-cShaderVBOPair::cShaderVBOPair() :
-  pShader(nullptr),
-  pVBO(nullptr)
-{
-}
-
 
 class cApplication : public opengl::cWindowEventListener, public opengl::cInputEventListener
 {
@@ -231,6 +216,7 @@ private:
 
   opengl::cShader* pShaderCubeMap;
   opengl::cShader* pShaderLights;
+  opengl::cShader* pShaderParallaxNormalMap;
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
   opengl::cShader* pShaderScreenRectSepia;
@@ -271,8 +257,7 @@ private:
 
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectPointLight;
   opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectSpotLight;
-
-  cShaderVBOPair parallaxNormalMap;
+  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectParallaxNormalMap;
 
   std::vector<cTextureVBOPair*> testImages;
 };
@@ -313,6 +298,7 @@ cApplication::cApplication() :
 
   pShaderCubeMap(nullptr),
   pShaderLights(nullptr),
+  pShaderParallaxNormalMap(nullptr),
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
   pShaderScreenRectSepia(nullptr),
@@ -352,7 +338,8 @@ cApplication::cApplication() :
   pStaticVertexBufferObjectTeapot3(nullptr),
 
   pStaticVertexBufferObjectPointLight(nullptr),
-  pStaticVertexBufferObjectSpotLight(nullptr)
+  pStaticVertexBufferObjectSpotLight(nullptr),
+  pStaticVertexBufferObjectParallaxNormalMap(nullptr)
 {
 }
 
@@ -640,7 +627,7 @@ void cGeometryBuilder_v3_n3_t2_tangent4::PushBackQuad(
 
 void cApplication::CreateNormalMappedCube()
 {
-  assert(parallaxNormalMap.pVBO != nullptr);
+  assert(pStaticVertexBufferObjectParallaxNormalMap != nullptr);
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -693,9 +680,9 @@ void cApplication::CreateNormalMappedCube()
     spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f)
   );
 
-  parallaxNormalMap.pVBO->SetData(pGeometryDataPtr);
+  pStaticVertexBufferObjectParallaxNormalMap->SetData(pGeometryDataPtr);
 
-  parallaxNormalMap.pVBO->Compile();
+  pStaticVertexBufferObjectParallaxNormalMap->Compile();
 }
 
 void cApplication::CreateTeapotVBO()
@@ -898,8 +885,8 @@ bool cApplication::Create()
   pShaderLights = pContext->CreateShader(TEXT("shaders/lights.vert"), TEXT("shaders/lights.frag"));
   assert(pShaderLights != nullptr);
 
-  parallaxNormalMap.pShader = pContext->CreateShader(TEXT("shaders/parallaxnormalmap.vert"), TEXT("shaders/parallaxnormalmap.frag"));
-  assert(parallaxNormalMap.pShader != nullptr);
+  pShaderParallaxNormalMap = pContext->CreateShader(TEXT("shaders/parallaxnormalmap.vert"), TEXT("shaders/parallaxnormalmap.frag"));
+  assert(pShaderParallaxNormalMap != nullptr);
 
   pShaderPassThrough = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderPassThrough != nullptr);
@@ -999,7 +986,7 @@ bool cApplication::Create()
   pStaticVertexBufferObjectSpotLight = pContext->CreateStaticVertexBufferObject();
   CreateSphere(pStaticVertexBufferObjectSpotLight, 0, 0.3f);
 
-  parallaxNormalMap.pVBO = pContext->CreateStaticVertexBufferObject();
+  pStaticVertexBufferObjectParallaxNormalMap = pContext->CreateStaticVertexBufferObject();
   CreateNormalMappedCube();
 
   // Setup our event listeners
@@ -1011,9 +998,9 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
-  if (parallaxNormalMap.pVBO != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(parallaxNormalMap.pVBO);
-    parallaxNormalMap.pVBO = nullptr;
+  if (pStaticVertexBufferObjectParallaxNormalMap != nullptr) {
+    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectParallaxNormalMap);
+    pStaticVertexBufferObjectParallaxNormalMap = nullptr;
   }
 
   if (pStaticVertexBufferObjectSpotLight != nullptr) {
@@ -1152,9 +1139,9 @@ void cApplication::Destroy()
     pShaderPassThrough = nullptr;
   }
 
-  if (parallaxNormalMap.pShader != nullptr) {
-    pContext->DestroyShader(parallaxNormalMap.pShader);
-    parallaxNormalMap.pShader = nullptr;
+  if (pShaderParallaxNormalMap != nullptr) {
+    pContext->DestroyShader(pShaderParallaxNormalMap);
+    pShaderParallaxNormalMap = nullptr;
   }
 
   if (pShaderLights != nullptr) {
@@ -1408,8 +1395,8 @@ void cApplication::Run()
   assert(pShaderCubeMap->IsCompiledProgram());
   assert(pShaderLights != nullptr);
   assert(pShaderLights->IsCompiledProgram());
-  assert(parallaxNormalMap.pShader != nullptr);
-  assert(parallaxNormalMap.pShader->IsCompiledProgram());
+  assert(pShaderParallaxNormalMap != nullptr);
+  assert(pShaderParallaxNormalMap->IsCompiledProgram());
   assert(pShaderPassThrough != nullptr);
   assert(pShaderPassThrough->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
@@ -1480,8 +1467,8 @@ void cApplication::Run()
   assert(pStaticVertexBufferObjectPointLight->IsCompiled());
   assert(pStaticVertexBufferObjectSpotLight != nullptr);
   assert(pStaticVertexBufferObjectSpotLight->IsCompiled());
-  assert(parallaxNormalMap.pVBO != nullptr);
-  assert(parallaxNormalMap.pVBO->IsCompiled());
+  assert(pStaticVertexBufferObjectParallaxNormalMap != nullptr);
+  assert(pStaticVertexBufferObjectParallaxNormalMap->IsCompiled());
 
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
@@ -1652,7 +1639,7 @@ void cApplication::Run()
     pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
   pContext->UnBindShader(*pShaderLights);
 
-  pContext->BindShader(*parallaxNormalMap.pShader);
+  pContext->BindShader(*pShaderParallaxNormalMap);
     // Directional light
     pContext->SetShaderConstant("directionalLight.ambientColour", lightDirectionalAmbientColour);
     pContext->SetShaderConstant("directionalLight.diffuseColour", lightDirectionalDiffuseColour);
@@ -1663,7 +1650,7 @@ void cApplication::Run()
     pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
     pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
     pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
-  pContext->UnBindShader(*parallaxNormalMap.pShader);
+  pContext->UnBindShader(*pShaderParallaxNormalMap);
 
 
   const uint32_t uiUpdateInputDelta = uint32_t(1000.0f / 120.0f);
@@ -1742,12 +1729,12 @@ void cApplication::Run()
     pContext->UnBindShader(*pShaderLights);
 
     // Set up the pallax normal map shader
-    pContext->BindShader(*parallaxNormalMap.pShader);
+    pContext->BindShader(*pShaderParallaxNormalMap);
       pContext->SetShaderConstant("matView", matView);
 
       // Directional light
       pContext->SetShaderConstant("directionalLight.direction", lightDirection);
-    pContext->UnBindShader(*parallaxNormalMap.pShader);
+    pContext->UnBindShader(*pShaderParallaxNormalMap);
 
     {
       // Render a few items from the scene into the frame buffer object for use later
@@ -1849,17 +1836,17 @@ void cApplication::Run()
         pContext->BindTexture(2, *pTextureNormalMapNormal);
         pContext->BindTexture(3, *pTextureNormalMapHeight);
 
-        pContext->BindShader(*parallaxNormalMap.pShader);
+        pContext->BindShader(*pShaderParallaxNormalMap);
 
-        pContext->BindStaticVertexBufferObject(*parallaxNormalMap.pVBO);
+        pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectParallaxNormalMap);
 
         pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationParallaxNormalMap);
 
-        pContext->DrawStaticVertexBufferObjectTriangles(*parallaxNormalMap.pVBO);
+        pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectParallaxNormalMap);
 
-        pContext->UnBindStaticVertexBufferObject(*parallaxNormalMap.pVBO);
+        pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectParallaxNormalMap);
 
-        pContext->UnBindShader(*parallaxNormalMap.pShader);
+        pContext->UnBindShader(*pShaderParallaxNormalMap);
 
         pContext->UnBindTexture(3, *pTextureNormalMapHeight);
         pContext->UnBindTexture(2, *pTextureNormalMapNormal);
