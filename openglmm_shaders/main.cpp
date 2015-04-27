@@ -40,6 +40,7 @@
 // libopenglmm headers
 #include <libopenglmm/libopenglmm.h>
 #include <libopenglmm/cContext.h>
+#include <libopenglmm/cFont.h>
 #include <libopenglmm/cGeometry.h>
 #include <libopenglmm/cShader.h>
 #include <libopenglmm/cSystem.h>
@@ -149,7 +150,6 @@ class cApplication : public opengl::cWindowEventListener, public opengl::cInputE
 {
 public:
   cApplication();
-  ~cApplication();
 
   bool Create();
   void Destroy();
@@ -157,6 +157,7 @@ public:
   void Run();
 
 private:
+  void CreateText();
   void CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreateCube(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreateBox(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
@@ -212,6 +213,9 @@ private:
   opengl::cContext* pContext;
 
   cFreeLookCamera camera;
+
+  opengl::cFont* pFont;
+  opengl::cStaticVertexBufferObject textVBO;
 
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectTeapot;
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreen;
@@ -295,6 +299,8 @@ cApplication::cApplication() :
   pWindow(nullptr),
   pContext(nullptr),
 
+  pFont(nullptr),
+
   pTextureFrameBufferObjectTeapot(nullptr),
   pTextureFrameBufferObjectScreen(nullptr),
 
@@ -324,8 +330,58 @@ cApplication::cApplication() :
 {
 }
 
-cApplication::~cApplication()
+void cApplication::CreateText()
 {
+  assert(pFont != nullptr);
+
+  // Destroy any existing VBO
+  pContext->DestroyStaticVertexBufferObject(textVBO);
+
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  opengl::cGeometryBuilder_v2_c4_t2 builder(*pGeometryDataPtr);
+
+  std::list<spitfire::string_t> lines;
+  lines.push_back(spitfire::string_t(TEXT("Rotating: ")) + (bIsRotating ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Wireframe: ")) + (bIsWireframe ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Direction light: ")) + (bIsDirectionalLightOn ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Point light: ")) + (bIsPointLightOn ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Spotlight: ")) + (bIsSpotLightOn ? TEXT("On") : TEXT("Off")));
+
+  spitfire::string_t sPostRenderEffect = TEXT("None");
+  switch (postEffect) {
+    case SEPIA:
+      sPostRenderEffect = TEXT("Sepia");
+      break;
+    case NOIR:
+      sPostRenderEffect = TEXT("Noir");
+      break;
+    case MATRIX:
+      sPostRenderEffect = TEXT("Matrix");
+      break;
+    case TEAL_AND_ORANGE:
+      sPostRenderEffect = TEXT("Teal and Orange");
+      break;
+  };
+
+  lines.push_back(TEXT("Post Render Effect: ") + sPostRenderEffect);
+
+
+  // Add our lines of text
+  const spitfire::math::cColour blue(0.0f, 0.0f, 1.0f);
+  float y = 0.0f;
+  std::list<spitfire::string_t>::const_iterator iter(lines.begin());
+  const std::list<spitfire::string_t>::const_iterator iterEnd(lines.end());
+  while (iter != iterEnd) {
+    pFont->PushBack(builder, *iter, blue, spitfire::math::cVec2(0.0f, y));
+    y += 0.04f;
+
+    iter++;
+  }
+
+  textVBO.SetData(pGeometryDataPtr);
+
+  textVBO.Compile2D();
 }
 
 void cApplication::CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates)
@@ -801,6 +857,14 @@ bool cApplication::Create()
     return false;
   }
 
+  // Create our font
+  pFont = pContext->CreateFont(TEXT("fonts/pricedown.ttf"), 32, TEXT("shaders/font.vert"), TEXT("shaders/font.frag"));
+  assert(pFont != nullptr);
+  assert(pFont->IsValid());
+
+  // Create our text VBO
+  pContext->CreateStaticVertexBufferObject(textVBO);
+
   pTextureFrameBufferObjectTeapot = pContext->CreateTextureFrameBufferObject(resolution.width, resolution.height, opengl::PIXELFORMAT::R8G8B8A8);
   assert(pTextureFrameBufferObjectTeapot != nullptr);
 
@@ -1102,6 +1166,14 @@ void cApplication::Destroy()
 
   testImages.clear();
 
+  // Destroy our text VBO
+  pContext->DestroyStaticVertexBufferObject(textVBO);
+
+  // Destroy our font
+  if (pFont != nullptr) {
+    pContext->DestroyFont(pFont);
+    pFont = nullptr;
+  }
 
   pContext = nullptr;
 
@@ -1256,6 +1328,8 @@ void cApplication::Run()
 
   assert(pContext != nullptr);
   assert(pContext->IsValid());
+  assert(pFont != nullptr);
+  assert(pFont->IsValid());
   assert(pTextureDiffuse != nullptr);
   assert(pTextureDiffuse->IsValid());
   assert(pTextureLightMap != nullptr);
@@ -1553,6 +1627,10 @@ void cApplication::Run()
       previousUpdateTime = currentTime;
     }
 
+
+    // Update our text
+    CreateText();
+    assert(textVBO.IsCompiled());
 
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
@@ -1982,6 +2060,28 @@ void cApplication::Run()
         pContext->UnBindShader(*pShaderScreenRect);
 
         pContext->UnBindTexture(0, *pTextureFrameBufferObjectTeapot);
+      }
+
+      
+      // Draw the text overlay
+      {
+        pContext->BindFont(*pFont);
+
+        // Rendering the font in the middle of the screen
+        spitfire::math::cMat4 matModelView;
+        matModelView.SetTranslation(0.02f, 0.02f, 0.0f);
+
+        pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView);
+
+        pContext->BindStaticVertexBufferObject2D(textVBO);
+
+        {
+          pContext->DrawStaticVertexBufferObjectTriangles2D(textVBO);
+        }
+
+        pContext->UnBindStaticVertexBufferObject2D(textVBO);
+
+        pContext->UnBindFont(*pFont);
       }
 
       pContext->EndRenderMode2D();

@@ -103,7 +103,7 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <PreprocessorDefinitions>BUILD_LIBOPENGLMM_OPENGL_VERSION=330;BUILD_LIBOPENGLMM_OPENGL_STRICT;BUILD_LIBOPENGLMM_WINDOW_SDL;WIN32_LEAN_AND_MEAN;NOMINMAX;_UNICODE;UNICODE;SPITFIRE_APPLICATION_COMPANY_NAME="Iluo";SPITFIRE_APPLICATION_NAME="openglmm_shaders";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BUILD_LIBOPENGLMM_OPENGL_VERSION=330;BUILD_LIBOPENGLMM_OPENGL_STRICT;BUILD_LIBOPENGLMM_WINDOW_SDL;BUILD_LIBOPENGLMM_FONT;WIN32_LEAN_AND_MEAN;NOMINMAX;_UNICODE;UNICODE;SPITFIRE_APPLICATION_COMPANY_NAME="Iluo";SPITFIRE_APPLICATION_NAME="openglmm_shaders";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4100;4127;4512;4702;4244;4610;4510</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
