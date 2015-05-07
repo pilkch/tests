@@ -72,11 +72,13 @@ void main()
   float fHue = GetHueOfColour(colour.rgb);
 
   // Teal
-  float fTealHue = GetHueOfColour(vec3(0, 1.0, 1.0));
+  const vec3 tealRGB = vec3(0, 1.0, 1.0);
+  float fTealHue = GetHueOfColour(tealRGB);
   float fTealDistance = abs(fTealHue - fHue);
 
   // Orange
-  float fOrangeHue = GetHueOfColour(vec3(1.0, 0.5, 0.0));
+  const vec3 orangeRGB = vec3(1.0, 0.5, 0.0);
+  float fOrangeHue = GetHueOfColour(orangeRGB);
   float fOrangeDistance = abs(fOrangeHue - fHue);
 
   // Make the colour either more teal or more orange depending on which this colour is closer to
