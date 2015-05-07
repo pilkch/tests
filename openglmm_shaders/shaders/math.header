@@ -54,4 +54,3 @@ vec3 RGBtoHSL(vec3 colourRGB)
 
   return vec3(hue, sat, lum);
 }
-
