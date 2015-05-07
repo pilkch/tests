@@ -1,5 +1,4 @@
-#version 140
-// 140 adds sample2DRect
+#version 330
 
 uniform sampler2DRect texUnit0; // Diffuse texture
 

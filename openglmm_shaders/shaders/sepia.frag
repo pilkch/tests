@@ -1,5 +1,4 @@
-#version 140
-// 140 adds sample2DRect
+#version 330
 
 // http://stackoverflow.com/questions/5830139/where-can-i-find-sample-opengl-es-2-0-shaders-that-perform-image-processing-task/9402041#9402041
 

@@ -1,4 +1,4 @@
-#version 130
+#version 330
 
 uniform sampler2D texUnit0; // Diffuse texture
 uniform sampler2D texUnit1; // Lightmap texture
