@@ -36,7 +36,6 @@ class cApplication : public opengl::cWindowEventListener, public opengl::cInputE
 {
 public:
   cApplication();
-  ~cApplication();
 
   bool Create();
   void Destroy();
@@ -44,8 +43,8 @@ public:
   void Run();
 
 private:
-  void CreateGear(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fInnerRadius, float fOuterRadius, float fWidth, size_t nTeeth, float fToothDepth);
-  void CreateSphere(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fRadius, size_t nSegments);
+  void CreateGear(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float fInnerRadius, float fOuterRadius, float fWidth, size_t nTeeth, float fToothDepth);
+  void CreateSphere(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float fRadius, size_t nSegments);
 
   bool LoadResources();
   void DestroyResources();
@@ -66,9 +65,9 @@ private:
 
   opengl::cShader* pShader;
 
-  opengl::cStaticVertexBufferObject* pGearVBO1;
-  opengl::cStaticVertexBufferObject* pGearVBO2;
-  opengl::cStaticVertexBufferObject* pGearVBO3;
+  opengl::cStaticVertexBufferObject gearVBO1;
+  opengl::cStaticVertexBufferObject gearVBO2;
+  opengl::cStaticVertexBufferObject gearVBO3;
 };
 
 cApplication::cApplication() :
@@ -77,17 +76,8 @@ cApplication::cApplication() :
   pWindow(nullptr),
   pContext(nullptr),
 
-  pShader(nullptr),
-
-  pGearVBO1(nullptr),
-  pGearVBO2(nullptr),
-  pGearVBO3(nullptr)
+  pShader(nullptr)
 {
-}
-
-cApplication::~cApplication()
-{
-  Destroy();
 }
 
 bool cApplication::Create()
@@ -202,16 +192,16 @@ std::vector<std::string> cApplication::GetInputDescription() const
 // NOTE: I haven't thought too much about the normals for each vertex, it doesn't look terrible so that is good enough for me
 //
 
-void cApplication::CreateGear(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fInnerRadius, float fOuterRadius, float fWidth, size_t nTeeth, float fToothDepth)
+void cApplication::CreateGear(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float fInnerRadius, float fOuterRadius, float fWidth, size_t nTeeth, float fToothDepth)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   opengl::cGeometryBuilder builder;
   builder.CreateGear(fInnerRadius, fOuterRadius, fWidth, nTeeth, fToothDepth, *pGeometryDataPtr);
 
-  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
+  staticVertexBufferObject.SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObject->Compile(system);
+  staticVertexBufferObject.Compile();
 }
 
 
@@ -219,7 +209,7 @@ void cApplication::CreateGear(opengl::cStaticVertexBufferObject* pStaticVertexBu
 // Build a sphere vbo object for rendering later.
 //
 
-void cApplication::CreateSphere(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, float fRadius, size_t nSegments)
+void cApplication::CreateSphere(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float fRadius, size_t nSegments)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -228,9 +218,9 @@ void cApplication::CreateSphere(opengl::cStaticVertexBufferObject* pStaticVertex
   opengl::cGeometryBuilder builder;
   builder.CreateSphere(fRadius, nSegments, *pGeometryDataPtr, nTextureUnits);
 
-  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
+  staticVertexBufferObject.SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObject->Compile(system);
+  staticVertexBufferObject.Compile();
 }
 
 bool cApplication::LoadResources()
@@ -241,19 +231,15 @@ bool cApplication::LoadResources()
     return false;
   }
 
-  pGearVBO1 = pContext->CreateStaticVertexBufferObject();
-  pGearVBO2 = pContext->CreateStaticVertexBufferObject();
-  pGearVBO3 = pContext->CreateStaticVertexBufferObject();
-  if ((pGearVBO1 == nullptr) || (pGearVBO2 == nullptr) || (pGearVBO3 == nullptr)) {
-    LOGERROR<<"cApplication::LoadResources VBO could not be created"<<std::endl;
-    return false;
-  }
+  pContext->CreateStaticVertexBufferObject(gearVBO1);
+  pContext->CreateStaticVertexBufferObject(gearVBO2);
+  pContext->CreateStaticVertexBufferObject(gearVBO3);
 
   // Make the gears
-  CreateGear(pGearVBO1, 1.0f, 4.0f, 1.0f, 20, 0.7f);
-  CreateGear(pGearVBO2, 0.5f, 2.0f, 2.0f, 10, 0.7f);
-  CreateGear(pGearVBO3, 1.3f, 2.0f, 0.5f, 10, 0.7f);
-  //CreateSphere(pGearVBO3, 1.3f, 32);
+  CreateGear(gearVBO1, 1.0f, 4.0f, 1.0f, 20, 0.7f);
+  CreateGear(gearVBO2, 0.5f, 2.0f, 2.0f, 10, 0.7f);
+  CreateGear(gearVBO3, 1.3f, 2.0f, 0.5f, 10, 0.7f);
+  //CreateSphere(gearVBO3, 1.3f, 32);
 
   
   // Light
@@ -289,18 +275,11 @@ bool cApplication::LoadResources()
 
 void cApplication::DestroyResources()
 {
-  if (pGearVBO3 != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pGearVBO3);
-    pGearVBO3 = nullptr;
-  }
-  if (pGearVBO2 != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pGearVBO2);
-    pGearVBO2 = nullptr;
-  }
-  if (pGearVBO1 != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pGearVBO1);
-    pGearVBO1 = nullptr;
-  }
+  ASSERT(pContext != nullptr);
+
+  pContext->DestroyStaticVertexBufferObject(gearVBO3);
+  pContext->DestroyStaticVertexBufferObject(gearVBO2);
+  pContext->DestroyStaticVertexBufferObject(gearVBO1);
 
   if (pShader != nullptr) {
     pContext->DestroyShader(pShader);
@@ -337,7 +316,7 @@ void cApplication::Run()
   LOG<<"cApplication::Run Entering main loop "<<opengl::cSystem::GetErrorString()<<std::endl;
   while (!bIsDone) {
     // Update window events
-    pWindow->UpdateEvents();
+    pWindow->ProcessEvents();
 
 
     // Update state
@@ -385,11 +364,11 @@ void cApplication::Run()
       // Setup material
       pContext->SetShaderConstant("material.diffuseColour", red);
 
-      pContext->BindStaticVertexBufferObject(*pGearVBO1);
+      pContext->BindStaticVertexBufferObject(gearVBO1);
 
-      pContext->DrawStaticVertexBufferObjectTriangles(*pGearVBO1);
+      pContext->DrawStaticVertexBufferObjectTriangles(gearVBO1);
 
-      pContext->UnBindStaticVertexBufferObject(*pGearVBO1);
+      pContext->UnBindStaticVertexBufferObject(gearVBO1);
 
       pContext->UnBindShader(*pShader);
     }
@@ -408,11 +387,11 @@ void cApplication::Run()
       // Setup material
       pContext->SetShaderConstant("material.diffuseColour", green);
 
-      pContext->BindStaticVertexBufferObject(*pGearVBO2);
+      pContext->BindStaticVertexBufferObject(gearVBO2);
 
-      pContext->DrawStaticVertexBufferObjectTriangles(*pGearVBO2);
+      pContext->DrawStaticVertexBufferObjectTriangles(gearVBO2);
 
-      pContext->UnBindStaticVertexBufferObject(*pGearVBO2);
+      pContext->UnBindStaticVertexBufferObject(gearVBO2);
 
       pContext->UnBindShader(*pShader);
     }
@@ -431,11 +410,11 @@ void cApplication::Run()
       // Setup material
       pContext->SetShaderConstant("material.diffuseColour", blue);
 
-      pContext->BindStaticVertexBufferObject(*pGearVBO3);
+      pContext->BindStaticVertexBufferObject(gearVBO3);
 
-      pContext->DrawStaticVertexBufferObjectTriangles(*pGearVBO3);
+      pContext->DrawStaticVertexBufferObjectTriangles(gearVBO3);
 
-      pContext->UnBindStaticVertexBufferObject(*pGearVBO3);
+      pContext->UnBindStaticVertexBufferObject(gearVBO3);
 
       pContext->UnBindShader(*pShader);
     }
