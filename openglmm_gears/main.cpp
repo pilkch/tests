@@ -82,13 +82,13 @@ cApplication::cApplication() :
 
 bool cApplication::Create()
 {
-  LOG<<"cApplication::Create"<<std::endl;
+  LOG("cApplication::Create");
 
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
 
   opengl::cResolution resolution = capabilities.GetCurrentResolution();
   if ((resolution.width < 300) || (resolution.height < 300) || ((resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8) && (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8))) {
-    LOGERROR<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
+    LOGERROR("Current screen resolution is not adequate ", resolution.width, "x", resolution.height);
     return false;
   }
 
@@ -99,18 +99,18 @@ bool cApplication::Create()
 
   pWindow = system.CreateWindow(TEXT("openglmm_gears"), resolution, false);
   if (pWindow == nullptr) {
-    LOGERROR<<"Window could not be created"<<std::endl;
+    LOGERROR("Window could not be created");
     return false;
   }
 
   pContext = pWindow->GetContext();
   if (pContext == nullptr) {
-    LOGERROR<<"Context could not be created"<<std::endl;
+    LOGERROR("Context could not be created");
     return false;
   }
 
   if (!LoadResources()) {
-    LOGERROR<<"Resources could not be loaded"<<std::endl;
+    LOGERROR("Resources could not be loaded");
     return false;
   }
 
@@ -135,7 +135,7 @@ void cApplication::Destroy()
 
 void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
 {
-  std::cout<<"cApplication::_OnWindowEvent"<<std::endl;
+  LOG("cApplication::_OnWindowEvent");
 
   // On Windows the driver is liable to invalidate the resources when the window is resized, so we need to handle destroying and reloading them ourselves
   if (event.IsAboutToResize()) {
@@ -147,7 +147,7 @@ void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
     LoadResources();
     #endif
   } else if (event.IsQuit()) {
-    std::cout<<"cApplication::_OnWindowEvent Quiting"<<std::endl;
+    LOG("cApplication::_OnWindowEvent Quiting");
     bIsDone = true;
   }
 }
@@ -227,7 +227,7 @@ bool cApplication::LoadResources()
 {
   pShader = pContext->CreateShader(TEXT("shaders/gear.vert"), TEXT("shaders/gear.frag"));
   if (pShader == nullptr) {
-    LOGERROR<<"cApplication::LoadResources Shader could not be created"<<std::endl;
+    LOGERROR("cApplication::LoadResources Shader could not be created");
     return false;
   }
 
@@ -253,7 +253,7 @@ bool cApplication::LoadResources()
   const spitfire::math::cColour materialSpecularColour(1.0f, 1.0f, 1.0f);
   const float fMaterialShininess = 50.0f;
   
-  LOG<<"cApplication::LoadResources Setting shader constants "<<opengl::cSystem::GetErrorString()<<std::endl;
+	LOG("cApplication::LoadResources Setting shader constants ", opengl::cSystem::GetErrorString());
   // Set our shader constants
   pContext->BindShader(*pShader);
 
@@ -289,7 +289,7 @@ void cApplication::DestroyResources()
 
 void cApplication::Run()
 {
-  LOG<<"cApplication::Run "<<opengl::cSystem::GetErrorString()<<std::endl;
+	LOG("cApplication::Run ", opengl::cSystem::GetErrorString());
 
   assert(pContext != nullptr);
   assert(pContext->IsValid());
@@ -313,7 +313,7 @@ void cApplication::Run()
 
   uint32_t currentTime = 0;
   
-  LOG<<"cApplication::Run Entering main loop "<<opengl::cSystem::GetErrorString()<<std::endl;
+	LOG("cApplication::Run Entering main loop ", opengl::cSystem::GetErrorString());
   while (!bIsDone) {
     // Update window events
     pWindow->ProcessEvents();
@@ -427,7 +427,7 @@ void cApplication::Run()
       uint32_t t = SDL_GetTicks();
       if (t - T0 >= 1000) {
           float fps = float(Frames);
-          LOG<<fps<<" FPS"<<std::endl;
+					LOG(fps, " FPS");
           T0 = t;
           Frames = 0;
       }
@@ -442,11 +442,9 @@ int main(int argc, char** argv)
   (void)argc;
   (void)argv;
 
-  bool bIsSuccess = true;
-
   cApplication application;
 
-  bIsSuccess = application.Create();
+  const bool bIsSuccess = application.Create();
   if (bIsSuccess) application.Run();
 
   application.Destroy();
