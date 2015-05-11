@@ -82,7 +82,7 @@ cApplication::cApplication() :
 
 bool cApplication::Create()
 {
-  LOG("cApplication::Create");
+  LOG("");
 
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
 
@@ -135,7 +135,7 @@ void cApplication::Destroy()
 
 void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
 {
-  LOG("cApplication::_OnWindowEvent");
+  LOG("");
 
   // On Windows the driver is liable to invalidate the resources when the window is resized, so we need to handle destroying and reloading them ourselves
   if (event.IsAboutToResize()) {
@@ -147,7 +147,7 @@ void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
     LoadResources();
     #endif
   } else if (event.IsQuit()) {
-    LOG("cApplication::_OnWindowEvent Quiting");
+    LOG("Quiting");
     bIsDone = true;
   }
 }
@@ -253,7 +253,7 @@ bool cApplication::LoadResources()
   const spitfire::math::cColour materialSpecularColour(1.0f, 1.0f, 1.0f);
   const float fMaterialShininess = 50.0f;
   
-	LOG("cApplication::LoadResources Setting shader constants ", opengl::cSystem::GetErrorString());
+  LOG("Setting shader constants ", opengl::cSystem::GetErrorString());
   // Set our shader constants
   pContext->BindShader(*pShader);
 
@@ -289,7 +289,7 @@ void cApplication::DestroyResources()
 
 void cApplication::Run()
 {
-	LOG("cApplication::Run ", opengl::cSystem::GetErrorString());
+  LOG(opengl::cSystem::GetErrorString());
 
   assert(pContext != nullptr);
   assert(pContext->IsValid());
@@ -313,7 +313,7 @@ void cApplication::Run()
 
   uint32_t currentTime = 0;
   
-	LOG("cApplication::Run Entering main loop ", opengl::cSystem::GetErrorString());
+  LOG("Entering main loop ", opengl::cSystem::GetErrorString());
   while (!bIsDone) {
     // Update window events
     pWindow->ProcessEvents();
@@ -427,7 +427,7 @@ void cApplication::Run()
       uint32_t t = SDL_GetTicks();
       if (t - T0 >= 1000) {
           float fps = float(Frames);
-					LOG(fps, " FPS");
+          LOG(fps, " FPS");
           T0 = t;
           Frames = 0;
       }
