@@ -733,7 +733,7 @@ void cApplication::CreateStatueVBO()
 
   breathe::render::model::cFileFormatOBJ loader;
   if (!loader.Load(TEXT("models/venus.obj"), model)) {
-    std::cerr<<"cApplication::CreateStatueVBO Failed to load obj file"<<std::endl;
+    LOG("Failed to load obj file");
     return;
   }
 
@@ -836,7 +836,7 @@ bool cApplication::Create()
 
   resolution = capabilities.GetCurrentResolution();
   if ((resolution.width < 720) || (resolution.height < 480) || ((resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8) && (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8))) {
-    LOGERROR<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
+    LOGERROR("Current screen resolution is not adequate ", resolution.width, "x", resolution.height);
     return false;
   }
 
@@ -847,13 +847,13 @@ bool cApplication::Create()
   // Set our required resolution
   pWindow = system.CreateWindow(TEXT("OpenGLmm Shaders Test"), resolution, false);
   if (pWindow == nullptr) {
-    LOGERROR<<"Window could not be created"<<std::endl;
+    LOGERROR("Window could not be created");
     return false;
   }
 
   pContext = pWindow->GetContext();
   if (pContext == nullptr) {
-    LOGERROR<<"Context could not be created"<<std::endl;
+    LOGERROR("Context could not be created");
     return false;
   }
 
@@ -1185,21 +1185,21 @@ void cApplication::Destroy()
 
 void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
 {
-  LOG<<"cApplication::_OnWindowEvent"<<std::endl;
+  LOG("");
 
   if (event.IsQuit()) {
-    LOG<<"cApplication::_OnWindowEvent Quiting"<<std::endl;
+    LOG("Quiting");
     bIsDone = true;
   }
 }
 
 void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
 {
-  // These a little too numerous to log every single one
-  //LOG<<"cApplication::_OnMouseEvent"<<std::endl;
+  // These are a little too numerous to log every single one
+  //LOG("");
 
   if (event.IsMouseMove()) {
-    //LOG<<"cApplication::_OnMouseEvent Mouse move"<<std::endl;
+    //LOG("Mouse move");
 
     if (fabs(event.GetX() - (pWindow->GetWidth() * 0.5f)) > 0.5f) {
       camera.RotateZ(-0.08f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
@@ -1213,11 +1213,11 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
 
 void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
 {
-  //LOG<<"cApplication::_OnKeyboardEvent"<<std::endl;
+  //LOG("");
   if (event.IsKeyDown()) {
     switch (event.GetKeyCode()) {
       case SDLK_ESCAPE: {
-        LOG<<"cApplication::_OnKeyboardEvent Escape key pressed, quiting"<<std::endl;
+        LOG("Escape key pressed, quiting");
         bIsDone = true;
         break;
       }
@@ -1238,7 +1238,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_SPACE: {
-        LOG<<"cApplication::_OnKeyboardEvent spacebar down"<<std::endl;
+        LOG("spacebar down");
         bIsRotating = false;
         break;
       }
@@ -1246,7 +1246,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
   } else if (event.IsKeyUp()) {
     switch (event.GetKeyCode()) {
       case SDLK_SPACE: {
-        LOG<<"cApplication::_OnKeyboardEvent spacebar up"<<std::endl;
+        LOG("spacebar up");
         bIsRotating = true;
         break;
       }
@@ -1324,7 +1324,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
 
 void cApplication::Run()
 {
-  LOG<<"cApplication::Run"<<std::endl;
+  LOG("");
 
   assert(pContext != nullptr);
   assert(pContext->IsValid());
@@ -1408,7 +1408,7 @@ void cApplication::Run()
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
   const size_t n = inputDescription.size();
-  for (size_t i = 0; i < n; i++) LOG<<inputDescription[i]<<std::endl;
+  for (size_t i = 0; i < n; i++) LOG(inputDescription[i]);
 
   // Set up the camera
   camera.SetPosition(spitfire::math::cVec3(-6.5f, 2.5f, 7.0f));
@@ -2096,7 +2096,7 @@ void cApplication::Run()
       if (t - T0 >= 5000) {
         float seconds = (t - T0) / 1000.0f;
         float fps = Frames / seconds;
-        LOG<<Frames<<" frames in "<<seconds<<" seconds = "<<fps<<" FPS"<<std::endl;
+        LOG(Frames, " frames in ", seconds, " seconds = ", fps, " FPS");
         T0 = t;
         Frames = 0;
       }
