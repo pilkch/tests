@@ -195,6 +195,7 @@ private:
 
   enum POSTEFFECT {
     NONE,
+    FXAA,
     SEPIA,
     NOIR,
     MATRIX,
@@ -235,6 +236,7 @@ private:
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
+  opengl::cShader* pShaderScreenRectFXAA;
   opengl::cShader* pShaderScreenRectSepia;
   opengl::cShader* pShaderScreenRectNoir;
   opengl::cShader* pShaderScreenRectMatrix;
@@ -319,6 +321,7 @@ cApplication::cApplication() :
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
+  pShaderScreenRectFXAA(nullptr),
   pShaderScreenRectSepia(nullptr),
   pShaderScreenRectNoir(nullptr),
   pShaderScreenRectMatrix(nullptr),
@@ -350,6 +353,9 @@ void cApplication::CreateText()
 
   spitfire::string_t sPostRenderEffect = TEXT("None");
   switch (postEffect) {
+    case FXAA:
+      sPostRenderEffect = TEXT("FXAA");
+      break;
     case SEPIA:
       sPostRenderEffect = TEXT("Sepia");
       break;
@@ -918,6 +924,9 @@ bool cApplication::Create()
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(pShaderScreenRect != nullptr);
 
+  pShaderScreenRectFXAA = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/fxaa.frag"));
+  assert(pShaderScreenRectFXAA != nullptr);
+
   pShaderScreenRectSepia = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/sepia.frag"));
   assert(pShaderScreenRectSepia != nullptr);
 
@@ -1075,6 +1084,10 @@ void cApplication::Destroy()
   if (pShaderScreenRectNoir != nullptr) {
     pContext->DestroyShader(pShaderScreenRectNoir);
     pShaderScreenRectNoir = nullptr;
+  }
+  if (pShaderScreenRectFXAA != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectFXAA);
+    pShaderScreenRectFXAA = nullptr;
   }
   if (pShaderScreenRectSepia != nullptr) {
     pContext->DestroyShader(pShaderScreenRectSepia);
@@ -1268,7 +1281,8 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
       }
       case SDLK_y: {
         // Cycle backwards through the post render effects
-        if (postEffect == POSTEFFECT::NONE) postEffect = POSTEFFECT::SEPIA;
+        if (postEffect == POSTEFFECT::NONE) postEffect = POSTEFFECT::FXAA;
+        else if (postEffect == POSTEFFECT::FXAA) postEffect = POSTEFFECT::SEPIA;
         else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::NOIR;
         else if (postEffect == POSTEFFECT::NOIR) postEffect = POSTEFFECT::MATRIX;
         else if (postEffect == POSTEFFECT::MATRIX) postEffect = POSTEFFECT::TEAL_AND_ORANGE;
@@ -1280,7 +1294,8 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         if (postEffect == POSTEFFECT::TEAL_AND_ORANGE) postEffect = POSTEFFECT::MATRIX;
         else if (postEffect == POSTEFFECT::MATRIX) postEffect = POSTEFFECT::NOIR;
         else if (postEffect == POSTEFFECT::NOIR) postEffect = POSTEFFECT::SEPIA;
-        else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::NONE;
+        else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::FXAA;
+        else if (postEffect == POSTEFFECT::FXAA) postEffect = POSTEFFECT::NONE;
         else postEffect = POSTEFFECT::TEAL_AND_ORANGE;
         break;
       }
@@ -1316,7 +1331,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
   description.push_back("4 toggle spot light");
-  description.push_back("Y/U switch shader (None, sepia, noir, matrix, teal and orange)");
+  description.push_back("Y/U switch shader (None, FXAA, sepia, noir, matrix, teal and orange)");
   description.push_back("Esc quit");
 
   return description;
@@ -1358,6 +1373,8 @@ void cApplication::Run()
   assert(pShaderPassThrough->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
+  assert(pShaderScreenRectFXAA != nullptr);
+  assert(pShaderScreenRectFXAA->IsCompiledProgram());
   assert(pShaderScreenRectSepia != nullptr);
   assert(pShaderScreenRectSepia->IsCompiledProgram());
   assert(pShaderScreenRectNoir != nullptr);
@@ -2010,7 +2027,9 @@ void cApplication::Run()
       // Draw the screen texture
       {
         opengl::cShader* pShader = pShaderScreenRect;
-        if (postEffect == POSTEFFECT::SEPIA) pShader = pShaderScreenRectSepia;
+
+        if (postEffect == POSTEFFECT::FXAA) pShader = pShaderScreenRectFXAA;
+        else if (postEffect == POSTEFFECT::SEPIA) pShader = pShaderScreenRectSepia;
         else if (postEffect == POSTEFFECT::NOIR) pShader = pShaderScreenRectNoir;
         else if (postEffect == POSTEFFECT::MATRIX) pShader = pShaderScreenRectMatrix;
         else if (postEffect == POSTEFFECT::TEAL_AND_ORANGE) pShader = pShaderScreenRectTealAndOrange;
