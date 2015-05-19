@@ -195,7 +195,6 @@ private:
 
   enum POSTEFFECT {
     NONE,
-    FXAA,
     SEPIA,
     NOIR,
     MATRIX,
@@ -236,7 +235,6 @@ private:
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
-  opengl::cShader* pShaderScreenRectFXAA;
   opengl::cShader* pShaderScreenRectSepia;
   opengl::cShader* pShaderScreenRectNoir;
   opengl::cShader* pShaderScreenRectMatrix;
@@ -321,7 +319,6 @@ cApplication::cApplication() :
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
-  pShaderScreenRectFXAA(nullptr),
   pShaderScreenRectSepia(nullptr),
   pShaderScreenRectNoir(nullptr),
   pShaderScreenRectMatrix(nullptr),
@@ -924,9 +921,6 @@ bool cApplication::Create()
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(pShaderScreenRect != nullptr);
 
-  pShaderScreenRectFXAA = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/fxaa.frag"));
-  assert(pShaderScreenRectFXAA != nullptr);
-
   pShaderScreenRectSepia = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/sepia.frag"));
   assert(pShaderScreenRectSepia != nullptr);
 
@@ -1084,10 +1078,6 @@ void cApplication::Destroy()
   if (pShaderScreenRectNoir != nullptr) {
     pContext->DestroyShader(pShaderScreenRectNoir);
     pShaderScreenRectNoir = nullptr;
-  }
-  if (pShaderScreenRectFXAA != nullptr) {
-    pContext->DestroyShader(pShaderScreenRectFXAA);
-    pShaderScreenRectFXAA = nullptr;
   }
   if (pShaderScreenRectSepia != nullptr) {
     pContext->DestroyShader(pShaderScreenRectSepia);
@@ -1373,8 +1363,6 @@ void cApplication::Run()
   assert(pShaderPassThrough->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
-  assert(pShaderScreenRectFXAA != nullptr);
-  assert(pShaderScreenRectFXAA->IsCompiledProgram());
   assert(pShaderScreenRectSepia != nullptr);
   assert(pShaderScreenRectSepia->IsCompiledProgram());
   assert(pShaderScreenRectNoir != nullptr);
@@ -2028,7 +2016,6 @@ void cApplication::Run()
       {
         opengl::cShader* pShader = pShaderScreenRect;
 
-        if (postEffect == POSTEFFECT::FXAA) pShader = pShaderScreenRectFXAA;
         else if (postEffect == POSTEFFECT::SEPIA) pShader = pShaderScreenRectSepia;
         else if (postEffect == POSTEFFECT::NOIR) pShader = pShaderScreenRectNoir;
         else if (postEffect == POSTEFFECT::MATRIX) pShader = pShaderScreenRectMatrix;
