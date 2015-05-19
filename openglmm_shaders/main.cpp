@@ -30,6 +30,7 @@
 #include <spitfire/math/cQuaternion.h>
 #include <spitfire/math/cColour.h>
 
+#include <spitfire/storage/file.h>
 #include <spitfire/storage/filesystem.h>
 #include <spitfire/util/log.h>
 
@@ -146,6 +147,23 @@ cShaderVBOPair::cShaderVBOPair() :
 }
 
 
+class cSimplePostRenderShader
+{
+public:
+  cSimplePostRenderShader(const spitfire::string_t sName, const spitfire::string_t& sFragmentShaderFilePath);
+
+  spitfire::string_t sName;
+  spitfire::string_t sFragmentShaderFilePath;
+  bool bOn;
+};
+
+cSimplePostRenderShader::cSimplePostRenderShader(const spitfire::string_t _sName, const spitfire::string_t& _sFragmentShaderFilePath) :
+  sName(_sName),
+  sFragmentShaderFilePath(_sFragmentShaderFilePath),
+  bOn(false)
+{
+}
+
 class cApplication : public opengl::cWindowEventListener, public opengl::cInputEventListener
 {
 public:
@@ -181,6 +199,8 @@ private:
 
   std::vector<std::string> GetInputDescription() const;
 
+  size_t GetActiveSimplePostRenderShadersCount() const;
+
   bool bIsMovingForward;
   bool bIsMovingLeft;
   bool bIsMovingRight;
@@ -192,15 +212,6 @@ private:
 
   bool bIsRotating;
   bool bIsWireframe;
-
-  enum POSTEFFECT {
-    NONE,
-    SEPIA,
-    NOIR,
-    MATRIX,
-    TEAL_AND_ORANGE
-  };
-  POSTEFFECT postEffect;
 
   bool bIsDone;
 
@@ -235,10 +246,6 @@ private:
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
-  opengl::cShader* pShaderScreenRectSepia;
-  opengl::cShader* pShaderScreenRectNoir;
-  opengl::cShader* pShaderScreenRectMatrix;
-  opengl::cShader* pShaderScreenRectTealAndOrange;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObject;
   #ifdef BUILD_LARGE_STATUE_MODEL
@@ -277,6 +284,10 @@ private:
   cShaderVBOPair parallaxNormalMap;
 
   std::vector<cTextureVBOPair*> testImages;
+
+  std::vector<cSimplePostRenderShader> simplePostRenderShaders;
+  bool bSimplePostRenderDirty;
+  opengl::cShader* pShaderScreenRectSimplePostRender;
 };
 
 cApplication::cApplication() :
@@ -291,8 +302,6 @@ cApplication::cApplication() :
 
   bIsRotating(true),
   bIsWireframe(false),
-
-  postEffect(POSTEFFECT::NONE),
 
   bIsDone(false),
 
@@ -319,14 +328,13 @@ cApplication::cApplication() :
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
-  pShaderScreenRectSepia(nullptr),
-  pShaderScreenRectNoir(nullptr),
-  pShaderScreenRectMatrix(nullptr),
-  pShaderScreenRectTealAndOrange(nullptr),
 
   pShaderCrate(nullptr),
   pShaderFog(nullptr),
-  pShaderMetal(nullptr)
+  pShaderMetal(nullptr),
+
+  bSimplePostRenderDirty(false),
+  pShaderScreenRectSimplePostRender(nullptr)
 {
 }
 
@@ -348,27 +356,16 @@ void cApplication::CreateText()
   lines.push_back(spitfire::string_t(TEXT("Point light: ")) + (bIsPointLightOn ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Spotlight: ")) + (bIsSpotLightOn ? TEXT("On") : TEXT("Off")));
 
-  spitfire::string_t sPostRenderEffect = TEXT("None");
-  switch (postEffect) {
-    case FXAA:
-      sPostRenderEffect = TEXT("FXAA");
-      break;
-    case SEPIA:
-      sPostRenderEffect = TEXT("Sepia");
-      break;
-    case NOIR:
-      sPostRenderEffect = TEXT("Noir");
-      break;
-    case MATRIX:
-      sPostRenderEffect = TEXT("Matrix");
-      break;
-    case TEAL_AND_ORANGE:
-      sPostRenderEffect = TEXT("Teal and Orange");
-      break;
-  };
-
-  lines.push_back(TEXT("Post Render Effect: ") + sPostRenderEffect);
-
+  // Post render shaders
+  lines.push_back(TEXT("Post Render Effects: "));
+  const size_t n = simplePostRenderShaders.size();
+  if (n == 0) lines.push_back(TEXT("None"));
+  else {
+    // Print the name for each post render shader that is turned on
+    for (size_t i = 0; i < n; i++) {
+      if (simplePostRenderShaders[i].bOn) lines.push_back(simplePostRenderShaders[i].sName);
+    }
+  }
 
   // Add our lines of text
   const spitfire::math::cColour blue(0.0f, 0.0f, 1.0f);
@@ -921,18 +918,6 @@ bool cApplication::Create()
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(pShaderScreenRect != nullptr);
 
-  pShaderScreenRectSepia = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/sepia.frag"));
-  assert(pShaderScreenRectSepia != nullptr);
-
-  pShaderScreenRectNoir = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/noir.frag"));
-  assert(pShaderScreenRectNoir != nullptr);
-
-  pShaderScreenRectMatrix = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/matrix.frag"));
-  assert(pShaderScreenRectMatrix != nullptr);
-
-  pShaderScreenRectTealAndOrange = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/tealandorange.frag"));
-  assert(pShaderScreenRectTealAndOrange != nullptr);
-
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObject);
   CreateTeapotVBO();
 
@@ -1011,6 +996,13 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(parallaxNormalMap.vbo);
   CreateNormalMappedCube();
 
+
+  simplePostRenderShaders.push_back(cSimplePostRenderShader(TEXT("Sepia"), TEXT("shaders/sepia.frag")));
+  simplePostRenderShaders.push_back(cSimplePostRenderShader(TEXT("Noir"), TEXT("shaders/noir.frag")));
+  simplePostRenderShaders.push_back(cSimplePostRenderShader(TEXT("Matrix"), TEXT("shaders/matrix.frag")));
+  simplePostRenderShaders.push_back(cSimplePostRenderShader(TEXT("Teal and Orange"), TEXT("shaders/tealandorange.frag")));
+
+
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
   pWindow->SetInputEventListener(*this);
@@ -1066,23 +1058,6 @@ void cApplication::Destroy()
 
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObject);
 
-
-  if (pShaderScreenRectTealAndOrange != nullptr) {
-    pContext->DestroyShader(pShaderScreenRectTealAndOrange);
-    pShaderScreenRectTealAndOrange = nullptr;
-  }
-  if (pShaderScreenRectMatrix != nullptr) {
-    pContext->DestroyShader(pShaderScreenRectMatrix);
-    pShaderScreenRectMatrix = nullptr;
-  }
-  if (pShaderScreenRectNoir != nullptr) {
-    pContext->DestroyShader(pShaderScreenRectNoir);
-    pShaderScreenRectNoir = nullptr;
-  }
-  if (pShaderScreenRectSepia != nullptr) {
-    pContext->DestroyShader(pShaderScreenRectSepia);
-    pShaderScreenRectSepia = nullptr;
-  }
   if (pShaderScreenRect != nullptr) {
     pContext->DestroyShader(pShaderScreenRect);
     pShaderScreenRect = nullptr;
@@ -1178,6 +1153,11 @@ void cApplication::Destroy()
     pFont = nullptr;
   }
 
+  if (pShaderScreenRectSimplePostRender != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectSimplePostRender);
+    pShaderScreenRectSimplePostRender = nullptr;
+  }
+
   pContext = nullptr;
 
   if (pWindow != nullptr) {
@@ -1269,24 +1249,24 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsMovingRight = false;
         break;
       }
-      case SDLK_y: {
-        // Cycle backwards through the post render effects
-        if (postEffect == POSTEFFECT::NONE) postEffect = POSTEFFECT::FXAA;
-        else if (postEffect == POSTEFFECT::FXAA) postEffect = POSTEFFECT::SEPIA;
-        else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::NOIR;
-        else if (postEffect == POSTEFFECT::NOIR) postEffect = POSTEFFECT::MATRIX;
-        else if (postEffect == POSTEFFECT::MATRIX) postEffect = POSTEFFECT::TEAL_AND_ORANGE;
-        else postEffect = POSTEFFECT::NONE;
+      case SDLK_u: {
+        simplePostRenderShaders[0].bOn = !simplePostRenderShaders[0].bOn;
+        bSimplePostRenderDirty = true;
         break;
       }
-      case SDLK_t: {
-        // Cycle backwards through the post render effects
-        if (postEffect == POSTEFFECT::TEAL_AND_ORANGE) postEffect = POSTEFFECT::MATRIX;
-        else if (postEffect == POSTEFFECT::MATRIX) postEffect = POSTEFFECT::NOIR;
-        else if (postEffect == POSTEFFECT::NOIR) postEffect = POSTEFFECT::SEPIA;
-        else if (postEffect == POSTEFFECT::SEPIA) postEffect = POSTEFFECT::FXAA;
-        else if (postEffect == POSTEFFECT::FXAA) postEffect = POSTEFFECT::NONE;
-        else postEffect = POSTEFFECT::TEAL_AND_ORANGE;
+      case SDLK_i: {
+        simplePostRenderShaders[1].bOn = !simplePostRenderShaders[1].bOn;
+        bSimplePostRenderDirty = true;
+        break;
+      }
+      case SDLK_o: {
+        simplePostRenderShaders[2].bOn = !simplePostRenderShaders[2].bOn;
+        bSimplePostRenderDirty = true;
+        break;
+      }
+      case SDLK_p: {
+        simplePostRenderShaders[3].bOn = !simplePostRenderShaders[3].bOn;
+        bSimplePostRenderDirty = true;
         break;
       }
       case SDLK_1: {
@@ -1321,10 +1301,25 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
   description.push_back("4 toggle spot light");
-  description.push_back("Y/U switch shader (None, FXAA, sepia, noir, matrix, teal and orange)");
+  description.push_back("U toggle post render sepia");
+  description.push_back("I toggle post render noir");
+  description.push_back("O toggle post render matrix");
+  description.push_back("P toggle post render teal and orange");
   description.push_back("Esc quit");
 
   return description;
+}
+
+size_t cApplication::GetActiveSimplePostRenderShadersCount() const
+{
+  size_t count = 0;
+
+  const size_t n = simplePostRenderShaders.size();
+  for (size_t i = 0; i < n; i++) {
+    if (simplePostRenderShaders[i].bOn) count++;
+  }
+
+  return count;
 }
 
 void cApplication::Run()
@@ -1363,14 +1358,6 @@ void cApplication::Run()
   assert(pShaderPassThrough->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
-  assert(pShaderScreenRectSepia != nullptr);
-  assert(pShaderScreenRectSepia->IsCompiledProgram());
-  assert(pShaderScreenRectNoir != nullptr);
-  assert(pShaderScreenRectNoir->IsCompiledProgram());
-  assert(pShaderScreenRectMatrix != nullptr);
-  assert(pShaderScreenRectMatrix->IsCompiledProgram());
-  assert(pShaderScreenRectTealAndOrange != nullptr);
-  assert(pShaderScreenRectTealAndOrange->IsCompiledProgram());
 
   assert(staticVertexBufferObject.IsCompiled());
   #ifdef BUILD_LARGE_STATUE_MODEL
@@ -1679,6 +1666,85 @@ void cApplication::Run()
       // Directional light
       pContext->SetShaderConstant("directionalLight.direction", lightDirection);
     pContext->UnBindShader(*parallaxNormalMap.pShader);
+
+    if (bSimplePostRenderDirty) {
+      // Destroy any existing shader
+      if (pShaderScreenRectSimplePostRender != nullptr) {
+        pContext->DestroyShader(pShaderScreenRectSimplePostRender);
+        pShaderScreenRectSimplePostRender = nullptr;
+      }
+
+      if (GetActiveSimplePostRenderShadersCount() != 0) {
+        // Load the vertex shader
+        std::string sVertexShaderText;
+        spitfire::storage::ReadText(TEXT("shaders/passthrough2d.vert"), sVertexShaderText);
+
+        // Create our fragment shader
+        std::string sFragmentShaderText =
+          "#version 330\n"
+          "\n"
+          "uniform sampler2DRect texUnit0; // Diffuse texture\n"
+          "\n"
+          "smooth in vec2 vertOutTexCoord;\n"
+          "\n"
+          "out vec4 fragmentColor;\n"
+          "\n"
+        ;
+
+        const size_t n = simplePostRenderShaders.size();
+        for (size_t i = 0; i < n; i++) {
+          if (simplePostRenderShaders[i].bOn) {
+            // Load the shader text
+            std::string sTempFragmentShaderText;
+            spitfire::storage::ReadText(simplePostRenderShaders[i].sFragmentShaderFilePath, sTempFragmentShaderText);
+
+            // Skip the version
+            if (spitfire::string::StartsWith(sTempFragmentShaderText, "#version")) {
+              size_t index = 0;
+              if (spitfire::string::Find(sTempFragmentShaderText, "\n", index)) sTempFragmentShaderText = sTempFragmentShaderText.substr(index);
+            }
+
+            // Rename the ApplyFilter function to ProcessFilter0..n
+            // NOTE: We use ProcessFilter0..n instead of ApplyFilter0..n to avoid an endless loop in spitfire::string::Replace
+            const std::string sFixedFragmentShaderText =
+              "// " + spitfire::string::ToUTF8(simplePostRenderShaders[i].sName) +
+              spitfire::string::Replace(sTempFragmentShaderText, "ApplyFilter", "ProcessFilter" + spitfire::string::ToUTF8(spitfire::string::ToString(i))) +
+              "\n"
+            ;
+
+            // Add it to the existing fragment shader
+            sFragmentShaderText += sFixedFragmentShaderText;
+          }
+        }
+
+
+        // Add our main function that calls the ApplyShader0..n functions
+        sFragmentShaderText +=
+          "\n"
+          "void main()\n"
+          "{\n"
+          "  vec4 colour = texture(texUnit0, vertOutTexCoord);\n"
+          "\n"
+        ;
+
+        for (size_t i = 0; i < n; i++) {
+          if (simplePostRenderShaders[i].bOn) sFragmentShaderText += "  colour = ProcessFilter" + spitfire::string::ToUTF8(spitfire::string::ToString(i)) + "(colour);\n";
+        }
+
+        sFragmentShaderText +=
+          "\n"
+          "  fragmentColor = colour;\n"
+          "}\n"
+          "\n"
+        ;
+
+
+        // Create the shader
+        pShaderScreenRectSimplePostRender = pContext->CreateShaderFromText(sVertexShaderText, sFragmentShaderText, TEXT("shaders/"));
+      }
+
+      bSimplePostRenderDirty = false;
+    }
 
     {
       // Render a few items from the scene into the frame buffer object for use later
@@ -2014,12 +2080,7 @@ void cApplication::Run()
 
       // Draw the screen texture
       {
-        opengl::cShader* pShader = pShaderScreenRect;
-
-        else if (postEffect == POSTEFFECT::SEPIA) pShader = pShaderScreenRectSepia;
-        else if (postEffect == POSTEFFECT::NOIR) pShader = pShaderScreenRectNoir;
-        else if (postEffect == POSTEFFECT::MATRIX) pShader = pShaderScreenRectMatrix;
-        else if (postEffect == POSTEFFECT::TEAL_AND_ORANGE) pShader = pShaderScreenRectTealAndOrange;
+        opengl::cShader* pShader = ((GetActiveSimplePostRenderShadersCount() == 0) ? pShaderScreenRect : pShaderScreenRectSimplePostRender);
 
         spitfire::math::cMat4 matModelView2D;
         matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);

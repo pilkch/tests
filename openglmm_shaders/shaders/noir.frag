@@ -1,31 +1,23 @@
 #version 330
 
-uniform sampler2DRect texUnit0; // Diffuse texture
-
-smooth in vec2 vertOutTexCoord;
-
-out vec4 fragmentColor;
-
-void main()
+vec4 ApplyFilter(vec4 inputColour)
 {
-  vec4 color = texture(texUnit0, vertOutTexCoord);
-
-  if ((color.r > 0.4) && (color.b < 0.05) && (color.g < 0.05)) {
+  if ((inputColour.r > 0.4) && (inputColour.b < 0.05) && (inputColour.g < 0.05)) {
     // Red colour is dominant, emphasise it
-    color.rgb = mix(color.rgb, vec3(1.0, 0.0, 0.0), 0.9);
-  } else if ((color.r > 0.4) && (color.b < 0.1) && (color.g < 0.1)) {
+    inputColour.rgb = mix(inputColour.rgb, vec3(1.0, 0.0, 0.0), 0.9);
+  } else if ((inputColour.r > 0.4) && (inputColour.b < 0.1) && (inputColour.g < 0.1)) {
     // Red colour is mostly dominant, emphasise it
-    color.rgb = mix(color.rgb, vec3(1.0, 0.0, 0.0), 0.7);
+    inputColour.rgb = mix(inputColour.rgb, vec3(1.0, 0.0, 0.0), 0.7);
   } else {
     // Greyscale
-    float fSin = max(color.r, max(color.g, color.b)) / 2 + min(color.r, min(color.g, color.b)) / 2;
+    float fSin = max(inputColour.r, max(inputColour.g, inputColour.b)) / 2 + min(inputColour.r, min(inputColour.g, inputColour.b)) / 2;
 
     if ((fSin < 0.1) || (fSin > 0.95)) {
-      color.rgb = vec3(0.0);
+      inputColour.rgb = vec3(0.0);
     } else {
-      color.rgb = vec3(1.0);
+      inputColour.rgb = vec3(1.0);
     }
   }
 
-  fragmentColor = color;
+  return inputColour;
 }

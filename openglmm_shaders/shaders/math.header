@@ -1,5 +1,13 @@
 #version 330
 
+// In GLSL 4 we can use fma
+//#define mad(a, b, c) fma(a, b, c)
+
+#define mad(a, b, c) (a * b + c)
+
+#define lerp(a, b, t) mix(a, b, t)
+#define saturate(a) clamp(a, 0.0, 1.0)
+
 float min3(float a, float b, float c)
 {
   return ((a < b) ? min(a, c) : min(b, c));
