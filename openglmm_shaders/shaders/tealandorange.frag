@@ -3,7 +3,7 @@
 // http://theabyssgazes.blogspot.com/2010/03/teal-and-orange-hollywood-please-stop.html
 // http://theabyssgazes.blogspot.com.au/2010/03/teal-and-orange-part-2.html
 
-#include <math.header>
+#include <colour.header>
 
 float GetHueOfColour(vec3 colour)
 {
