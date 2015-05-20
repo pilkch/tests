@@ -215,6 +215,7 @@ private:
 
   bool bIsRotating;
   bool bIsWireframe;
+  bool bIsSplitScreenSimplePostEffectShaders; // Tells us whether to split the screen down the middle when a simple post effect shader is active
 
   bool bIsDone;
 
@@ -306,6 +307,7 @@ cApplication::cApplication() :
 
   bIsRotating(true),
   bIsWireframe(false),
+  bIsSplitScreenSimplePostEffectShaders(true),
 
   bIsDone(false),
 
@@ -361,10 +363,13 @@ void cApplication::CreateText()
   lines.push_back(spitfire::string_t(TEXT("Spotlight: ")) + (bIsSpotLightOn ? TEXT("On") : TEXT("Off")));
 
   // Post render shaders
-  lines.push_back(TEXT("Post Render Effects: "));
   const size_t n = simplePostRenderShaders.size();
-  if (n == 0) lines.push_back(TEXT("None"));
-  else {
+  if (n == 0) {
+    lines.push_back(TEXT("Post render effects: "));
+    lines.push_back(TEXT("None"));
+  } else {
+    lines.push_back(spitfire::string_t(TEXT("Split post render effects: ")) + (bIsSplitScreenSimplePostEffectShaders ? TEXT("On") : TEXT("Off")));
+    lines.push_back(TEXT("Post render effects: "));
     // Print the name for each post render shader that is turned on
     for (size_t i = 0; i < n; i++) {
       if (simplePostRenderShaders[i].bOn) lines.push_back(simplePostRenderShaders[i].sName);
@@ -1344,6 +1349,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsSpotLightOn = !bIsSpotLightOn;
         break;
       }
+      case SDLK_5: {
+        bIsSplitScreenSimplePostEffectShaders = !bIsSplitScreenSimplePostEffectShaders;
+        break;
+      }
     }
   }
 }
@@ -1360,6 +1369,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
   description.push_back("4 toggle spot light");
+  description.push_back("5 toggle split screen post render");
   description.push_back("U toggle post render sepia");
   description.push_back("I toggle post render noir");
   description.push_back("O toggle post render matrix");
@@ -2138,26 +2148,34 @@ void cApplication::Run()
       // Now draw an overlay of our rendered textures
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
-      // Draw the screen texture
-      RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRect);
 
-      // Draw the shaders screen texture
       if (GetActiveSimplePostRenderShadersCount() != 0) {
-        RenderScreenRectangle(0.25f, 0.5f, staticVertexBufferObjectScreenRectHalfScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRectSimplePostRender);
+        if (bIsSplitScreenSimplePostEffectShaders) {
+          // Draw the screen texture
+          RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRect);
+
+          // Draw the shaders split screen texture
+          RenderScreenRectangle(0.25f, 0.5f, staticVertexBufferObjectScreenRectHalfScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRectSimplePostRender);
+        } else {
+          // Draw the shaders screen texture
+          RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRectSimplePostRender);
+        }
+      } else {
+        // Draw the screen texture
+        RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRect);
       }
 
       // Draw the teapot texture
       RenderScreenRectangle(0.75f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectTeapot, *pShaderScreenRect);
 
 
-      
       // Draw the text overlay
       {
         pContext->BindFont(*pFont);
 
         // Rendering the font in the middle of the screen
         spitfire::math::cMat4 matModelView;
-        matModelView.SetTranslation(0.02f, 0.02f, 0.0f);
+        matModelView.SetTranslation(0.02f, 0.05f, 0.0f);
 
         pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView);
 
