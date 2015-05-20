@@ -192,6 +192,7 @@ private:
   void CreateStatueVBO();
   #endif
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
+  void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
@@ -1166,6 +1167,30 @@ void cApplication::Destroy()
   }
 }
 
+void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader)
+{
+  spitfire::math::cMat4 matModelView2D;
+  matModelView2D.SetTranslation(x, y, 0.0f);
+
+  pContext->BindTexture(0, texture);
+
+  pContext->BindShader(shader);
+
+  pContext->BindStaticVertexBufferObject2D(vbo);
+
+  {
+    pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
+
+    pContext->DrawStaticVertexBufferObjectTriangles2D(vbo);
+  }
+
+  pContext->UnBindStaticVertexBufferObject2D(vbo);
+
+  pContext->UnBindShader(shader);
+
+  pContext->UnBindTexture(0, texture);
+}
+
 void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
 {
   LOG("");
@@ -2079,55 +2104,13 @@ void cApplication::Run()
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
       // Draw the screen texture
-      {
-        opengl::cShader* pShader = ((GetActiveSimplePostRenderShadersCount() == 0) ? pShaderScreenRect : pShaderScreenRectSimplePostRender);
+      RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRect);
 
-        spitfire::math::cMat4 matModelView2D;
-        matModelView2D.SetTranslation(0.5f, 0.5f, 0.0f);
-
-        pContext->BindTexture(0, *pTextureFrameBufferObjectScreen);
-
-        pContext->BindShader(*pShader);
-
-        pContext->BindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectScreen);
-
-        {
-          pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
-
-          pContext->DrawStaticVertexBufferObjectTriangles2D(staticVertexBufferObjectScreenRectScreen);
-        }
-
-        pContext->UnBindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectScreen);
-
-        pContext->UnBindShader(*pShader);
-
-        pContext->UnBindTexture(0, *pTextureFrameBufferObjectScreen);
       }
 
       // Draw the teapot texture
-      {
-        // Move the rectangle into the bottom right hand corner of the screen
-        spitfire::math::cMat4 matModelView2D;
-        matModelView2D.SetTranslation(0.75f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), 0.0f);
+      RenderScreenRectangle(0.75f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectTeapot, *pShaderScreenRect);
 
-        pContext->BindTexture(0, *pTextureFrameBufferObjectTeapot);
-
-        pContext->BindShader(*pShaderScreenRect);
-
-        pContext->BindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectTeapot);
-
-        {
-          pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
-
-          pContext->DrawStaticVertexBufferObjectTriangles2D(staticVertexBufferObjectScreenRectTeapot);
-        }
-
-        pContext->UnBindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectTeapot);
-
-        pContext->UnBindShader(*pShaderScreenRect);
-
-        pContext->UnBindTexture(0, *pTextureFrameBufferObjectTeapot);
-      }
 
       
       // Draw the text overlay
