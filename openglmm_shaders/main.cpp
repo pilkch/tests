@@ -192,6 +192,8 @@ private:
   void CreateStatueVBO();
   #endif
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
+  void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
+  
   void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
@@ -253,6 +255,7 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectStatue;
   #endif
   opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectScreen;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectHalfScreen;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectTeapot;
 
 
@@ -798,6 +801,33 @@ void cApplication::CreateScreenRectVBO(opengl::cStaticVertexBufferObject& static
   staticVertexBufferObject.Compile2D();
 }
 
+void cApplication::CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight)
+{
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fHalfTextureWidth = 0.5f * float(resolution.width);
+  const float fTextureHeight = float(resolution.height);
+
+  const float_t fHalfWidth = fWidth * 0.5f;
+  const float_t fHalfHeight = fHeight * 0.5f;
+  const spitfire::math::cVec2 vMin(-fHalfWidth, -fHalfHeight);
+  const spitfire::math::cVec2 vMax(fHalfWidth, fHalfHeight);
+
+  opengl::cGeometryBuilder_v2_t2 builder(*pGeometryDataPtr);
+
+  // Front facing rectangle
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(fHalfTextureWidth, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMax.y), spitfire::math::cVec2(fHalfTextureWidth, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMin.y), spitfire::math::cVec2(0.0f, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec2(vMin.x, vMax.y), spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec2(vMax.x, vMin.y), spitfire::math::cVec2(fHalfTextureWidth, fTextureHeight));
+
+  staticVertexBufferObject.SetData(pGeometryDataPtr);
+
+  staticVertexBufferObject.Compile2D();
+}
+
 void cApplication::CreateTestImage(opengl::cStaticVertexBufferObject& vbo, size_t nTextureWidth, size_t nTextureHeight)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
@@ -930,6 +960,9 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
   CreateScreenRectVBO(staticVertexBufferObjectScreenRectScreen, 1.0f, 1.0f);
 
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectHalfScreen);
+  CreateScreenHalfRectVBO(staticVertexBufferObjectScreenRectHalfScreen, 0.5f, 1.0f);
+
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectTeapot);
   CreateScreenRectVBO(staticVertexBufferObjectScreenRectTeapot, 0.25f, 0.25f);
 
@@ -1051,6 +1084,7 @@ void cApplication::Destroy()
 
 
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectTeapot);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectHalfScreen);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
 
   #ifdef BUILD_LARGE_STATUE_MODEL
@@ -1389,6 +1423,7 @@ void cApplication::Run()
   assert(staticVertexBufferObjectStatue.IsCompiled());
   #endif
   assert(staticVertexBufferObjectScreenRectScreen.IsCompiled());
+  assert(staticVertexBufferObjectScreenRectHalfScreen.IsCompiled());
   assert(staticVertexBufferObjectScreenRectTeapot.IsCompiled());
 
 
@@ -2106,6 +2141,9 @@ void cApplication::Run()
       // Draw the screen texture
       RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRect);
 
+      // Draw the shaders screen texture
+      if (GetActiveSimplePostRenderShadersCount() != 0) {
+        RenderScreenRectangle(0.25f, 0.5f, staticVertexBufferObjectScreenRectHalfScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRectSimplePostRender);
       }
 
       // Draw the teapot texture
