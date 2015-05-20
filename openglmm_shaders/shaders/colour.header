@@ -41,3 +41,26 @@ vec3 RGBtoHSL(vec3 colourRGB)
   return vec3(hue, sat, lum);
 }
 
+// Convert RGB to LMS
+// http://en.wikipedia.org/wiki/LMS_color_space
+vec3 RGBtoLMS(vec3 colourRGB)
+{
+	// RGB to LMS matrix conversion
+	float l = (17.8824f * colourRGB.r) + (43.5161f * colourRGB.g) + (4.11935f * colourRGB.b);
+	float m = (3.45565f * colourRGB.r) + (27.1554f * colourRGB.g) + (3.86714f * colourRGB.b);
+	float s = (0.0299566f * colourRGB.r) + (0.184309f * colourRGB.g) + (1.46709f * colourRGB.b);
+
+  return vec3(l, m, s);
+}
+
+// Convert LMS to RGB
+// http://en.wikipedia.org/wiki/LMS_color_space
+vec3 LMStoRGB(float l, float m, float s)
+{
+	// LMS to RGB matrix conversion
+	float r = (0.0809444479f * l) + (-0.130504409f * m) + (0.116721066f * s);
+	float g = (-0.0102485335f * l) + (0.0540193266f * m) + (-0.113614708f * s);
+	float b = (-0.000365296938f * l) + (-0.00412161469f * m) + (0.693511405f * s);
+
+  return vec3(r, g, b);
+}

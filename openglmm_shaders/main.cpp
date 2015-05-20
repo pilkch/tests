@@ -361,16 +361,17 @@ void cApplication::CreateText()
   lines.push_back(spitfire::string_t(TEXT("Direction light: ")) + (bIsDirectionalLightOn ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Point light: ")) + (bIsPointLightOn ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Spotlight: ")) + (bIsSpotLightOn ? TEXT("On") : TEXT("Off")));
+  lines.push_back(TEXT(""));
 
   // Post render shaders
-  const size_t n = simplePostRenderShaders.size();
-  if (n == 0) {
+  if (GetActiveSimplePostRenderShadersCount() == 0) {
     lines.push_back(TEXT("Post render effects: "));
     lines.push_back(TEXT("None"));
   } else {
     lines.push_back(spitfire::string_t(TEXT("Split post render effects: ")) + (bIsSplitScreenSimplePostEffectShaders ? TEXT("On") : TEXT("Off")));
     lines.push_back(TEXT("Post render effects: "));
     // Print the name for each post render shader that is turned on
+    const size_t n = simplePostRenderShaders.size();
     for (size_t i = 0; i < n; i++) {
       if (simplePostRenderShaders[i].bOn) lines.push_back(simplePostRenderShaders[i].sName);
     }
@@ -1040,6 +1041,7 @@ bool cApplication::Create()
   simplePostRenderShaders.push_back(cSimplePostRenderShader(TEXT("Noir"), TEXT("shaders/noir.frag")));
   simplePostRenderShaders.push_back(cSimplePostRenderShader(TEXT("Matrix"), TEXT("shaders/matrix.frag")));
   simplePostRenderShaders.push_back(cSimplePostRenderShader(TEXT("Teal and Orange"), TEXT("shaders/tealandorange.frag")));
+  simplePostRenderShaders.push_back(cSimplePostRenderShader(TEXT("Colour blind simulation"), TEXT("shaders/colourblind.frag")));
 
 
   // Setup our event listeners
@@ -1313,23 +1315,28 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsMovingRight = false;
         break;
       }
-      case SDLK_u: {
+      case SDLK_y: {
         simplePostRenderShaders[0].bOn = !simplePostRenderShaders[0].bOn;
         bSimplePostRenderDirty = true;
         break;
       }
-      case SDLK_i: {
+      case SDLK_u: {
         simplePostRenderShaders[1].bOn = !simplePostRenderShaders[1].bOn;
         bSimplePostRenderDirty = true;
         break;
       }
-      case SDLK_o: {
+      case SDLK_i: {
         simplePostRenderShaders[2].bOn = !simplePostRenderShaders[2].bOn;
         bSimplePostRenderDirty = true;
         break;
       }
-      case SDLK_p: {
+      case SDLK_o: {
         simplePostRenderShaders[3].bOn = !simplePostRenderShaders[3].bOn;
+        bSimplePostRenderDirty = true;
+        break;
+      }
+      case SDLK_p: {
+        simplePostRenderShaders[4].bOn = !simplePostRenderShaders[4].bOn;
         bSimplePostRenderDirty = true;
         break;
       }
@@ -1370,10 +1377,11 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("3 toggle point light");
   description.push_back("4 toggle spot light");
   description.push_back("5 toggle split screen post render");
-  description.push_back("U toggle post render sepia");
-  description.push_back("I toggle post render noir");
-  description.push_back("O toggle post render matrix");
-  description.push_back("P toggle post render teal and orange");
+  description.push_back("Y toggle post render sepia");
+  description.push_back("U toggle post render noir");
+  description.push_back("I toggle post render matrix");
+  description.push_back("O toggle post render teal and orange");
+  description.push_back("P toggle post render colour blind simulation");
   description.push_back("Esc quit");
 
   return description;

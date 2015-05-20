@@ -119,6 +119,8 @@
     <ClCompile Include="..\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\shaders\colour.header" />
+    <None Include="..\shaders\colourblind.frag" />
     <None Include="..\shaders\crate.frag" />
     <None Include="..\shaders\crate.vert" />
     <None Include="..\shaders\cubemap.frag" />
