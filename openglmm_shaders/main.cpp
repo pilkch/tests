@@ -877,8 +877,13 @@ bool cApplication::Create()
     return false;
   }
 
+  #ifdef BUILD_DEBUG
   // Override the resolution
   opengl::cSystem::GetWindowedTestResolution16By9(resolution.width, resolution.height);
+  #else
+  resolution.width = 1000;
+  resolution.height = 562;
+  #endif
   resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
 
   // Set our required resolution
@@ -2208,9 +2213,11 @@ void cApplication::Run()
     {
       uint32_t t = SDL_GetTicks();
       if (t - T0 >= 5000) {
+        #ifdef BUILD_DEBUG
         float seconds = (t - T0) / 1000.0f;
         float fps = Frames / seconds;
         LOG(Frames, " frames in ", seconds, " seconds = ", fps, " FPS");
+        #endif
         T0 = t;
         Frames = 0;
       }
