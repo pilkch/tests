@@ -5,9 +5,7 @@
 // http://www.daltonize.org/2010/05/lms-daltonization-algorithm.html
 // https://gist.github.com/jcdickinson/580b7fb5cc145cee8740
 
-#define COLORBLIND_MODE 3
-
-#if (COLORBLIND_MODE == 3)
+#if (COLORBLIND_MODE == 2)
 // Tritanope - blues are greatly reduced (0.003% population)
 // http://mudcu.be/labs/index.php?dir=Color-Vision/Javascript/
 const mat3 matTritanopia = mat3(
@@ -21,7 +19,7 @@ const mat3 matTritanopia = mat3(
 // Modified to simulate color blindness
 vec4 ApplyFilter(vec4 inputColour)
 {
-  #if (COLORBLIND_MODE == 1) || (COLORBLIND_MODE == 2)
+  #if (COLORBLIND_MODE == 0) || (COLORBLIND_MODE == 1)
   // Get an LMS colour
   vec3 lms = RGBtoLMS(inputColour.rgb);
   float L = lms.x;
