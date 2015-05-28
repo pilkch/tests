@@ -204,6 +204,9 @@ private:
 
   size_t GetActiveSimplePostRenderShadersCount() const;
 
+  bool IsColourBlindSimplePostRenderShaderEnabled() const;
+  size_t GetColourBlindModeDefineValue() const;
+
   bool bIsMovingForward;
   bool bIsMovingLeft;
   bool bIsMovingRight;
@@ -293,6 +296,13 @@ private:
   std::vector<cSimplePostRenderShader> simplePostRenderShaders;
   bool bSimplePostRenderDirty;
   opengl::cShader* pShaderScreenRectSimplePostRender;
+
+  enum class COLOUR_BLIND_MODE {
+    PROTANOPIA,
+    DEUTERANOPIA,
+    TRITANOPIA
+  };
+  COLOUR_BLIND_MODE colourBlindMode;
 };
 
 cApplication::cApplication() :
@@ -340,7 +350,9 @@ cApplication::cApplication() :
   pShaderMetal(nullptr),
 
   bSimplePostRenderDirty(false),
-  pShaderScreenRectSimplePostRender(nullptr)
+  pShaderScreenRectSimplePostRender(nullptr),
+
+  colourBlindMode(COLOUR_BLIND_MODE::PROTANOPIA)
 {
 }
 
@@ -374,6 +386,13 @@ void cApplication::CreateText()
     const size_t n = simplePostRenderShaders.size();
     for (size_t i = 0; i < n; i++) {
       if (simplePostRenderShaders[i].bOn) lines.push_back(simplePostRenderShaders[i].sName);
+    }
+
+    // Print the colour blind mode
+    if (IsColourBlindSimplePostRenderShaderEnabled()) {
+      if (colourBlindMode == COLOUR_BLIND_MODE::PROTANOPIA) lines.push_back(TEXT("Protanopia"));
+      else if (colourBlindMode == COLOUR_BLIND_MODE::DEUTERANOPIA) lines.push_back(TEXT("Deuteranopia"));
+      else lines.push_back(TEXT("Tritanopia"));
     }
   }
 
@@ -1345,6 +1364,15 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bSimplePostRenderDirty = true;
         break;
       }
+      case SDLK_l: {
+        if (IsColourBlindSimplePostRenderShaderEnabled()) {
+          if (colourBlindMode == COLOUR_BLIND_MODE::PROTANOPIA) colourBlindMode = COLOUR_BLIND_MODE::DEUTERANOPIA;
+          else if (colourBlindMode == COLOUR_BLIND_MODE::DEUTERANOPIA) colourBlindMode = COLOUR_BLIND_MODE::TRITANOPIA;
+          else colourBlindMode = COLOUR_BLIND_MODE::PROTANOPIA;
+          bSimplePostRenderDirty = true;
+        }
+        break;
+      }
       case SDLK_1: {
         bIsWireframe = !bIsWireframe;
         break;
@@ -1387,6 +1415,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("I toggle post render matrix");
   description.push_back("O toggle post render teal and orange");
   description.push_back("P toggle post render colour blind simulation");
+  description.push_back("L switch colour blind mode");
   description.push_back("Esc quit");
 
   return description;
@@ -1402,6 +1431,20 @@ size_t cApplication::GetActiveSimplePostRenderShadersCount() const
   }
 
   return count;
+}
+
+bool cApplication::IsColourBlindSimplePostRenderShaderEnabled() const
+{
+  ASSERT(4 < simplePostRenderShaders.size());
+  return simplePostRenderShaders[4].bOn;
+}
+
+size_t cApplication::GetColourBlindModeDefineValue() const
+{
+  if (colourBlindMode == COLOUR_BLIND_MODE::PROTANOPIA) return 0;
+  else if (colourBlindMode == COLOUR_BLIND_MODE::DEUTERANOPIA) return 1;
+
+  return 2;
 }
 
 void cApplication::Run()
@@ -1766,6 +1809,18 @@ void cApplication::Run()
         std::string sFragmentShaderText =
           "#version 330\n"
           "\n"
+        ;
+
+        // Add the colour blind define that says which colour blind mode we are using
+        if (IsColourBlindSimplePostRenderShaderEnabled()) {
+          const size_t iColourBlindMode = GetColourBlindModeDefineValue();
+          sFragmentShaderText +=
+            "#define COLORBLIND_MODE " + spitfire::string::ToUTF8(spitfire::string::ToString(iColourBlindMode)) + "\n"
+            "\n"
+          ;
+        }
+        
+        sFragmentShaderText +=
           "uniform sampler2DRect texUnit0; // Diffuse texture\n"
           "\n"
           "smooth in vec2 vertOutTexCoord;\n"
