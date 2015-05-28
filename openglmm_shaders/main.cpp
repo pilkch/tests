@@ -855,12 +855,12 @@ void cApplication::CreateTestImage(opengl::cStaticVertexBufferObject& vbo, size_
   opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
 
   // Front facing rectangle
-  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(fTextureWidth, fTextureHeight));
-  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
-  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(fTextureWidth, 0.0f));
-  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(0.0f, fTextureHeight));
-  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
-  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(fTextureWidth, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(0.0f, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(fTextureWidth, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(fTextureWidth, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(fTextureWidth, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(0.0f, fTextureHeight));
 
   vbo.SetData(pGeometryDataPtr);
 
