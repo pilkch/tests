@@ -29,6 +29,7 @@ void Log(H head, T... t)
 
 void LogTest()
 {
+  // Outputs "Hola mundo 42 n"
   Log("Hola", " mundo ", 42, ' ', 'n');
 }
 
