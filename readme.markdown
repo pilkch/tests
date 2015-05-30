@@ -23,6 +23,29 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software  
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.  
 
+### Description  
+
+A collection of tests and small utilities:
+- c++11_test: Just a basic test for using implementing a type safe printf in C++11 using variadic template arguments  
+- discombobulator: You give it a string and it creates a function to build a value from obfuscated data.  The idea being that you can use this function to store sensitive  
+- data instead of just storing it as raw strings that can be viewed in a hex editor or with the "strings" utility.  
+- openglmm_fadein: Fades into the scene from the desktop.  The way it does is by saving a screenshot image of the desktop, creating a full screen context that spans across all monitors, showing the stored image and then fading between that and the actual scene.  
+- openglmm_font: Testing use of fonts.  
+- openglmm_gears: Similar to the glxgears test application  
+- openglmm_heightmap: Testing heightmap loading  
+- openglmm_shaders: Testing various object shaders and post render effect shaders  
+- permutations: Given a string this will print all the permutations of the characters in that string  
+- size_test: Prints out the sizes of various types in the current architecture  
+- source_cleaner: Applys various very simple fixes such as replacing tabs with spaces, removing leading and trailing spaces, in source code and text files in a folder  
+- xdgmm: Test for using libxdgmm  
+
+### Usage
+
+Many of the tests have cmake projects which can be run like so:  
+cd openglmm_gears  
+cmake .  
+make  
+./openglmm_gears  
 
 ### Getting a copy of the project on Linux (Fedora 14 used)
 
@@ -34,33 +57,19 @@ git clone git@github.com:pilkch/tests.git
 OR  
 git clone https://github.com/pilkch/git@github.com:pilkch/tests.git  
 
-
 ### Building on Linux (Fedora 14 used)
 
-Many of the examples require <https://github.com/pilkch/library/>. For examples that use libopenglmm or libxdgmm this will require extra dependencies such as <http://www.libsdl.org/>.  
+Many of the tests require <https://github.com/pilkch/library/>. For tests that use libopenglmm or libxdgmm this will require extra dependencies such as <http://www.libsdl.org/>.  
 It should be checked out at the same level as tests:  
 source/  
-library/  
-tests/  
-
-
-### Usage
-
-The tests and examples all have cmake projects which can be run like so:  
-cd openglmm_gears  
-cmake .  
-make  
-./openglmm_gears  
-### Build Flags
-
-UNICODE  
-
+- library/  
+- tests/  
 
 ### Credit
 
 Breathe and Spitfire are created by me, Christopher Pilkington.   
 For the parts that are not mine, I try to keep an up to date list of any third party libraries that I use.   
-I only use libraries that are license under either the GPL, LGPL or similar and am eternally grateful for the high quality ease of use and generosity of the open source community. 
+I only use libraries that are license under either the GPL, LGPL or similar and am eternally grateful for the high quality ease of use and generosity of the open source community.  
 
 Box2D  
 Copyright (c) 2006-2007 Erin Catto  
