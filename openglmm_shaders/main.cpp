@@ -1801,6 +1801,8 @@ void cApplication::Run()
       }
 
       if (GetActiveSimplePostRenderShadersCount() != 0) {
+        std::map<std::string, int> mapDefinesToAdd;
+
         // Load the vertex shader
         std::string sVertexShaderText;
         spitfire::storage::ReadText(TEXT("shaders/passthrough2d.vert"), sVertexShaderText);
@@ -1813,11 +1815,8 @@ void cApplication::Run()
 
         // Add the colour blind define that says which colour blind mode we are using
         if (IsColourBlindSimplePostRenderShaderEnabled()) {
-          const size_t iColourBlindMode = GetColourBlindModeDefineValue();
-          sFragmentShaderText +=
-            "#define COLORBLIND_MODE " + spitfire::string::ToUTF8(spitfire::string::ToString(iColourBlindMode)) + "\n"
-            "\n"
-          ;
+          const int iColourBlindMode = int(GetColourBlindModeDefineValue());
+          mapDefinesToAdd["COLORBLIND_MODE"] = iColourBlindMode;
         }
         
         sFragmentShaderText +=
@@ -1876,9 +1875,8 @@ void cApplication::Run()
           "\n"
         ;
 
-
         // Create the shader
-        pShaderScreenRectSimplePostRender = pContext->CreateShaderFromText(sVertexShaderText, sFragmentShaderText, TEXT("shaders/"));
+        pShaderScreenRectSimplePostRender = pContext->CreateShaderFromText(sVertexShaderText, sFragmentShaderText, TEXT("shaders/"), mapDefinesToAdd);
       }
 
       bSimplePostRenderDirty = false;
