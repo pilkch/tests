@@ -397,12 +397,12 @@ void cApplication::CreateText()
   }
 
   // Add our lines of text
-  const spitfire::math::cColour blue(0.0f, 0.0f, 1.0f);
+  const spitfire::math::cColour red(1.0f, 0.0f, 0.0f);
   float y = 0.0f;
   std::list<spitfire::string_t>::const_iterator iter(lines.begin());
   const std::list<spitfire::string_t>::const_iterator iterEnd(lines.end());
   while (iter != iterEnd) {
-    pFont->PushBack(builder, *iter, blue, spitfire::math::cVec2(0.0f, y));
+    pFont->PushBack(builder, *iter, red, spitfire::math::cVec2(0.0f, y));
     y += 0.04f;
 
     iter++;
@@ -1652,9 +1652,11 @@ void cApplication::Run()
     pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
   pContext->UnBindShader(*pShaderMetal);
 
-  const spitfire::math::cColour fogColour(1.0f, 0.0f, 0.0f);
+  // Use Cornflower blue as the fog colour
+  // http://en.wikipedia.org/wiki/Cornflower_blue
+  const spitfire::math::cColour fogColour(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
   const float fFogStart = 5.0f;
-  const float fFogEnd = 20.0f;
+  const float fFogEnd = 15.0f;
   //const float fFogDensity = 0.5f;
 
   pContext->BindShader(*pShaderFog);
@@ -1920,7 +1922,9 @@ void cApplication::Run()
 
     {
       // Render the scene into a texture for later
-      const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
+      // Use Cornflower blue as the background colour
+      // http://en.wikipedia.org/wiki/Cornflower_blue
+      const spitfire::math::cColour clearColour(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
       pContext->SetClearColour(clearColour);
 
       pContext->BeginRenderToTexture(*pTextureFrameBufferObjectScreen);
