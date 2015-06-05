@@ -251,6 +251,7 @@ private:
   opengl::cTexture* pTextureNormalMapHeight;
 
   opengl::cShader* pShaderCubeMap;
+  opengl::cShader* pShaderCarPaint;
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
@@ -345,6 +346,7 @@ cApplication::cApplication() :
   pTextureNormalMapHeight(nullptr),
 
   pShaderCubeMap(nullptr),
+  pShaderCarPaint(nullptr),
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
@@ -1004,6 +1006,9 @@ bool cApplication::Create()
   pShaderCubeMap = pContext->CreateShader(TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
   assert(pShaderCubeMap != nullptr);
 
+  pShaderCarPaint = pContext->CreateShader(TEXT("shaders/carpaint.vert"), TEXT("shaders/carpaint.frag"));
+  assert(pShaderCarPaint != nullptr);
+
   pShaderLights = pContext->CreateShader(TEXT("shaders/lights.vert"), TEXT("shaders/lights.frag"));
   assert(pShaderLights != nullptr);
 
@@ -1184,6 +1189,10 @@ void cApplication::Destroy()
     pShaderLights = nullptr;
   }
 
+  if (pShaderCarPaint != nullptr) {
+    pContext->DestroyShader(pShaderCarPaint);
+    pShaderCarPaint = nullptr;
+  }
   if (pShaderCubeMap != nullptr) {
     pContext->DestroyShader(pShaderCubeMap);
     pShaderCubeMap = nullptr;
@@ -1516,6 +1525,8 @@ void cApplication::Run()
   assert(pTextureNormalMapNormal->IsValid());
   assert(pShaderCubeMap != nullptr);
   assert(pShaderCubeMap->IsCompiledProgram());
+  assert(pShaderCarPaint != nullptr);
+  assert(pShaderCarPaint->IsCompiledProgram());
   assert(pShaderLights != nullptr);
   assert(pShaderLights->IsCompiledProgram());
   assert(parallaxNormalMap.pShader != nullptr);
@@ -1610,6 +1621,11 @@ void cApplication::Run()
   const spitfire::math::cVec3 positionCubeMappedTeapot(-fSpacingX, (-1.0f * fSpacingY), 0.0f);
   spitfire::math::cMat4 matTranslationCubeMappedTeapot;
   matTranslationCubeMappedTeapot.SetTranslation(positionCubeMappedTeapot);
+
+  // Car paint teapot
+  const spitfire::math::cVec3 positionCarPaintTeapot(-2.0f * fSpacingX, (-1.0f * fSpacingY), 0.0f);
+  spitfire::math::cMat4 matTranslationCarPaintTeapot;
+  matTranslationCarPaintTeapot.SetTranslation(positionCarPaintTeapot);
 
   // Parallax normal mapping
   const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, (-1.0f * fSpacingY), 0.0f);
@@ -1810,6 +1826,11 @@ void cApplication::Run()
       pContext->SetShaderConstant("cameraPosition", matView * spitfire::math::cVec3(0.0f, 0.0f, 0.0f));
     pContext->UnBindShader(*pShaderCubeMap);
 
+    // Set up the car paint shader
+    pContext->BindShader(*pShaderCarPaint);
+      pContext->SetShaderConstant("cameraPosition", matView * spitfire::math::cVec3(0.0f, 0.0f, 0.0f));
+    pContext->UnBindShader(*pShaderCarPaint);
+
     // Set up the lights shader
     pContext->BindShader(*pShaderLights);
       pContext->SetShaderConstant("matView", matView);
@@ -1934,9 +1955,7 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
-      pContext->BindTexture(0, *pTextureDiffuse);
-      pContext->BindTexture(1, *pTextureDetail);
-      pContext->BindTextureCubeMap(2, *pTextureCubeMap);
+      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
 
       pContext->BindShader(*pShaderCubeMap);
 
@@ -1952,9 +1971,7 @@ void cApplication::Run()
 
       pContext->UnBindShader(*pShaderCubeMap);
 
-      pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
-      pContext->UnBindTexture(1, *pTextureDetail);
-      pContext->UnBindTexture(0, *pTextureDiffuse);
+      pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
 
       if (bIsWireframe) pContext->DisableWireframe();
 
@@ -1973,10 +1990,8 @@ void cApplication::Run()
       if (bIsWireframe) pContext->EnableWireframe();
 
 
-      // Render the teapot
-      pContext->BindTexture(0, *pTextureDiffuse);
-      pContext->BindTexture(1, *pTextureDetail);
-      pContext->BindTextureCubeMap(2, *pTextureCubeMap);
+      // Render the cube mapped teapot
+      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
 
       pContext->BindShader(*pShaderCubeMap);
 
@@ -1992,9 +2007,32 @@ void cApplication::Run()
 
       pContext->UnBindShader(*pShaderCubeMap);
 
-      pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
-      pContext->UnBindTexture(1, *pTextureDetail);
-      pContext->UnBindTexture(0, *pTextureDiffuse);
+      pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+
+
+      {
+        // Render the car paint teapot
+        pContext->BindTexture(0, *pTextureDiffuse);
+        pContext->BindTextureCubeMap(1, *pTextureCubeMap);
+
+        pContext->BindShader(*pShaderCarPaint);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObject);
+
+        {
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCarPaintTeapot);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObject);
+        }
+
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObject);
+
+        pContext->UnBindShader(*pShaderCarPaint);
+
+        pContext->UnBindTextureCubeMap(1, *pTextureCubeMap);
+        pContext->UnBindTexture(0, *pTextureDiffuse);
+      }
+
 
       #ifdef BUILD_LARGE_STATUE_MODEL
       // Render the statues

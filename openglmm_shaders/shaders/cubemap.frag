@@ -2,9 +2,7 @@
 
 #include <math.header>
 
-uniform sampler2D texUnit0; // Diffuse texture
-uniform sampler2D texUnit1; // Detail texture
-uniform samplerCube texUnit2; // Cubemap texture
+uniform samplerCube texUnit0; // Cubemap texture
 
 uniform vec3 cameraPosition;
 
@@ -16,11 +14,5 @@ out vec4 fragmentColour;
 
 void main()
 {
-  vec3 diffuseColour = (texture(texUnit0, vertOutTexCoord0).rgb + texture(texUnit1, vertOutTexCoord0).rgb) * 0.5;
-
-  // Mix between the diffuse colour and the cubemap based on noise that is a function of x and y
-  //float fMix = (simplexNoise(vertOutTexCoord0) + 1.0) * 0.25; // Biased towards the diffuse colour
-  //const float fMix = 0.99; // For testing
-  const float fMix = 0.2;
-  fragmentColour = vec4(mix(diffuseColour, texture(texUnit2, reflect(vertOutPosition - cameraPosition, normalize(vertOutNormal))).rgb, fMix), 1.0);
+  fragmentColour = vec4(texture(texUnit0, reflect(vertOutPosition - cameraPosition, normalize(vertOutNormal))).rgb, 1.0);
 }
