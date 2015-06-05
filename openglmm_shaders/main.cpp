@@ -193,6 +193,7 @@ private:
   #endif
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
+  void CreateGuiRectangle(opengl::cStaticVertexBufferObject& staticVertexBufferObject, size_t nTextureWidth, size_t nTextureHeight);
   
   void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader);
 
@@ -303,6 +304,9 @@ private:
     TRITANOPIA
   };
   COLOUR_BLIND_MODE colourBlindMode;
+
+
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectGuiRectangle;
 };
 
 cApplication::cApplication() :
@@ -826,6 +830,39 @@ void cApplication::CreateScreenRectVBO(opengl::cStaticVertexBufferObject& static
   staticVertexBufferObject.Compile2D();
 }
 
+void cApplication::CreateGuiRectangle(opengl::cStaticVertexBufferObject& vbo, size_t nTextureWidth, size_t nTextureHeight)
+{
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fTextureWidth = float(nTextureWidth);
+  const float fTextureHeight = float(nTextureHeight);
+
+  const float fRatioWidthOverHeight = (fTextureWidth / fTextureHeight);
+
+  const float fWidth = 1.0f;
+  const float fHeight = fWidth / fRatioWidthOverHeight;
+
+  const float_t fHalfWidth = fWidth * 0.5f;
+  const float_t fHalfHeight = fHeight * 0.5f;
+  const spitfire::math::cVec3 vMin(-fHalfWidth, 0.0f, -fHalfHeight);
+  const spitfire::math::cVec3 vMax(fHalfWidth, 0.0f, fHalfHeight);
+  const spitfire::math::cVec3 vNormal(0.0f, 0.0f, -1.0f);
+
+  opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
+
+  // Front facing rectangle
+  builder.PushBack(spitfire::math::cVec3(vMin.x, vMin.z, 0.0f), vNormal, spitfire::math::cVec2(0.0f, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, vMax.z, 0.0f), vNormal, spitfire::math::cVec2(fTextureWidth, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, vMax.z, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, vMin.z, 0.0f), vNormal, spitfire::math::cVec2(fTextureWidth, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, vMax.z, 0.0f), vNormal, spitfire::math::cVec2(fTextureWidth, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, vMin.z, 0.0f), vNormal, spitfire::math::cVec2(0.0f, fTextureHeight));
+
+  vbo.SetData(pGeometryDataPtr);
+
+  vbo.Compile();
+}
+
 void cApplication::CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
@@ -990,6 +1027,9 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
   CreateScreenRectVBO(staticVertexBufferObjectScreenRectScreen, 1.0f, 1.0f);
 
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectGuiRectangle);
+  CreateGuiRectangle(staticVertexBufferObjectGuiRectangle, 1000.0f, 500.0f);
+
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectHalfScreen);
   CreateScreenHalfRectVBO(staticVertexBufferObjectScreenRectHalfScreen, 0.5f, 1.0f);
 
@@ -1117,6 +1157,7 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectTeapot);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectHalfScreen);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectGuiRectangle);
 
   #ifdef BUILD_LARGE_STATUE_MODEL
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectStatue);
@@ -2204,6 +2245,38 @@ void cApplication::Run()
         }
       }
 
+      // Render some gui in 3d space
+      {
+        pContext->DisableDepthTesting();
+
+        const size_t n = testImages.size();
+        for (size_t i = 0; i < n; i++) {
+          cTextureVBOPair* pPair = testImages[i];
+
+          pContext->BindTexture(0, *(pPair->pTexture));
+
+          pContext->BindShader(*pShaderPassThrough);
+
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectGuiRectangle);
+
+          const spitfire::math::cVec3 position(2.5f - float(i), 1.8f, -5.0f);
+          spitfire::math::cMat4 matTranslation;
+          matTranslation.SetTranslation(position);
+
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matTranslation);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectGuiRectangle);
+
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectGuiRectangle);
+
+
+          pContext->UnBindShader(*pShaderPassThrough);
+
+          pContext->UnBindTexture(0, *(pPair->pTexture));
+        }
+
+        pContext->EnableDepthTesting();
+      }
 
       pContext->EndRenderToTexture(*pTextureFrameBufferObjectScreen);
     }
