@@ -55,21 +55,32 @@
 class cFreeLookCamera
 {
 public:
+  cFreeLookCamera();
+
   spitfire::math::cVec3 GetPosition() const;
   void SetPosition(const spitfire::math::cVec3& position);
   void SetRotation(const spitfire::math::cQuaternion& rotation);
 
   void MoveX(float fDistance);
-  void MoveY(float fDistance);
+  void MoveZ(float fDistance);
   void RotateX(float fDegrees);
-  void RotateZ(float fDegrees);
+  void RotateY(float fDegrees);
 
   spitfire::math::cMat4 CalculateViewMatrix() const;
 
 private:
+  spitfire::math::cQuaternion GetRotation() const;
+
   spitfire::math::cVec3 position;
-  spitfire::math::cQuaternion rotation;
+  float fRotationRight;
+  float fRotationUp;
 };
+
+cFreeLookCamera::cFreeLookCamera() :
+  fRotationRight(0.0f),
+  fRotationUp(0.0f)
+{
+}
 
 spitfire::math::cVec3 cFreeLookCamera::GetPosition() const
 {
@@ -81,40 +92,53 @@ void cFreeLookCamera::SetPosition(const spitfire::math::cVec3& _position)
   position = _position;
 }
 
-void cFreeLookCamera::SetRotation(const spitfire::math::cQuaternion& _rotation)
+void cFreeLookCamera::SetRotation(const spitfire::math::cQuaternion& rotation)
 {
-  rotation = _rotation;
+  const spitfire::math::cVec3 euler = rotation.GetEuler();
+  fRotationRight = euler.x;
+  fRotationUp = euler.z;
 }
 
 void cFreeLookCamera::MoveX(float xmmod)
 {
-  position += rotation * spitfire::math::cVec3(xmmod, 0.0f, 0.0f);
+  const spitfire::math::cQuaternion rotation = GetRotation();
+  position += (-rotation) * spitfire::math::cVec3(xmmod, 0.0f, 0.0f);
 }
 
-void cFreeLookCamera::MoveY(float ymmod)
+void cFreeLookCamera::MoveZ(float ymmod)
 {
-  position += rotation * spitfire::math::cVec3(0.0f, 0.0f, -ymmod);
+  const spitfire::math::cQuaternion rotation = GetRotation();
+  position += (-rotation) * spitfire::math::cVec3(0.0f, 0.0f, -ymmod);
 }
 
 void cFreeLookCamera::RotateX(float xrmod)
 {
-  spitfire::math::cQuaternion nrot;
-  nrot.SetFromAxisAngleDegrees(spitfire::math::cVec3(1.0f, 0.0f, 0.0f), xrmod);
-  rotation = rotation * nrot;
+  fRotationRight -= xrmod;
 }
 
-void cFreeLookCamera::RotateZ(float yrmod)
+void cFreeLookCamera::RotateY(float yrmod)
 {
-  spitfire::math::cQuaternion nrot;
-  nrot.SetFromAxisAngleDegrees(spitfire::math::cVec3(0.0f, 0.0f, 1.0f), yrmod);
-  rotation = nrot * rotation;
+  fRotationUp += yrmod;
+}
+
+spitfire::math::cQuaternion cFreeLookCamera::GetRotation() const
+{
+  spitfire::math::cQuaternion up;
+  up.SetFromAxisAngle(spitfire::math::cVec3(1.0f, 0.0f, 0.0f), spitfire::math::DegreesToRadians(fRotationUp));
+  spitfire::math::cQuaternion right;
+  right.SetFromAxisAngle(spitfire::math::cVec3(0.0f, 1.0f, 0.0f), spitfire::math::DegreesToRadians(fRotationRight));
+
+  return (up * right);
 }
 
 spitfire::math::cMat4 cFreeLookCamera::CalculateViewMatrix() const
 {
   spitfire::math::cMat4 matTranslation;
   matTranslation.TranslateMatrix(-position);
-  return (-rotation).GetMatrix() * matTranslation;
+
+  const spitfire::math::cQuaternion rotation = GetRotation();
+  
+  return ((-rotation).GetMatrix() * matTranslation);
 }
 
 
@@ -1325,11 +1349,11 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
     //LOG("Mouse move");
 
     if (fabs(event.GetX() - (pWindow->GetWidth() * 0.5f)) > 0.5f) {
-      camera.RotateZ(-0.08f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
+      camera.RotateX(-0.08f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
     }
 
     if (fabs(event.GetY() - (pWindow->GetHeight() * 0.5f)) > 1.5f) {
-      camera.RotateX(-0.05f * (event.GetY() - (pWindow->GetHeight() * 0.5f)));
+      camera.RotateY(0.05f * (event.GetY() - (pWindow->GetHeight() * 0.5f)));
     }
   }
 }
@@ -1582,11 +1606,8 @@ void cApplication::Run()
 
   // Set up the camera
   camera.SetPosition(spitfire::math::cVec3(-6.5f, 2.5f, 7.0f));
-  spitfire::math::cQuaternion cameraRotationZ;
-  cameraRotationZ.SetFromAxisAngleDegrees(spitfire::math::v3Up, -90.0f);
-  spitfire::math::cQuaternion cameraRotationX;
-  cameraRotationX.SetFromAxisAngleDegrees(spitfire::math::v3Left, 45.0f);
-  camera.SetRotation(cameraRotationZ * cameraRotationX);
+  camera.RotateX(90.0f);
+  camera.RotateY(45.0f);
 
   // Set up the translations for our objects
   const size_t columns = 5;
