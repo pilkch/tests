@@ -1003,12 +1003,12 @@ bool cApplication::Create()
   assert(pTextureDetail != nullptr);
 
   pTextureCubeMap = pContext->CreateTextureCubeMap(
-    TEXT("textures/cubemap_positive_x.png"),
-    TEXT("textures/cubemap_negative_x.png"),
-    TEXT("textures/cubemap_positive_y.png"),
-    TEXT("textures/cubemap_negative_y.png"),
-    TEXT("textures/cubemap_positive_z.png"),
-    TEXT("textures/cubemap_negative_z.png")
+    TEXT("textures/skybox_positive_x.jpg"),
+    TEXT("textures/skybox_negative_x.jpg"),
+    TEXT("textures/skybox_positive_y.jpg"),
+    TEXT("textures/skybox_negative_y.jpg"),
+    TEXT("textures/skybox_positive_z.jpg"),
+    TEXT("textures/skybox_negative_z.jpg")
   );
   assert(pTextureCubeMap != nullptr);
 
