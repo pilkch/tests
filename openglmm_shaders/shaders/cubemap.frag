@@ -4,15 +4,18 @@
 
 uniform samplerCube texUnit0; // Cubemap texture
 
-uniform vec3 cameraPosition;
+uniform vec3 cameraPos;
 
-smooth in vec3 vertOutPosition;
-smooth in vec3 vertOutNormal;
+in vec3 Normal;
+in vec3 Position;
+
 smooth in vec2 vertOutTexCoord0;
 
 out vec4 fragmentColour;
 
 void main()
 {
-  fragmentColour = vec4(texture(texUnit0, reflect(vertOutPosition - cameraPosition, normalize(vertOutNormal))).rgb, 1.0);
+  vec3 I = normalize(Position - cameraPos);
+  vec3 R = reflect(I, normalize(Normal));
+  fragmentColour = texture(texUnit0, R);
 }

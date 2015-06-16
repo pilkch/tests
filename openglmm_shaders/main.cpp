@@ -802,7 +802,7 @@ void cApplication::CreateStatueVBO()
   spitfire::math::cMat4 matScale;
   matScale.SetScale(spitfire::math::cVec3(0.1f, 0.1f, 0.1f));
 
-  const spitfire::math::cMat4 matTransform = matRotation * matScale;
+  const spitfire::math::cMat4 matTransform = matScale;
 
   const size_t nMeshes = model.mesh.size();
   for (size_t iMesh = 0; iMesh < nMeshes; iMesh++) {
@@ -1603,8 +1603,8 @@ void cApplication::Run()
   camera.RotateY(45.0f);
 
   // Set up the translations for our objects
-  const size_t columns = 5;
-  const size_t rows = 3;
+  const size_t columns = 5; // 5 types of objects
+  const size_t rows = 4; // 4 types of materials
 
   const float fSpacingX = 0.007f * pContext->GetWidth() / float(rows);
   const float fSpacingZ = 0.03f * pContext->GetHeight() / float(columns);
@@ -1835,16 +1835,6 @@ void cApplication::Run()
       pContext->SetShaderConstant("light.direction", lightDirection);
     pContext->UnBindShader(*pShaderMetal);
 
-    // Set up the cube map shader
-    pContext->BindShader(*pShaderCubeMap);
-      pContext->SetShaderConstant("cameraPosition", matView * spitfire::math::cVec3(0.0f, 0.0f, 0.0f));
-    pContext->UnBindShader(*pShaderCubeMap);
-
-    // Set up the car paint shader
-    pContext->BindShader(*pShaderCarPaint);
-      pContext->SetShaderConstant("cameraPosition", matView * spitfire::math::cVec3(0.0f, 0.0f, 0.0f));
-    pContext->UnBindShader(*pShaderCarPaint);
-
     // Set up the lights shader
     pContext->BindShader(*pShaderLights);
       pContext->SetShaderConstant("matView", matView);
@@ -1870,6 +1860,12 @@ void cApplication::Run()
       // Directional light
       pContext->SetShaderConstant("directionalLight.direction", lightDirection);
     pContext->UnBindShader(*parallaxNormalMap.pShader);
+
+    // Set up the cube map shader
+    pContext->BindShader(*pShaderCubeMap);
+      //pContext->SetShaderConstant("matView", matView);
+      pContext->SetShaderConstant("cameraPos", camera.GetPosition());
+    pContext->UnBindShader(*pShaderCubeMap);
 
     if (bSimplePostRenderDirty) {
       // Destroy any existing shader
@@ -1973,6 +1969,8 @@ void cApplication::Run()
 
       pContext->BindShader(*pShaderCubeMap);
 
+      pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot);
+
       pContext->BindStaticVertexBufferObject(staticVertexBufferObject);
 
       {
@@ -2009,6 +2007,8 @@ void cApplication::Run()
 
       pContext->BindShader(*pShaderCubeMap);
 
+      pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot);
+
       pContext->BindStaticVertexBufferObject(staticVertexBufferObject);
 
       {
@@ -2030,6 +2030,15 @@ void cApplication::Run()
         pContext->BindTextureCubeMap(1, *pTextureCubeMap);
 
         pContext->BindShader(*pShaderCarPaint);
+
+        // Set our constants
+        pContext->SetShaderConstant("fvLightPosition", lightDirectionalPosition);
+        pContext->SetShaderConstant("fvEyePosition", camera.GetPosition());
+
+        // The world matrix is the model matrix apparently, matObjectToBeRendered
+        const spitfire::math::cMat4 matWorld = matTranslationCarPaintTeapot;
+        const spitfire::math::cMat4 matWorldInverseTranspose = matWorld.GetInverseTranspose();
+        pContext->SetShaderConstant("matWorldInverseTranspose", matWorldInverseTranspose);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObject);
 
@@ -2271,6 +2280,65 @@ void cApplication::Run()
 
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
+
+
+
+      // Render the cubemapped objects
+
+
+
+
+      // Render the cube mapped teapot
+      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
+
+      pContext->BindShader(*pShaderCubeMap);
+
+      {
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane2);
+          pContext->SetShaderConstant("matModel", matTranslationArray[15] * matObjectRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[15] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlane2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlane2);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCube2);
+          pContext->SetShaderConstant("matModel", matTranslationArray[16] * matObjectRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[16] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCube2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCube2);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox2);
+          pContext->SetShaderConstant("matModel", matTranslationArray[17] * matObjectRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[17] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox2);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere2);
+          pContext->SetShaderConstant("matModel", matTranslationArray[18] * matObjectRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[18] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere2);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
+          pContext->SetShaderConstant("matModel", matTranslationArray[19] * matObjectRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[19] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
+        }
+      }
+
+      pContext->UnBindShader(*pShaderCubeMap);
+
+      pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+
 
 
       // Render the test images
