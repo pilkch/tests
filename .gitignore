@@ -46,6 +46,7 @@ openglmm_heightmap/CMakeFiles
 openglmm_shaders/openglmm_shaders
 openglmm_shaders/build
 openglmm_shaders/CMakeFiles
+openglmm_shaders/car paint shader
 permutations/*
 size_test/*
 source_cleaner/*

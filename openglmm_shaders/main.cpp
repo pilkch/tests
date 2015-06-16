@@ -798,13 +798,6 @@ void cApplication::CreateStatueVBO()
 
   opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
 
-  // The obj file uses Y up, so we rotate all the points and normals within it
-  spitfire::math::cQuaternion rotation;
-  rotation.SetFromAxisAngleDegrees(spitfire::math::v3Left, 90.0f);
-
-  spitfire::math::cMat4 matRotation;
-  matRotation.SetRotation(rotation);
-
   // The obj file is giant so scale it down as well
   spitfire::math::cMat4 matScale;
   matScale.SetScale(spitfire::math::cVec3(0.1f, 0.1f, 0.1f));
@@ -817,7 +810,7 @@ void cApplication::CreateStatueVBO()
     for (size_t iVertex = 0; iVertex < nVertices; iVertex++) {
       builder.PushBack(
         matTransform * spitfire::math::cVec3(model.mesh[iMesh]->vertices[(3 * iVertex)], model.mesh[iMesh]->vertices[(3 * iVertex) + 1], model.mesh[iMesh]->vertices[(3 * iVertex) + 2]),
-        matRotation * spitfire::math::cVec3(model.mesh[iMesh]->normals[(3 * iVertex)], model.mesh[iMesh]->normals[(3 * iVertex) + 1], model.mesh[iMesh]->normals[(3 * iVertex) + 2]),
+        spitfire::math::cVec3(model.mesh[iMesh]->normals[(3 * iVertex)], model.mesh[iMesh]->normals[(3 * iVertex) + 1], model.mesh[iMesh]->normals[(3 * iVertex) + 2]),
         spitfire::math::cVec2(model.mesh[iMesh]->textureCoordinates[(2 * iVertex)], model.mesh[iMesh]->textureCoordinates[(2 * iVertex) + 1])
       );
     }
@@ -930,19 +923,19 @@ void cApplication::CreateTestImage(opengl::cStaticVertexBufferObject& vbo, size_
 
   const float_t fHalfWidth = fWidth * 0.5f;
   const float_t fHalfHeight = fHeight * 0.5f;
-  const spitfire::math::cVec3 vMin(-fHalfWidth, 0.0f, -fHalfHeight);
-  const spitfire::math::cVec3 vMax(fHalfWidth, 0.0f, fHalfHeight);
-  const spitfire::math::cVec3 vNormal(0.0f, -1.0f, 0.0f);
+  const spitfire::math::cVec3 vMin(-fHalfWidth, -fHalfHeight, 0.0f);
+  const spitfire::math::cVec3 vMax(fHalfWidth, fHalfHeight, 0.0f);
+  const spitfire::math::cVec3 vNormal(0.0f, 0.0f, -1.0f);
 
   opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
 
   // Front facing rectangle
-  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(0.0f, fTextureHeight));
-  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(fTextureWidth, 0.0f));
-  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
-  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(fTextureWidth, fTextureHeight));
-  builder.PushBack(spitfire::math::cVec3(vMin.x, 0.0f, vMax.z), vNormal, spitfire::math::cVec2(fTextureWidth, 0.0f));
-  builder.PushBack(spitfire::math::cVec3(vMax.x, 0.0f, vMin.z), vNormal, spitfire::math::cVec2(0.0f, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(fTextureWidth, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(fTextureWidth, 0.0f));
+  builder.PushBack(spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(fTextureWidth, fTextureHeight));
+  builder.PushBack(spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
 
   vbo.SetData(pGeometryDataPtr);
 
@@ -1614,14 +1607,14 @@ void cApplication::Run()
   const size_t rows = 3;
 
   const float fSpacingX = 0.007f * pContext->GetWidth() / float(rows);
-  const float fSpacingY = 0.03f * pContext->GetHeight() / float(columns);
+  const float fSpacingZ = 0.03f * pContext->GetHeight() / float(columns);
   const float fLeft = -0.5f * float(columns - 1) * fSpacingX;
 
   spitfire::math::cVec3 positions[columns * rows];
   size_t i = 0;
   for (size_t y = 0; y < rows; y++) {
     for (size_t x = 0; x < columns; x++) {
-      positions[i].Set(fLeft + (x * fSpacingX), (y * fSpacingY), 0.0f);
+      positions[i].Set(fLeft + (x * fSpacingX), 0.0f, (y * fSpacingZ));
       i++;
     }
   }
@@ -1639,17 +1632,17 @@ void cApplication::Run()
   spitfire::math::cMat4 matObjectRotation;
 
   // Cube mapped teapot
-  const spitfire::math::cVec3 positionCubeMappedTeapot(-fSpacingX, (-1.0f * fSpacingY), 0.0f);
+  const spitfire::math::cVec3 positionCubeMappedTeapot(-fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationCubeMappedTeapot;
   matTranslationCubeMappedTeapot.SetTranslation(positionCubeMappedTeapot);
 
   // Car paint teapot
-  const spitfire::math::cVec3 positionCarPaintTeapot(-2.0f * fSpacingX, (-1.0f * fSpacingY), 0.0f);
+  const spitfire::math::cVec3 positionCarPaintTeapot(-2.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationCarPaintTeapot;
   matTranslationCarPaintTeapot.SetTranslation(positionCarPaintTeapot);
 
   // Parallax normal mapping
-  const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, (-1.0f * fSpacingY), 0.0f);
+  const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationParallaxNormalMap;
   matTranslationParallaxNormalMap.SetTranslation(parallaxNormalMapPosition);
 
@@ -1658,7 +1651,7 @@ void cApplication::Run()
   i = 0;
   for (size_t y = 0; y < 3; y++) {
     for (size_t x = 0; x < 3; x++) {
-      const spitfire::math::cVec3 position((-1.0f + float(x)) * fSpacingX, ((-2.0f - float(y)) * fSpacingY), 0.0f);
+      const spitfire::math::cVec3 position((-1.0f + float(x)) * fSpacingX, 0.0f, ((-2.0f - float(y)) * fSpacingZ));
       matTranslationStatue[i].SetTranslation(position);
       i++;
     }
@@ -1669,7 +1662,7 @@ void cApplication::Run()
   {
     const size_t n = testImages.size();
     for (size_t i = 0; i < n; i++) {
-      const spitfire::math::cVec3 position((-1.0f + float(i)) * fSpacingX, -5.0f * fSpacingY, 0.0f);
+      const spitfire::math::cVec3 position((-1.0f + float(i)) * fSpacingX, 0.0f, -5.0f * fSpacingZ);
       spitfire::math::cMat4 matTranslation;
       matTranslation.SetTranslation(position);
       matTranslationTestImages.push_back(matTranslation);
@@ -1810,8 +1803,8 @@ void cApplication::Run()
     if ((currentTime - previousUpdateTime) > uiUpdateDelta) {
       // Update the camera
       const float fDistance = 0.1f;
-      if (bIsMovingForward) camera.MoveY(fDistance);
-      if (bIsMovingBackward) camera.MoveY(-fDistance);
+      if (bIsMovingForward) camera.MoveZ(fDistance);
+      if (bIsMovingBackward) camera.MoveZ(-fDistance);
       if (bIsMovingLeft) camera.MoveX(-fDistance);
       if (bIsMovingRight) camera.MoveX(fDistance);
 
