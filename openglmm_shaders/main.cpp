@@ -2137,7 +2137,7 @@ void cApplication::Run()
       }
 
 
-      // Render the cubemapped objects
+      // Render the metal objects
       pContext->BindShader(*pShaderMetal);
 
       {
