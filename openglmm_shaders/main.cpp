@@ -277,6 +277,7 @@ private:
   opengl::cShader* pShaderCubeMap;
   opengl::cShader* pShaderCarPaint;
   opengl::cShader* pShaderLights;
+  opengl::cShader* pShaderLambert;
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
 
@@ -371,6 +372,7 @@ cApplication::cApplication() :
 
   pShaderCubeMap(nullptr),
   pShaderCarPaint(nullptr),
+  pShaderLambert(nullptr),
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
@@ -1026,6 +1028,9 @@ bool cApplication::Create()
   pShaderCarPaint = pContext->CreateShader(TEXT("shaders/carpaint.vert"), TEXT("shaders/carpaint.frag"));
   assert(pShaderCarPaint != nullptr);
 
+  pShaderLambert = pContext->CreateShader(TEXT("shaders/lambert.vert"), TEXT("shaders/lambert.frag"));
+  assert(pShaderLambert != nullptr);
+
   pShaderLights = pContext->CreateShader(TEXT("shaders/lights.vert"), TEXT("shaders/lights.frag"));
   assert(pShaderLights != nullptr);
 
@@ -1201,6 +1206,10 @@ void cApplication::Destroy()
     parallaxNormalMap.pShader = nullptr;
   }
 
+  if (pShaderLambert != nullptr) {
+    pContext->DestroyShader(pShaderLambert);
+    pShaderLambert = nullptr;
+  }
   if (pShaderLights != nullptr) {
     pContext->DestroyShader(pShaderLights);
     pShaderLights = nullptr;
@@ -1544,6 +1553,8 @@ void cApplication::Run()
   assert(pShaderCubeMap->IsCompiledProgram());
   assert(pShaderCarPaint != nullptr);
   assert(pShaderCarPaint->IsCompiledProgram());
+  assert(pShaderLambert != nullptr);
+  assert(pShaderLambert->IsCompiledProgram());
   assert(pShaderLights != nullptr);
   assert(pShaderLights->IsCompiledProgram());
   assert(parallaxNormalMap.pShader != nullptr);
@@ -1604,7 +1615,7 @@ void cApplication::Run()
 
   // Set up the translations for our objects
   const size_t columns = 5; // 5 types of objects
-  const size_t rows = 4; // 4 types of materials
+  const size_t rows = 5; // 5 types of materials
 
   const float fSpacingX = 0.007f * pContext->GetWidth() / float(rows);
   const float fSpacingZ = 0.03f * pContext->GetHeight() / float(columns);
@@ -2339,6 +2350,52 @@ void cApplication::Run()
 
       pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
 
+
+
+      // Render the lambert shaded objects
+      pContext->BindShader(*pShaderLambert);
+
+      {
+        pContext->SetShaderConstant("lightPosition", lightDirectionalPosition);
+        pContext->SetShaderConstant("matView", matView);
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane0);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[20] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlane0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlane0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCube0);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[21] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCube0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCube0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox0);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[22] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[23] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[24] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
+        }
+      }
+
+      pContext->UnBindShader(*pShaderLambert);
 
 
       // Render the test images
