@@ -199,6 +199,9 @@ public:
   void Run();
 
 private:
+  void CreateShaders();
+  void DestroyShaders();
+
   void CreateText();
   void CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreateCube(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
@@ -231,6 +234,8 @@ private:
 
   bool IsColourBlindSimplePostRenderShaderEnabled() const;
   size_t GetColourBlindModeDefineValue() const;
+
+  bool bReloadShaders;
 
   bool bIsMovingForward;
   bool bIsMovingLeft;
@@ -336,6 +341,8 @@ private:
 };
 
 cApplication::cApplication() :
+  bReloadShaders(false),
+
   bIsMovingForward(false),
   bIsMovingLeft(false),
   bIsMovingRight(false),
@@ -981,6 +988,8 @@ bool cApplication::Create()
   assert(pFont != nullptr);
   assert(pFont->IsValid());
 
+  CreateShaders();
+
   // Create our text VBO
   pContext->CreateStaticVertexBufferObject(textVBO);
 
@@ -1022,27 +1031,6 @@ bool cApplication::Create()
   pTextureNormalMapHeight = pContext->CreateTexture(TEXT("textures/floor_tile_height_map.png"));
   assert(pTextureNormalMapHeight != nullptr);
 
-  pShaderCubeMap = pContext->CreateShader(TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
-  assert(pShaderCubeMap != nullptr);
-
-  pShaderCarPaint = pContext->CreateShader(TEXT("shaders/carpaint.vert"), TEXT("shaders/carpaint.frag"));
-  assert(pShaderCarPaint != nullptr);
-
-  pShaderLambert = pContext->CreateShader(TEXT("shaders/lambert.vert"), TEXT("shaders/lambert.frag"));
-  assert(pShaderLambert != nullptr);
-
-  pShaderLights = pContext->CreateShader(TEXT("shaders/lights.vert"), TEXT("shaders/lights.frag"));
-  assert(pShaderLights != nullptr);
-
-  parallaxNormalMap.pShader = pContext->CreateShader(TEXT("shaders/parallaxnormalmap.vert"), TEXT("shaders/parallaxnormalmap.frag"));
-  assert(parallaxNormalMap.pShader != nullptr);
-
-  pShaderPassThrough = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
-  assert(pShaderPassThrough != nullptr);
-
-  pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
-  assert(pShaderScreenRect != nullptr);
-
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObject);
   CreateTeapotVBO();
 
@@ -1076,10 +1064,6 @@ bool cApplication::Create()
     }
   }
 
-
-  pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
-  pShaderFog = pContext->CreateShader(TEXT("shaders/fog.vert"), TEXT("shaders/fog.frag"));
-  pShaderMetal = pContext->CreateShader(TEXT("shaders/metal.vert"), TEXT("shaders/metal.frag"));
 
   const float fRadius = 1.0f;
 
@@ -1167,20 +1151,6 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube0);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPlane0);
 
-  if (pShaderMetal != nullptr) {
-    pContext->DestroyShader(pShaderMetal);
-    pShaderMetal = nullptr;
-  }
-  if (pShaderFog != nullptr) {
-    pContext->DestroyShader(pShaderFog);
-    pShaderFog = nullptr;
-  }
-  if (pShaderCrate != nullptr) {
-    pContext->DestroyShader(pShaderCrate);
-    pShaderCrate = nullptr;
-  }
-
-
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectTeapot);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectHalfScreen);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
@@ -1192,37 +1162,6 @@ void cApplication::Destroy()
 
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObject);
 
-  if (pShaderScreenRect != nullptr) {
-    pContext->DestroyShader(pShaderScreenRect);
-    pShaderScreenRect = nullptr;
-  }
-  if (pShaderPassThrough != nullptr) {
-    pContext->DestroyShader(pShaderPassThrough);
-    pShaderPassThrough = nullptr;
-  }
-
-  if (parallaxNormalMap.pShader != nullptr) {
-    pContext->DestroyShader(parallaxNormalMap.pShader);
-    parallaxNormalMap.pShader = nullptr;
-  }
-
-  if (pShaderLambert != nullptr) {
-    pContext->DestroyShader(pShaderLambert);
-    pShaderLambert = nullptr;
-  }
-  if (pShaderLights != nullptr) {
-    pContext->DestroyShader(pShaderLights);
-    pShaderLights = nullptr;
-  }
-
-  if (pShaderCarPaint != nullptr) {
-    pContext->DestroyShader(pShaderCarPaint);
-    pShaderCarPaint = nullptr;
-  }
-  if (pShaderCubeMap != nullptr) {
-    pContext->DestroyShader(pShaderCubeMap);
-    pShaderCubeMap = nullptr;
-  }
 
   if (pTextureNormalMapHeight != nullptr) {
     pContext->DestroyTexture(pTextureNormalMapHeight);
@@ -1295,6 +1234,8 @@ void cApplication::Destroy()
     pFont = nullptr;
   }
 
+  DestroyShaders();
+
   if (pShaderScreenRectSimplePostRender != nullptr) {
     pContext->DestroyShader(pShaderScreenRectSimplePostRender);
     pShaderScreenRectSimplePostRender = nullptr;
@@ -1305,6 +1246,87 @@ void cApplication::Destroy()
   if (pWindow != nullptr) {
     system.DestroyWindow(pWindow);
     pWindow = nullptr;
+  }
+}
+
+void cApplication::CreateShaders()
+{
+  pShaderCubeMap = pContext->CreateShader(TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
+  assert(pShaderCubeMap != nullptr);
+
+  pShaderCarPaint = pContext->CreateShader(TEXT("shaders/carpaint.vert"), TEXT("shaders/carpaint.frag"));
+  assert(pShaderCarPaint != nullptr);
+
+  pShaderLambert = pContext->CreateShader(TEXT("shaders/lambert.vert"), TEXT("shaders/lambert.frag"));
+  assert(pShaderLambert != nullptr);
+
+  pShaderLights = pContext->CreateShader(TEXT("shaders/lights.vert"), TEXT("shaders/lights.frag"));
+  assert(pShaderLights != nullptr);
+
+  parallaxNormalMap.pShader = pContext->CreateShader(TEXT("shaders/parallaxnormalmap.vert"), TEXT("shaders/parallaxnormalmap.frag"));
+  assert(parallaxNormalMap.pShader != nullptr);
+
+  pShaderPassThrough = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
+  assert(pShaderPassThrough != nullptr);
+
+  pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
+  assert(pShaderScreenRect != nullptr);
+
+  pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
+  assert(pShaderCrate != nullptr);
+
+  pShaderFog = pContext->CreateShader(TEXT("shaders/fog.vert"), TEXT("shaders/fog.frag"));
+  assert(pShaderFog != nullptr);
+
+  pShaderMetal = pContext->CreateShader(TEXT("shaders/metal.vert"), TEXT("shaders/metal.frag"));
+  assert(pShaderMetal != nullptr);
+}
+
+void cApplication::DestroyShaders()
+{
+  if (pShaderScreenRect != nullptr) {
+    pContext->DestroyShader(pShaderScreenRect);
+    pShaderScreenRect = nullptr;
+  }
+  if (pShaderPassThrough != nullptr) {
+    pContext->DestroyShader(pShaderPassThrough);
+    pShaderPassThrough = nullptr;
+  }
+
+  if (parallaxNormalMap.pShader != nullptr) {
+    pContext->DestroyShader(parallaxNormalMap.pShader);
+    parallaxNormalMap.pShader = nullptr;
+  }
+
+  if (pShaderLambert != nullptr) {
+    pContext->DestroyShader(pShaderLambert);
+    pShaderLambert = nullptr;
+  }
+  if (pShaderLights != nullptr) {
+    pContext->DestroyShader(pShaderLights);
+    pShaderLights = nullptr;
+  }
+
+  if (pShaderCarPaint != nullptr) {
+    pContext->DestroyShader(pShaderCarPaint);
+    pShaderCarPaint = nullptr;
+  }
+  if (pShaderCubeMap != nullptr) {
+    pContext->DestroyShader(pShaderCubeMap);
+    pShaderCubeMap = nullptr;
+  }
+
+  if (pShaderMetal != nullptr) {
+    pContext->DestroyShader(pShaderMetal);
+    pShaderMetal = nullptr;
+  }
+  if (pShaderFog != nullptr) {
+    pContext->DestroyShader(pShaderFog);
+    pShaderFog = nullptr;
+  }
+  if (pShaderCrate != nullptr) {
+    pContext->DestroyShader(pShaderCrate);
+    pShaderCrate = nullptr;
   }
 }
 
@@ -1415,6 +1437,11 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsMovingRight = false;
         break;
       }
+      case SDLK_r: {
+        bReloadShaders = true;
+        bSimplePostRenderDirty = true;
+        break;
+      }
       case SDLK_y: {
         simplePostRenderShaders[0].bOn = !simplePostRenderShaders[0].bOn;
         bSimplePostRenderDirty = true;
@@ -1481,6 +1508,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("S backward");
   description.push_back("D right");
   description.push_back("Space pause rotation");
+  description.push_back("R reload shaders");
   description.push_back("1 toggle wireframe");
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
@@ -1827,6 +1855,16 @@ void cApplication::Run()
       matObjectRotation.SetRotation(rotation);
 
       previousUpdateTime = currentTime;
+    }
+
+    if (bReloadShaders) {
+      LOG("Reloading shaders");
+
+      // Destroy and create our shaders
+      DestroyShaders();
+      CreateShaders();
+
+      bReloadShaders = false;
     }
 
 
