@@ -236,6 +236,7 @@ private:
   size_t GetColourBlindModeDefineValue() const;
 
   bool bReloadShaders;
+  bool bUpdateShaderConstants;
 
   bool bIsMovingForward;
   bool bIsMovingLeft;
@@ -342,6 +343,7 @@ private:
 
 cApplication::cApplication() :
   bReloadShaders(false),
+  bUpdateShaderConstants(true),
 
   bIsMovingForward(false),
   bIsMovingLeft(false),
@@ -1437,9 +1439,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsMovingRight = false;
         break;
       }
-      case SDLK_r: {
+      case SDLK_F5: {
         bReloadShaders = true;
         bSimplePostRenderDirty = true;
+        bUpdateShaderConstants = true;
         break;
       }
       case SDLK_y: {
@@ -1508,7 +1511,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("S backward");
   description.push_back("D right");
   description.push_back("Space pause rotation");
-  description.push_back("R reload shaders");
+  description.push_back("F5 reload shaders");
   description.push_back("1 toggle wireframe");
   description.push_back("2 toggle directional light");
   description.push_back("3 toggle point light");
@@ -1747,75 +1750,13 @@ void cApplication::Run()
   const spitfire::math::cColour materialDiffuseColour(1.0f, 1.0f, 1.0f);
   const spitfire::math::cColour materialSpecularColour(1.0f, 1.0f, 1.0f);
   const float fMaterialShininess = 25.0f;
-
-  // Set our shader constants
-  pContext->BindShader(*pShaderMetal);
-    // Setup lighting
-    pContext->SetShaderConstant("light.ambientColour", lightDirectionalAmbientColour);
-    pContext->SetShaderConstant("light.diffuseColour", lightDirectionalDiffuseColour);
-    pContext->SetShaderConstant("light.specularColour", lightDirectionalSpecularColour);
-
-    // Setup materials
-    pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
-    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
-    pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
-    pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
-  pContext->UnBindShader(*pShaderMetal);
-
+  
   // Use Cornflower blue as the fog colour
   // http://en.wikipedia.org/wiki/Cornflower_blue
   const spitfire::math::cColour fogColour(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
   const float fFogStart = 5.0f;
   const float fFogEnd = 15.0f;
   //const float fFogDensity = 0.5f;
-
-  pContext->BindShader(*pShaderFog);
-    pContext->SetShaderConstant("fog.colour", fogColour);
-    pContext->SetShaderConstant("fog.fStart", fFogStart);
-    pContext->SetShaderConstant("fog.fEnd", fFogEnd);
-    //pContext->SetShaderConstant("fog.fDensity", fFogDensity);
-  pContext->UnBindShader(*pShaderFog);
-
-  pContext->BindShader(*pShaderLights);
-    // Directional light
-    pContext->SetShaderConstant("lightDirectional.ambientColour", lightDirectionalAmbientColour);
-    pContext->SetShaderConstant("lightDirectional.diffuseColour", lightDirectionalDiffuseColour);
-    pContext->SetShaderConstant("lightDirectional.specularColour", lightDirectionalSpecularColour);
-
-    // Point light
-    pContext->SetShaderConstant("lightPointLight.colour", lightPointColour);
-    pContext->SetShaderConstant("lightPointLight.fAmbient", lightPointAmbient);
-    pContext->SetShaderConstant("lightPointLight.fConstantAttenuation", lightPointConstantAttenuation);
-    pContext->SetShaderConstant("lightPointLight.fLinearAttenuation", lightPointLinearAttenuation);
-    pContext->SetShaderConstant("lightPointLight.fExpAttenuation", lightPointExpAttenuation);
-
-    // Spot light
-    pContext->SetShaderConstant("lightSpotLight.colour", lightSpotColour);
-    //pContext->SetShaderConstant("lightSpotLight.fAmbient", lightSpotAmbient);
-    //pContext->SetShaderConstant("lightSpotLight.fConstantAttenuation", lightSpotConstantAttenuation);
-    pContext->SetShaderConstant("lightSpotLight.fLinearAttenuation", lightSpotLinearAttenuation);
-    //pContext->SetShaderConstant("lightSpotLight.fExpAttenuation", lightSpotExpAttenuation);
-    pContext->SetShaderConstant("lightSpotLight.fConeCosineAngle", lightSpotConeCosineAngle);
-
-    // Setup materials
-    pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
-    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
-    pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
-    pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
-  pContext->UnBindShader(*pShaderLights);
-
-  pContext->BindShader(*parallaxNormalMap.pShader);
-    // Directional light
-    pContext->SetShaderConstant("directionalLight.ambientColour", lightDirectionalAmbientColour);
-    pContext->SetShaderConstant("directionalLight.diffuseColour", lightDirectionalDiffuseColour);
-    pContext->SetShaderConstant("directionalLight.specularColour", lightDirectionalSpecularColour);
-
-    // Setup materials
-    pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
-    pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
-    pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
-    pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
-  pContext->UnBindShader(*parallaxNormalMap.pShader);
 
 
   const uint32_t uiUpdateInputDelta = uint32_t(1000.0f / 120.0f);
@@ -1865,6 +1806,72 @@ void cApplication::Run()
       CreateShaders();
 
       bReloadShaders = false;
+    }
+
+    if (bUpdateShaderConstants) {
+      // Set our shader constants
+      pContext->BindShader(*pShaderMetal);
+        // Setup lighting
+        pContext->SetShaderConstant("light.ambientColour", lightDirectionalAmbientColour);
+        pContext->SetShaderConstant("light.diffuseColour", lightDirectionalDiffuseColour);
+        pContext->SetShaderConstant("light.specularColour", lightDirectionalSpecularColour);
+
+        // Setup materials
+        pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+        pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
+        pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
+        pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
+      pContext->UnBindShader(*pShaderMetal);
+
+      pContext->BindShader(*pShaderFog);
+        pContext->SetShaderConstant("fog.colour", fogColour);
+        pContext->SetShaderConstant("fog.fStart", fFogStart);
+        pContext->SetShaderConstant("fog.fEnd", fFogEnd);
+        //pContext->SetShaderConstant("fog.fDensity", fFogDensity);
+      pContext->UnBindShader(*pShaderFog);
+
+      pContext->BindShader(*pShaderLights);
+        // Directional light
+        pContext->SetShaderConstant("lightDirectional.ambientColour", lightDirectionalAmbientColour);
+        pContext->SetShaderConstant("lightDirectional.diffuseColour", lightDirectionalDiffuseColour);
+        pContext->SetShaderConstant("lightDirectional.specularColour", lightDirectionalSpecularColour);
+
+        // Point light
+        pContext->SetShaderConstant("lightPointLight.colour", lightPointColour);
+        pContext->SetShaderConstant("lightPointLight.fAmbient", lightPointAmbient);
+        pContext->SetShaderConstant("lightPointLight.fConstantAttenuation", lightPointConstantAttenuation);
+        pContext->SetShaderConstant("lightPointLight.fLinearAttenuation", lightPointLinearAttenuation);
+        pContext->SetShaderConstant("lightPointLight.fExpAttenuation", lightPointExpAttenuation);
+
+        // Spot light
+        pContext->SetShaderConstant("lightSpotLight.colour", lightSpotColour);
+        //pContext->SetShaderConstant("lightSpotLight.fAmbient", lightSpotAmbient);
+        //pContext->SetShaderConstant("lightSpotLight.fConstantAttenuation", lightSpotConstantAttenuation);
+        pContext->SetShaderConstant("lightSpotLight.fLinearAttenuation", lightSpotLinearAttenuation);
+        //pContext->SetShaderConstant("lightSpotLight.fExpAttenuation", lightSpotExpAttenuation);
+        pContext->SetShaderConstant("lightSpotLight.fConeCosineAngle", lightSpotConeCosineAngle);
+
+        // Setup materials
+        pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+        pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
+        pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
+        pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
+      pContext->UnBindShader(*pShaderLights);
+
+      pContext->BindShader(*parallaxNormalMap.pShader);
+        // Directional light
+        pContext->SetShaderConstant("directionalLight.ambientColour", lightDirectionalAmbientColour);
+        pContext->SetShaderConstant("directionalLight.diffuseColour", lightDirectionalDiffuseColour);
+        pContext->SetShaderConstant("directionalLight.specularColour", lightDirectionalSpecularColour);
+
+        // Setup materials
+        pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+        pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
+        pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
+        pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
+      pContext->UnBindShader(*parallaxNormalMap.pShader);
+
+      bUpdateShaderConstants = false;
     }
 
 
