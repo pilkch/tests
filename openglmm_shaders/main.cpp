@@ -2404,7 +2404,16 @@ void cApplication::Run()
         pContext->SetShaderConstant("lightPosition", lightDirectionalPosition);
         pContext->SetShaderConstant("matView", matView);
 
+        // Mirror's Edge style lighting (But much uglier because this is just a cheap knock off)
+        pContext->SetShaderConstant("ambientColour", spitfire::math::cColour3(0.0f, 0.26f, 0.9f));
+        pContext->SetShaderConstant("lightColour", spitfire::math::cColour3(1.0f, 1.0f, 0.83f));
+        
+        const spitfire::math::cColour3 white(0.9f, 0.9f, 0.9f);
+        const spitfire::math::cColour3 red(1.0f, 0.0f, 0.0f);
+        const spitfire::math::cColour3 yellow(1.0f, 1.0f, 0.0f);
+
         {
+          pContext->SetShaderConstant("diffuseColour", white);
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane0);
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[20] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlane0);
@@ -2412,6 +2421,7 @@ void cApplication::Run()
         }
 
         {
+          pContext->SetShaderConstant("diffuseColour", white);
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCube0);
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[21] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCube0);
@@ -2419,6 +2429,7 @@ void cApplication::Run()
         }
 
         {
+          pContext->SetShaderConstant("diffuseColour", red);
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox0);
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[22] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox0);
@@ -2426,6 +2437,7 @@ void cApplication::Run()
         }
 
         {
+          pContext->SetShaderConstant("diffuseColour", white);
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[23] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
@@ -2433,6 +2445,7 @@ void cApplication::Run()
         }
 
         {
+          pContext->SetShaderConstant("diffuseColour", yellow);
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[24] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot0);
