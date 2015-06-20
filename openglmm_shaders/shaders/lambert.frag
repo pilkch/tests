@@ -4,7 +4,7 @@
 
 precision highp float;
 
-uniform vec3 diffuseColour;
+uniform vec3 colour;
 uniform vec3 ambientColour;
 uniform vec3 lightColour;
 
@@ -15,6 +15,8 @@ out vec4 fragmentColour;
 
 void main()
 {
-  float lambert = CalculateLambertDiffuse(normalize(L), normalize(N));
-  fragmentColour = vec4((0.7 * diffuseColour) + (0.5 * mix(ambientColour, lightColour, lambert)), 1.0);
+  vec3 ambient = ambientColour;
+  float fLambertDiffuse = CalculateLambertDiffuse(normalize(L), normalize(N));
+  vec3 diffuse = lightColour * fLambertDiffuse;
+  fragmentColour = vec4((ambient + diffuse) * colour, 1.0);
 }
