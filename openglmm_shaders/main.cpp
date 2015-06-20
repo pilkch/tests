@@ -1762,10 +1762,6 @@ void cApplication::Run()
   const uint32_t uiUpdateInputDelta = uint32_t(1000.0f / 120.0f);
   const uint32_t uiUpdateDelta = uint32_t(1000.0f / 60.0f);
 
-  // Setup mouse
-  pWindow->ShowCursor(false);
-  pWindow->WarpCursorToMiddleOfScreen();
-
   while (!bIsDone) {
     // Update state
     currentTime = SDL_GetTicks();
@@ -1774,8 +1770,16 @@ void cApplication::Run()
       // Update window events
       pWindow->ProcessEvents();
 
-      // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
-      pWindow->WarpCursorToMiddleOfScreen();
+      if (pWindow->IsActive()) {
+        // Hide the cursor
+        pWindow->ShowCursor(false);
+
+        // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
+        pWindow->WarpCursorToMiddleOfScreen();
+      } else {
+        // Show the cursor
+        pWindow->ShowCursor(true);
+      }
 
       previousUpdateInputTime = currentTime;
     }
