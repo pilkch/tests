@@ -1885,7 +1885,7 @@ void cApplication::Run()
 
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
-    const spitfire::math::cMat4 matView = matWorldViewProjectioncamera.CalculateViewMatrix();
+    const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
 
     const spitfire::math::cVec3 lightDirection = (spitfire::math::cVec3(0.0f, 0.0f, 0.0f) - lightDirectionalPosition).GetNormalised();
 
