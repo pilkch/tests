@@ -287,7 +287,7 @@ private:
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
 
-  opengl::cStaticVertexBufferObject staticVertexBufferObject;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectLargeTeapot;
   #ifdef BUILD_LARGE_STATUE_MODEL
   opengl::cStaticVertexBufferObject staticVertexBufferObjectStatue;
   #endif
@@ -787,11 +787,11 @@ void cApplication::CreateTeapotVBO()
 
   const float fRadius = 0.3f;
   const size_t nSegments = 20;
-  builder.CreateTeapot(fRadius, nSegments, *pGeometryDataPtr, 2);
+  builder.CreateTeapot(fRadius, nSegments, *pGeometryDataPtr, 1);
 
-  staticVertexBufferObject.SetData(pGeometryDataPtr);
+  staticVertexBufferObjectLargeTeapot.SetData(pGeometryDataPtr);
 
-  staticVertexBufferObject.Compile();
+  staticVertexBufferObjectLargeTeapot.Compile();
 }
 
 #ifdef BUILD_LARGE_STATUE_MODEL
@@ -1033,7 +1033,7 @@ bool cApplication::Create()
   pTextureNormalMapHeight = pContext->CreateTexture(TEXT("textures/floor_tile_height_map.png"));
   assert(pTextureNormalMapHeight != nullptr);
 
-  pContext->CreateStaticVertexBufferObject(staticVertexBufferObject);
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
   CreateTeapotVBO();
 
   #ifdef BUILD_LARGE_STATUE_MODEL
@@ -1162,7 +1162,7 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectStatue);
   #endif
 
-  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObject);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
 
   if (pTextureNormalMapHeight != nullptr) {
@@ -1595,7 +1595,7 @@ void cApplication::Run()
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
 
-  assert(staticVertexBufferObject.IsCompiled());
+  assert(staticVertexBufferObjectLargeTeapot.IsCompiled());
   #ifdef BUILD_LARGE_STATUE_MODEL
   assert(staticVertexBufferObjectStatue.IsCompiled());
   #endif
@@ -1885,7 +1885,7 @@ void cApplication::Run()
 
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
-    const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
+    const spitfire::math::cMat4 matView = matWorldViewProjectioncamera.CalculateViewMatrix();
 
     const spitfire::math::cVec3 lightDirection = (spitfire::math::cVec3(0.0f, 0.0f, 0.0f) - lightDirectionalPosition).GetNormalised();
 
@@ -2031,15 +2031,15 @@ void cApplication::Run()
 
       pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot);
 
-      pContext->BindStaticVertexBufferObject(staticVertexBufferObject);
+      pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       {
         pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCubeMappedTeapot);
 
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObject);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
       }
 
-      pContext->UnBindStaticVertexBufferObject(staticVertexBufferObject);
+      pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       pContext->UnBindShader(*pShaderCubeMap);
 
@@ -2069,15 +2069,15 @@ void cApplication::Run()
 
       pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot);
 
-      pContext->BindStaticVertexBufferObject(staticVertexBufferObject);
+      pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       {
         pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCubeMappedTeapot);
 
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObject);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
       }
 
-      pContext->UnBindStaticVertexBufferObject(staticVertexBufferObject);
+      pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       pContext->UnBindShader(*pShaderCubeMap);
 
@@ -2100,15 +2100,15 @@ void cApplication::Run()
         const spitfire::math::cMat4 matWorldInverseTranspose = matWorld.GetInverseTranspose();
         pContext->SetShaderConstant("matWorldInverseTranspose", matWorldInverseTranspose);
 
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObject);
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
         {
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCarPaintTeapot);
 
-          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObject);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
         }
 
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObject);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
         pContext->UnBindShader(*pShaderCarPaint);
 
