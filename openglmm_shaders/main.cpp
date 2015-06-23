@@ -2094,7 +2094,7 @@ void cApplication::Run()
         // Set our constants
         const spitfire::math::cMat4 matModelView = matView * matTranslationCarPaintTeapot;
         pContext->SetShaderConstant("fvLightPosition", matModelView * lightDirectionalPosition);
-        pContext->SetShaderConstant("fvEyePosition", matModelView * camera.GetPosition());
+        pContext->SetShaderConstant("fvEyePosition", spitfire::math::cVec3());
 
         // The world matrix is the model matrix apparently, matObjectToBeRendered
         const spitfire::math::cMat4 matWorld = matTranslationCarPaintTeapot;

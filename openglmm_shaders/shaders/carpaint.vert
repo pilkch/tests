@@ -2,7 +2,11 @@
 
 uniform mat4 matModelView;
 uniform mat4 matModelViewProjection;
+uniform mat4 matWorldInverseTranspose;
 uniform mat3 matNormal;
+
+uniform vec3 fvLightPosition;
+uniform vec3 fvEyePosition;
 
 #define POSITION 0
 #define NORMAL 1
@@ -11,37 +15,29 @@ layout(location = POSITION) in vec3 position;
 layout(location = NORMAL) in vec3 normal;
 layout(location = TEXCOORD0) in vec2 texCoord0;
 
-// Outputs for fragment program
-smooth out vec3 vertOutNormal;
-smooth out vec2 vertOutTexCoord0;
-
-
-uniform vec3 fvLightPosition;
-uniform vec3 fvEyePosition;
-uniform mat4 matWorldInverseTranspose;
-
-smooth out vec3 ViewDirection;
-smooth out vec3 LightDirection;
-smooth out vec3 reflcoord;
+out vec2 Texcoord;
+out vec3 ViewDirection;
+out vec3 LightDirection;
+out vec3 Normal;
+out vec3 reflcoord;
 
 void main()
 {
-  // Calculate the normal value for this vertex, in world coordinates (multiply by the normal matrix)
-  vertOutNormal = matNormal * normal;
-
   gl_Position = matModelViewProjection * vec4(position, 1.0);
 
   // Pass on the texture coordinates
-  vertOutTexCoord0 = texCoord0;
+  Texcoord = texCoord0;
 
+  vec3 fvObjectPosition = (matModelView * vec4(position, 1.0)).xyz;
 
-  vec4 fvObjectPosition = matModelView * vec4(position, 1.0);
-  ViewDirection = fvEyePosition - fvObjectPosition.xyz;
-  vec3 ViewDirection = normalize(ViewDirection);
-  LightDirection = fvLightPosition - fvObjectPosition.xyz;
-  vec3 normal2 = (vec4(vertOutNormal, 1.0) * matWorldInverseTranspose).xyz;
+  ViewDirection  = fvEyePosition - fvObjectPosition;
+  vec3 ViewDirectionn=normalize(ViewDirection);
+  LightDirection = fvLightPosition - fvObjectPosition;
+  Normal         = matNormal * normal;
+  vec3 normal2 = (vec4(Normal, 1.0) * matWorldInverseTranspose).xyz;
 
-  vec3 fin = ViewDirection -(2.0 * (dot(normalize(normal2), ViewDirection)) * normal2);
-  float p = sqrt(pow(fin.x, 2.0)+pow(fin.y, 2.0) + pow((fin.z + 1.0), 2.0));
-  reflcoord = vec3(((fin.x / (2.0 * p)) + 1.0 / 2.0), ((fin.y / (2.0 * p)) + 1.0 / 2.0), ((fin.z / (2.0 * p)) + 1.0 / 2.0));
+  vec3 fin = ViewDirectionn-(2*(dot(normalize(normal2),ViewDirectionn))*normal2);
+  float p = sqrt(pow(fin.x,2)+pow(fin.y,2)+pow((fin.z+1),2));
+
+  reflcoord = (fin / (2.0 * p)) + 0.5;
 }
