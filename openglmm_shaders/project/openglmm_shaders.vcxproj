@@ -116,6 +116,7 @@
     <ClCompile Include="..\..\..\library\src\spitfire\util\log.cpp" />
     <ClCompile Include="..\..\..\library\src\spitfire\util\string.cpp" />
     <ClCompile Include="..\..\..\library\src\spitfire\util\thread.cpp" />
+    <ClCompile Include="..\..\..\library\src\spitfire\util\timer.cpp" />
     <ClCompile Include="..\main.cpp" />
   </ItemGroup>
   <ItemGroup>

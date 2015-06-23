@@ -19,6 +19,8 @@
 
 // Spitfire headers
 #include <spitfire/spitfire.h>
+#include <spitfire/util/timer.h>
+#include <spitfire/util/thread.h>
 
 // TODO: GET A HEBE STATUE MODEL
 
@@ -395,6 +397,11 @@ cApplication::cApplication() :
 
   colourBlindMode(COLOUR_BLIND_MODE::PROTANOPIA)
 {
+  // Set our main thread
+  spitfire::util::SetMainThread();
+
+  // Set up our time variables
+  spitfire::util::TimeInit();
 }
 
 void cApplication::CreateText()
@@ -1712,12 +1719,12 @@ void cApplication::Run()
   }
 
 
-  uint32_t T0 = 0;
+  spitfire::durationms_t T0 = spitfire::util::GetTimeMS();
   uint32_t Frames = 0;
 
-  uint32_t previousUpdateInputTime = SDL_GetTicks();
-  uint32_t previousUpdateTime = SDL_GetTicks();
-  uint32_t currentTime = SDL_GetTicks();
+  spitfire::durationms_t previousUpdateInputTime = spitfire::util::GetTimeMS();
+  spitfire::durationms_t previousUpdateTime = spitfire::util::GetTimeMS();
+  spitfire::durationms_t currentTime = spitfire::util::GetTimeMS();
 
 
   // Green directional light
@@ -1764,7 +1771,7 @@ void cApplication::Run()
 
   while (!bIsDone) {
     // Update state
-    currentTime = SDL_GetTicks();
+    currentTime = spitfire::util::GetTimeMS();
 
     if ((currentTime - previousUpdateInputTime) > uiUpdateInputDelta) {
       // Update window events
@@ -2583,7 +2590,7 @@ void cApplication::Run()
     // Gather our frames per second
     Frames++;
     {
-      uint32_t t = SDL_GetTicks();
+      spitfire::durationms_t t = spitfire::util::GetTimeMS();
       if (t - T0 >= 5000) {
         #ifdef BUILD_DEBUG
         float seconds = (t - T0) / 1000.0f;
