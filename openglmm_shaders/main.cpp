@@ -2094,12 +2094,15 @@ void cApplication::Run()
         // Set our constants
         const spitfire::math::cMat4 matModelView = matView * matTranslationCarPaintTeapot;
         pContext->SetShaderConstant("fvLightPosition", matModelView * lightDirectionalPosition);
-        pContext->SetShaderConstant("fvEyePosition", spitfire::math::cVec3());
+        pContext->SetShaderConstant("fvEyePosition", spitfire::math::cVec3());// matModelView * camera.GetPosition());
+
+        pContext->SetShaderConstant("cameraPos", camera.GetPosition());
+        pContext->SetShaderConstant("matModel", matTranslationCarPaintTeapot);
 
         // The world matrix is the model matrix apparently, matObjectToBeRendered
-        const spitfire::math::cMat4 matWorld = matTranslationCarPaintTeapot;
-        const spitfire::math::cMat4 matWorldInverseTranspose = matWorld.GetInverseTranspose();
-        pContext->SetShaderConstant("matWorldInverseTranspose", matWorldInverseTranspose);
+        //const spitfire::math::cMat4 matWorld = matTranslationCarPaintTeapot;
+        //const spitfire::math::cMat4 matWorldInverseTranspose = matWorld.GetInverseTranspose();
+        //pContext->SetShaderConstant("matWorldInverseTranspose", matWorldInverseTranspose);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
