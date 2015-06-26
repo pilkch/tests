@@ -122,6 +122,8 @@
   <ItemGroup>
     <None Include="..\shaders\carpaint.frag" />
     <None Include="..\shaders\carpaint.vert" />
+    <None Include="..\shaders\celshader.frag" />
+    <None Include="..\shaders\celshader.vert" />
     <None Include="..\shaders\colour.header" />
     <None Include="..\shaders\colourblind.frag" />
     <None Include="..\shaders\crate.frag" />
@@ -149,6 +151,8 @@
     <None Include="..\shaders\passthrough2d.frag" />
     <None Include="..\shaders\passthrough2d.vert" />
     <None Include="..\shaders\sepia.frag" />
+    <None Include="..\shaders\silhouette.frag" />
+    <None Include="..\shaders\silhouette.vert" />
     <None Include="..\shaders\tealandorange.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

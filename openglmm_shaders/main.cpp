@@ -276,6 +276,7 @@ private:
   opengl::cTexture* pTextureDetail;
   opengl::cTextureCubeMap* pTextureCubeMap;
   opengl::cTexture* pTextureMarble;
+  opengl::cTexture* pTextureCelShaderColourMap;
 
   opengl::cTexture* pTextureNormalMapDiffuse;
   opengl::cTexture* pTextureNormalMapSpecular;
@@ -284,6 +285,8 @@ private:
 
   opengl::cShader* pShaderCubeMap;
   opengl::cShader* pShaderCarPaint;
+  opengl::cShader* pShaderSilhouette;
+  opengl::cShader* pShaderCelShaded;
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderLambert;
   opengl::cShader* pShaderPassThrough;
@@ -375,6 +378,7 @@ cApplication::cApplication() :
   pTextureDetail(nullptr),
   pTextureCubeMap(nullptr),
   pTextureMarble(nullptr),
+  pTextureCelShaderColourMap(nullptr),
 
   pTextureNormalMapDiffuse(nullptr),
   pTextureNormalMapSpecular(nullptr),
@@ -383,6 +387,8 @@ cApplication::cApplication() :
 
   pShaderCubeMap(nullptr),
   pShaderCarPaint(nullptr),
+  pShaderSilhouette(nullptr),
+  pShaderCelShaded(nullptr),
   pShaderLambert(nullptr),
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
@@ -1028,6 +1034,52 @@ bool cApplication::Create()
   pTextureMarble = pContext->CreateTexture(TEXT("textures/marble.png"));
   assert(pTextureMarble != nullptr);
 
+  voodoo::cImage image;
+  {
+    // Create our image
+    struct cColourRGB255 {
+      uint8_t r;
+      uint8_t g;
+      uint8_t b;
+    };
+    const cColourRGB255 colours[] = {
+      { 0, 0, 0 }, // Black
+      { 124, 76, 0 }, // Black
+      { 255, 159, 0 }, // Orange
+      { 234, 218, 0 }, // Yellow
+      { 255, 255, 0 }, // Light yellow
+      { 255, 255, 255 }, // White
+    };
+
+    // TODO: Create a 4x4 image or even 4x1?
+    const size_t width = 128;
+    const size_t height = 128;
+    const size_t nParts = countof(colours);
+    const size_t partWidth = (width / nParts) * 3;
+    std::array<uint8_t, width * height * 3> data;
+
+    // Fill in the first line of pixels
+    for (size_t part = 0; part < nParts; part++) {
+      for (size_t index = (part * partWidth); index < ((part + 1) * partWidth); index += 3) {
+        data[index] = colours[part].r;
+        data[index + 1] = colours[part].g;
+        data[index + 2] = colours[part].b;
+      }
+    }
+
+    const size_t rowWidthBytes = width * 3;
+
+    // Copy the first line of pixels over the other lines
+    for (size_t y = 0; y < height; y++) {
+      const size_t index = (y * rowWidthBytes);
+      memcpy(&data[index], &data[0], rowWidthBytes);
+    }
+
+    image.CreateFromBuffer(data.data(), width, height, voodoo::PIXELFORMAT::R8G8B8);
+  }
+  pTextureCelShaderColourMap = pContext->CreateTextureFromImage(image);
+  assert(pTextureCelShaderColourMap != nullptr);
+
   pTextureNormalMapDiffuse = pContext->CreateTexture(TEXT("textures/floor_tile_color_map.png"));
   assert(pTextureNormalMapDiffuse != nullptr);
 
@@ -1189,6 +1241,10 @@ void cApplication::Destroy()
     pTextureNormalMapDiffuse = nullptr;
   }
 
+  if (pTextureCelShaderColourMap != nullptr) {
+    pContext->DestroyTexture(pTextureCelShaderColourMap);
+    pTextureCelShaderColourMap = nullptr;
+  }
   if (pTextureMarble != nullptr) {
     pContext->DestroyTexture(pTextureMarble);
     pTextureMarble = nullptr;
@@ -1266,6 +1322,12 @@ void cApplication::CreateShaders()
   pShaderCarPaint = pContext->CreateShader(TEXT("shaders/carpaint.vert"), TEXT("shaders/carpaint.frag"));
   assert(pShaderCarPaint != nullptr);
 
+  pShaderSilhouette = pContext->CreateShader(TEXT("shaders/silhouette.vert"), TEXT("shaders/silhouette.frag"));
+  assert(pShaderSilhouette != nullptr);
+
+  pShaderCelShaded = pContext->CreateShader(TEXT("shaders/celshader.vert"), TEXT("shaders/celshader.frag"));
+  assert(pShaderCelShaded != nullptr);
+
   pShaderLambert = pContext->CreateShader(TEXT("shaders/lambert.vert"), TEXT("shaders/lambert.frag"));
   assert(pShaderLambert != nullptr);
 
@@ -1316,6 +1378,14 @@ void cApplication::DestroyShaders()
     pShaderLights = nullptr;
   }
 
+  if (pShaderCelShaded != nullptr) {
+      pContext->DestroyShader(pShaderCelShaded);
+      pShaderCelShaded = nullptr;
+    }
+  if (pShaderSilhouette != nullptr) {
+    pContext->DestroyShader(pShaderSilhouette);
+    pShaderSilhouette = nullptr;
+  }
   if (pShaderCarPaint != nullptr) {
     pContext->DestroyShader(pShaderCarPaint);
     pShaderCarPaint = nullptr;
@@ -1579,6 +1649,8 @@ void cApplication::Run()
   assert(pTextureCubeMap->IsValid());
   assert(pTextureMarble != nullptr);
   assert(pTextureMarble->IsValid());
+  assert(pTextureCelShaderColourMap != nullptr);
+  assert(pTextureCelShaderColourMap->IsValid());
   assert(pTextureNormalMapDiffuse != nullptr);
   assert(pTextureNormalMapDiffuse->IsValid());
   assert(pTextureNormalMapSpecular != nullptr);
@@ -1591,6 +1663,10 @@ void cApplication::Run()
   assert(pShaderCubeMap->IsCompiledProgram());
   assert(pShaderCarPaint != nullptr);
   assert(pShaderCarPaint->IsCompiledProgram());
+  assert(pShaderSilhouette != nullptr);
+  assert(pShaderSilhouette->IsCompiledProgram());
+  assert(pShaderCelShaded != nullptr);
+  assert(pShaderCelShaded->IsCompiledProgram());
   assert(pShaderLambert != nullptr);
   assert(pShaderLambert->IsCompiledProgram());
   assert(pShaderLights != nullptr);
@@ -1689,6 +1765,11 @@ void cApplication::Run()
   const spitfire::math::cVec3 positionCarPaintTeapot(-2.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationCarPaintTeapot;
   matTranslationCarPaintTeapot.SetTranslation(positionCarPaintTeapot);
+
+  // Cel shaded teapot
+  const spitfire::math::cVec3 positionCelShadedTeapot(-4.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
+  spitfire::math::cMat4 matTranslationCelShadedTeapot;
+  matTranslationCelShadedTeapot.SetTranslation(positionCelShadedTeapot);
 
   // Parallax normal mapping
   const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, 0.0f, (-1.0f * fSpacingZ));
@@ -2125,6 +2206,72 @@ void cApplication::Run()
 
         pContext->UnBindTextureCubeMap(1, *pTextureCubeMap);
         pContext->UnBindTexture(0, *pTextureDiffuse);
+      }
+
+      {
+        // Render the cel shaded teapot which consists of a black silhouette pass and a cel shaded pass
+
+        // Black silhouette
+        {
+          glEnable(GL_CULL_FACE); // enable culling
+          glCullFace(GL_CW); // enable culling of front faces
+          glDepthMask(GL_FALSE); // enable writes to Z-buffer
+
+          pContext->BindShader(*pShaderSilhouette);
+
+          // Set our constants
+          const float fOffset = 0.25f;
+          pContext->SetShaderConstant("fOffset", fOffset);
+
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
+
+          {
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCelShadedTeapot);
+
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
+          }
+
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
+
+          pContext->UnBindShader(*pShaderSilhouette);
+
+          glCullFace(GL_CW); // enable culling of back faces
+          glDepthMask(GL_FALSE); // disable writes to Z-buffer
+          glEnable(GL_DEPTH_TEST);
+          glDepthMask(GL_TRUE);
+        }
+
+        // Cel shaded
+        {
+          pContext->BindTexture(0, *pTextureCelShaderColourMap);
+
+          pContext->BindShader(*pShaderCelShaded);
+
+          // Set our constants
+          const spitfire::math::cMat4 matModel = matTranslationCelShadedTeapot;
+          const spitfire::math::cMat4 matViewProjection = matProjection * matView;
+          pContext->SetShaderConstant("matModel", matModel);
+          pContext->SetShaderConstant("matViewProjection", matViewProjection);
+
+          pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
+          pContext->SetShaderConstant("lightPosition", lightPointPosition);
+          pContext->SetShaderConstant("nShades", 6);
+          pContext->SetShaderConstant("colour", spitfire::math::cVec3(1.0f, 0.62f, 0.0));
+
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
+
+          {
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCelShadedTeapot);
+
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
+          }
+
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
+
+          pContext->UnBindShader(*pShaderCelShaded);
+
+          pContext->UnBindTexture(0, *pTextureCelShaderColourMap);
+        }
       }
 
 
