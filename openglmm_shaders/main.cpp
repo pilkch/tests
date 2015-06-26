@@ -276,7 +276,6 @@ private:
   opengl::cTexture* pTextureDetail;
   opengl::cTextureCubeMap* pTextureCubeMap;
   opengl::cTexture* pTextureMarble;
-  opengl::cTexture* pTextureCelShaderColourMap;
 
   opengl::cTexture* pTextureNormalMapDiffuse;
   opengl::cTexture* pTextureNormalMapSpecular;
@@ -378,7 +377,6 @@ cApplication::cApplication() :
   pTextureDetail(nullptr),
   pTextureCubeMap(nullptr),
   pTextureMarble(nullptr),
-  pTextureCelShaderColourMap(nullptr),
 
   pTextureNormalMapDiffuse(nullptr),
   pTextureNormalMapSpecular(nullptr),
@@ -1034,52 +1032,6 @@ bool cApplication::Create()
   pTextureMarble = pContext->CreateTexture(TEXT("textures/marble.png"));
   assert(pTextureMarble != nullptr);
 
-  voodoo::cImage image;
-  {
-    // Create our image
-    struct cColourRGB255 {
-      uint8_t r;
-      uint8_t g;
-      uint8_t b;
-    };
-    const cColourRGB255 colours[] = {
-      { 0, 0, 0 }, // Black
-      { 124, 76, 0 }, // Black
-      { 255, 159, 0 }, // Orange
-      { 234, 218, 0 }, // Yellow
-      { 255, 255, 0 }, // Light yellow
-      { 255, 255, 255 }, // White
-    };
-
-    // TODO: Create a 4x4 image or even 4x1?
-    const size_t width = 128;
-    const size_t height = 128;
-    const size_t nParts = countof(colours);
-    const size_t partWidth = (width / nParts) * 3;
-    std::array<uint8_t, width * height * 3> data;
-
-    // Fill in the first line of pixels
-    for (size_t part = 0; part < nParts; part++) {
-      for (size_t index = (part * partWidth); index < ((part + 1) * partWidth); index += 3) {
-        data[index] = colours[part].r;
-        data[index + 1] = colours[part].g;
-        data[index + 2] = colours[part].b;
-      }
-    }
-
-    const size_t rowWidthBytes = width * 3;
-
-    // Copy the first line of pixels over the other lines
-    for (size_t y = 0; y < height; y++) {
-      const size_t index = (y * rowWidthBytes);
-      memcpy(&data[index], &data[0], rowWidthBytes);
-    }
-
-    image.CreateFromBuffer(data.data(), width, height, voodoo::PIXELFORMAT::R8G8B8);
-  }
-  pTextureCelShaderColourMap = pContext->CreateTextureFromImage(image);
-  assert(pTextureCelShaderColourMap != nullptr);
-
   pTextureNormalMapDiffuse = pContext->CreateTexture(TEXT("textures/floor_tile_color_map.png"));
   assert(pTextureNormalMapDiffuse != nullptr);
 
@@ -1241,10 +1193,6 @@ void cApplication::Destroy()
     pTextureNormalMapDiffuse = nullptr;
   }
 
-  if (pTextureCelShaderColourMap != nullptr) {
-    pContext->DestroyTexture(pTextureCelShaderColourMap);
-    pTextureCelShaderColourMap = nullptr;
-  }
   if (pTextureMarble != nullptr) {
     pContext->DestroyTexture(pTextureMarble);
     pTextureMarble = nullptr;
@@ -1649,8 +1597,6 @@ void cApplication::Run()
   assert(pTextureCubeMap->IsValid());
   assert(pTextureMarble != nullptr);
   assert(pTextureMarble->IsValid());
-  assert(pTextureCelShaderColourMap != nullptr);
-  assert(pTextureCelShaderColourMap->IsValid());
   assert(pTextureNormalMapDiffuse != nullptr);
   assert(pTextureNormalMapDiffuse->IsValid());
   assert(pTextureNormalMapSpecular != nullptr);
@@ -2117,12 +2063,12 @@ void cApplication::Run()
 
       pContext->BindShader(*pShaderCubeMap);
 
-      pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot);
+      pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot * matObjectRotation);
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCubeMappedTeapot);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCubeMappedTeapot * matObjectRotation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
       }
@@ -2155,12 +2101,12 @@ void cApplication::Run()
 
       pContext->BindShader(*pShaderCubeMap);
 
-      pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot);
+      pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot * matObjectRotation);
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCubeMappedTeapot);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCubeMappedTeapot * matObjectRotation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
       }
@@ -2185,7 +2131,7 @@ void cApplication::Run()
         pContext->SetShaderConstant("fvEyePosition", spitfire::math::cVec3());// matModelView * camera.GetPosition());
 
         pContext->SetShaderConstant("cameraPos", camera.GetPosition());
-        pContext->SetShaderConstant("matModel", matTranslationCarPaintTeapot);
+        pContext->SetShaderConstant("matModel", matTranslationCarPaintTeapot * matObjectRotation);
 
         // The world matrix is the model matrix apparently, matObjectToBeRendered
         //const spitfire::math::cMat4 matWorld = matTranslationCarPaintTeapot;
@@ -2195,7 +2141,7 @@ void cApplication::Run()
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
         {
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCarPaintTeapot);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCarPaintTeapot * matObjectRotation);
 
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
         }
@@ -2226,7 +2172,7 @@ void cApplication::Run()
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
           {
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCelShadedTeapot);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCelShadedTeapot * matObjectRotation);
 
             pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
           }
@@ -2243,25 +2189,20 @@ void cApplication::Run()
 
         // Cel shaded
         {
-          pContext->BindTexture(0, *pTextureCelShaderColourMap);
-
           pContext->BindShader(*pShaderCelShaded);
 
           // Set our constants
-          const spitfire::math::cMat4 matModel = matTranslationCelShadedTeapot;
-          const spitfire::math::cMat4 matViewProjection = matProjection * matView;
-          pContext->SetShaderConstant("matModel", matModel);
-          pContext->SetShaderConstant("matViewProjection", matViewProjection);
-
-          pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
-          pContext->SetShaderConstant("lightPosition", lightPointPosition);
-          pContext->SetShaderConstant("nShades", 6);
-          pContext->SetShaderConstant("colour", spitfire::math::cVec3(1.0f, 0.62f, 0.0));
+          pContext->SetShaderConstant("cameraPosition", matView * camera.GetPosition());
+          pContext->SetShaderConstant("lightPosition", matView * lightPointPosition);
+          pContext->SetShaderConstant("colour", spitfire::math::cVec3(0.0f, 0.75f, 0.75f));
+          pContext->SetShaderConstant("ambientMaterial", spitfire::math::cVec3(0.04f, 0.04f, 0.04f));
+          pContext->SetShaderConstant("specularMaterial", spitfire::math::cVec3(0.5f, 0.5f, 0.5f));
+          pContext->SetShaderConstant("fShininess", 50.0f);
 
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
           {
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCelShadedTeapot);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCelShadedTeapot * matObjectRotation);
 
             pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
           }
@@ -2269,8 +2210,6 @@ void cApplication::Run()
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
           pContext->UnBindShader(*pShaderCelShaded);
-
-          pContext->UnBindTexture(0, *pTextureCelShaderColourMap);
         }
       }
 
@@ -2310,7 +2249,7 @@ void cApplication::Run()
 
         pContext->BindStaticVertexBufferObject(parallaxNormalMap.vbo);
 
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationParallaxNormalMap);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationParallaxNormalMap * matObjectRotation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(parallaxNormalMap.vbo);
 

@@ -1,46 +1,58 @@
 #version 330
 
-// http://sunandblackcat.com/tipFullView.php?l=eng&topicid=15
-
-uniform sampler2D texUnit0; // Diffuse texture
+// http://prideout.net/blog/?p=22
 
 uniform vec3 colour; // Shading color
-uniform float nShades;
+uniform vec3 cameraPosition;
+uniform vec3 lightPosition;
+uniform vec3 ambientMaterial;
+uniform vec3 specularMaterial;
+uniform float fShininess;
 
 smooth in vec3 vertOutNormal;
-smooth in vec2 vertOutTexCoord0;
-
-in vec3 vertOutDirectionToLight;
-in vec3 vertOutDirectionToCamera;
 
 out vec4 fragmentColor;
 
-float CalculateDiffuseSimple(vec3 L, vec3 N)
+float stepmix(float edge0, float edge1, float E, float x)
 {
-  return clamp(dot(L, N), 0.0, 1.0);
-}
-
-float CalculateSpecularSimple(vec3 L, vec3 N, vec3 H)
-{
-  if (dot(N, L) > 0.0) return pow(clamp(dot(H, N), 0.0, 1.0), 64.0);
-
-  return 0.0;
+  float T = clamp(0.5 * (x - edge0 + E) / E, 0.0, 1.0);
+  return mix(edge0, edge1, T);
 }
 
 void main()
 {
-  // Sample color from diffuse texture
-  vec3 colfromtex = texture2D(texUnit0, vertOutTexCoord0).rgb;
+  vec3 N = normalize(vertOutNormal);
+  vec3 L = lightPosition;
+  vec3 Eye = cameraPosition;
+  vec3 H = normalize(L + Eye);
 
-  // Calculate total intensity of lighting
-  vec3 halfVector = normalize(vertOutDirectionToLight + vertOutDirectionToCamera);
-  float iambi = 0.1;
-  float idiff = CalculateDiffuseSimple(vertOutDirectionToLight, vertOutNormal);
-  float ispec = CalculateSpecularSimple(vertOutDirectionToLight, vertOutNormal, halfVector);
-  float intensity = iambi + idiff + ispec;
+  float df = max(0.0, dot(N, L));
+  vec3 Diffuse = colour;
 
-  // Quantize intensity for cel shading
-  float shadeIntensity = max(ceil(intensity * nShades) / nShades, 1.0);
+  float sf = max(0.0, dot(N, H));
+  sf = pow(sf, fShininess);
 
-  fragmentColor = vec4(colour * colfromtex * shadeIntensity, 1.0);
+  const float A = 0.1;
+  const float B = 0.3;
+  const float C = 0.6;
+  const float D = 1.0;
+  float E = fwidth(df);
+
+  if      (df > A - E && df < A + E) df = stepmix(A, B, E, df);
+  else if (df > B - E && df < B + E) df = stepmix(B, C, E, df);
+  else if (df > C - E && df < C + E) df = stepmix(C, D, E, df);
+  else if (df < A) df = 0.0;
+  else if (df < B) df = B;
+  else if (df < C) df = C;
+  else df = D;
+
+  E = fwidth(sf);
+
+  if (sf > 0.5 - E && sf < 0.5 + E) {
+    sf = smoothstep(0.5 - E, 0.5 + E, sf);
+  } else {
+    sf = step(0.5, sf);
+  }
+
+  fragmentColor = vec4(ambientMaterial + (df * Diffuse) + (sf * specularMaterial), 1.0);
 }
