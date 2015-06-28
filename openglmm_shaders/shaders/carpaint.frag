@@ -10,40 +10,40 @@ uniform samplerCube texUnit1; // Cubemap texture
 
 uniform vec3 cameraPos;
 
-in vec3 Position;
-in vec2 Texcoord;
+in vec3 vertOutPosition;
+in vec2 vertOutTexcoord;
 in vec3 ViewDirection;
 in vec3 LightDirection;
-in vec3 Normal;
+in vec3 vertOutNormal;
 //in vec3 reflcoord;
 
 out vec4 fragmentColour;
 
 vec4 CalculateCubeMap()
 {
-  vec3 I = normalize(Position - cameraPos);
-  vec3 R = reflect(I, normalize(Normal));
+  vec3 I = normalize(vertOutPosition - cameraPos);
+  vec3 R = reflect(I, normalize(vertOutNormal));
   return texture(texUnit1, R);
 }
 
 void main()
 {
   vec3  fvLightDirection = normalize( LightDirection );
-  vec3  fvNormal         = normalize( Normal );
+  vec3  fvNormal         = normalize(vertOutNormal);
   float fNDotL           = dot( fvNormal, fvLightDirection );
 
   vec3  fvReflection     = normalize( ( ( 2.0 * fvNormal ) * fNDotL ) - fvLightDirection );
   vec3  fvViewDirection  = normalize( ViewDirection );
   float fRDotV           = max( 0.0, dot( fvReflection, fvViewDirection ) );
 
-  vec4  fvBaseColor      = texture(texUnit0, Texcoord);
+  vec4  fvBaseColor      = texture(texUnit0, vertOutTexcoord);
 
   vec4  fvTotalAmbient   = fvLowTone * fvBaseColor;
   vec4  fvTotalDiffuse   = fvHighTone * (fNDotL) * fvBaseColor;
   vec4  fvTotalSpecular  = fvSpecular * ( pow( fRDotV, fSpecularPower ) );
 
-  // ORIGINAL: float fresnel = (1/dot( Normal, fvViewDirection) )/5;
-  float fresnel = 0.1 * (1/dot( Normal, fvViewDirection) )/5;
+  // ORIGINAL: float fresnel = (1/dot(vertOutNormal, fvViewDirection) )/5;
+  float fresnel = 0.1 * (1/dot(vertOutNormal, fvViewDirection) )/5;
   
   //ORIGINAL: fragmentColour = ( fvTotalAmbient + fvTotalDiffuse + fvTotalSpecular ) + (fresnel * texture(texUnit1, reflcoord)) + (fresnel / 2);
   fragmentColour = (fvTotalAmbient + fvTotalDiffuse + fvTotalSpecular) + (fresnel * CalculateCubeMap()) + (fresnel / 2);
