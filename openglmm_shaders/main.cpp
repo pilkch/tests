@@ -1708,12 +1708,12 @@ void cApplication::Run()
   matTranslationCubeMappedTeapot.SetTranslation(positionCubeMappedTeapot);
 
   // Car paint teapot
-  const spitfire::math::cVec3 positionCarPaintTeapot(-2.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
+  const spitfire::math::cVec3 positionCarPaintTeapot(-3.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationCarPaintTeapot;
   matTranslationCarPaintTeapot.SetTranslation(positionCarPaintTeapot);
 
   // Cel shaded teapot
-  const spitfire::math::cVec3 positionCelShadedTeapot(-4.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
+  const spitfire::math::cVec3 positionCelShadedTeapot(-9.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationCelShadedTeapot;
   matTranslationCelShadedTeapot.SetTranslation(positionCelShadedTeapot);
 
