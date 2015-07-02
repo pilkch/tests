@@ -21,7 +21,7 @@ void main()
 
   // Pass on the texture coordinates
   vertOutTexCoord0 = texCoord0;
-  
+
   Normal = mat3(transpose(inverse(matModel))) * normal;
   Position = vec3(matModel * vec4(position, 1.0f));
 }

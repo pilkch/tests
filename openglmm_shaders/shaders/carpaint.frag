@@ -15,6 +15,7 @@ in vec2 vertOutTexcoord;
 in vec3 ViewDirection;
 in vec3 LightDirection;
 in vec3 vertOutNormal;
+in vec3 vertOutNormal2;
 //in vec3 reflcoord;
 
 out vec4 fragmentColour;
@@ -22,7 +23,7 @@ out vec4 fragmentColour;
 vec4 CalculateCubeMap()
 {
   vec3 I = normalize(vertOutPosition - cameraPos);
-  vec3 R = reflect(I, normalize(vertOutNormal));
+  vec3 R = reflect(I, normalize(vertOutNormal2));
   return texture(texUnit1, R);
 }
 

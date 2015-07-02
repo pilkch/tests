@@ -38,7 +38,7 @@ void main()
 {
   // All vertex shaders should write the transformed homogeneous clip space
   // vertex position into the gl_Position variables.
-  vec4 pos = vec4(position.x, position.y, position.z, 1.0);
+  vec4 pos = vec4(position, 1.0);
 
   gl_Position = matModelViewProjection * pos;
 
