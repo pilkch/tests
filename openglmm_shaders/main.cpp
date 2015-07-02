@@ -277,6 +277,9 @@ private:
   opengl::cTextureCubeMap* pTextureCubeMap;
   opengl::cTexture* pTextureMarble;
 
+  opengl::cTexture* pTextureMetalDiffuse;
+  opengl::cTexture* pTextureMetalSpecular;
+
   opengl::cTexture* pTextureNormalMapDiffuse;
   opengl::cTexture* pTextureNormalMapSpecular;
   opengl::cTexture* pTextureNormalMapNormal;
@@ -284,6 +287,7 @@ private:
 
   opengl::cShader* pShaderCubeMap;
   opengl::cShader* pShaderCarPaint;
+  opengl::cShader* pShaderGlass;
   opengl::cShader* pShaderSilhouette;
   opengl::cShader* pShaderCelShaded;
   opengl::cShader* pShaderLights;
@@ -378,6 +382,9 @@ cApplication::cApplication() :
   pTextureCubeMap(nullptr),
   pTextureMarble(nullptr),
 
+  pTextureMetalDiffuse(nullptr),
+  pTextureMetalSpecular(nullptr),
+
   pTextureNormalMapDiffuse(nullptr),
   pTextureNormalMapSpecular(nullptr),
   pTextureNormalMapNormal(nullptr),
@@ -385,6 +392,7 @@ cApplication::cApplication() :
 
   pShaderCubeMap(nullptr),
   pShaderCarPaint(nullptr),
+  pShaderGlass(nullptr),
   pShaderSilhouette(nullptr),
   pShaderCelShaded(nullptr),
   pShaderLambert(nullptr),
@@ -1019,6 +1027,11 @@ bool cApplication::Create()
   pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
   assert(pTextureDetail != nullptr);
 
+  pTextureMetalDiffuse = pContext->CreateTexture(TEXT("textures/metal.png"));
+  assert(pTextureMetalDiffuse != nullptr);
+  pTextureMetalSpecular = pContext->CreateTexture(TEXT("textures/metal_specular.jpg"));
+  assert(pTextureMetalSpecular != nullptr);
+
   pTextureCubeMap = pContext->CreateTextureCubeMap(
     TEXT("textures/skybox_positive_x.jpg"),
     TEXT("textures/skybox_negative_x.jpg"),
@@ -1193,6 +1206,15 @@ void cApplication::Destroy()
     pTextureNormalMapDiffuse = nullptr;
   }
 
+  if (pTextureMetalSpecular != nullptr) {
+    pContext->DestroyTexture(pTextureMetalSpecular);
+    pTextureMetalSpecular = nullptr;
+  }
+  if (pTextureMetalDiffuse != nullptr) {
+    pContext->DestroyTexture(pTextureMetalDiffuse);
+    pTextureMetalDiffuse = nullptr;
+  }
+
   if (pTextureMarble != nullptr) {
     pContext->DestroyTexture(pTextureMarble);
     pTextureMarble = nullptr;
@@ -1269,6 +1291,8 @@ void cApplication::CreateShaders()
 
   pShaderCarPaint = pContext->CreateShader(TEXT("shaders/carpaint.vert"), TEXT("shaders/carpaint.frag"));
   assert(pShaderCarPaint != nullptr);
+  pShaderGlass = pContext->CreateShader(TEXT("shaders/glass.vert"), TEXT("shaders/glass.frag"));
+  assert(pShaderGlass != nullptr);
 
   pShaderSilhouette = pContext->CreateShader(TEXT("shaders/silhouette.vert"), TEXT("shaders/silhouette.frag"));
   assert(pShaderSilhouette != nullptr);
@@ -1333,6 +1357,10 @@ void cApplication::DestroyShaders()
   if (pShaderSilhouette != nullptr) {
     pContext->DestroyShader(pShaderSilhouette);
     pShaderSilhouette = nullptr;
+  }
+  if (pShaderGlass != nullptr) {
+    pContext->DestroyShader(pShaderGlass);
+    pShaderGlass = nullptr;
   }
   if (pShaderCarPaint != nullptr) {
     pContext->DestroyShader(pShaderCarPaint);
@@ -1597,6 +1625,10 @@ void cApplication::Run()
   assert(pTextureCubeMap->IsValid());
   assert(pTextureMarble != nullptr);
   assert(pTextureMarble->IsValid());
+  assert(pTextureMetalDiffuse != nullptr);
+  assert(pTextureMetalDiffuse->IsValid());
+  assert(pTextureMetalSpecular != nullptr);
+  assert(pTextureMetalSpecular->IsValid());
   assert(pTextureNormalMapDiffuse != nullptr);
   assert(pTextureNormalMapDiffuse->IsValid());
   assert(pTextureNormalMapSpecular != nullptr);
@@ -1609,6 +1641,8 @@ void cApplication::Run()
   assert(pShaderCubeMap->IsCompiledProgram());
   assert(pShaderCarPaint != nullptr);
   assert(pShaderCarPaint->IsCompiledProgram());
+  assert(pShaderGlass != nullptr);
+  assert(pShaderGlass->IsCompiledProgram());
   assert(pShaderSilhouette != nullptr);
   assert(pShaderSilhouette->IsCompiledProgram());
   assert(pShaderCelShaded != nullptr);
@@ -1711,6 +1745,11 @@ void cApplication::Run()
   const spitfire::math::cVec3 positionCarPaintTeapot(-3.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationCarPaintTeapot;
   matTranslationCarPaintTeapot.SetTranslation(positionCarPaintTeapot);
+
+  // Glass teapot
+  const spitfire::math::cVec3 positionGlassTeapot(-6.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
+  spitfire::math::cMat4 matTranslationGlassTeapot;
+  matTranslationGlassTeapot.SetTranslation(positionGlassTeapot);
 
   // Cel shaded teapot
   const spitfire::math::cVec3 positionCelShadedTeapot(-9.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
@@ -2152,6 +2191,45 @@ void cApplication::Run()
 
         pContext->UnBindTextureCubeMap(1, *pTextureCubeMap);
         pContext->UnBindTexture(0, *pTextureDiffuse);
+      }
+
+      {
+        // Render the glass teapot
+        pContext->BindTexture(0, *pTextureMetalDiffuse);
+        pContext->BindTexture(1, *pTextureMetalSpecular);
+        pContext->BindTextureCubeMap(2, *pTextureCubeMap);
+
+        pContext->BindShader(*pShaderGlass);
+
+        // Set our constants
+        pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
+
+        const float IoR_R = 1.14f;
+        const float IoR_G = 1.12f;
+        const float IoR_B = 1.10f;
+        pContext->SetShaderConstant("IoR_Values", spitfire::math::cColour3(IoR_R, IoR_G, IoR_B));
+
+        const float fresnelR = 0.15f;
+        const float fresnelG = 2.0f;
+        const float fresnelB = 0.0f;
+        pContext->SetShaderConstant("fresnelValues", spitfire::math::cColour3(fresnelR, fresnelG, fresnelB));
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
+
+        {
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationGlassTeapot * matObjectRotation);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationGlassTeapot * matObjectRotation);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
+        }
+
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
+
+        pContext->UnBindShader(*pShaderGlass);
+
+        pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
+        pContext->UnBindTexture(1, *pTextureMetalSpecular);
+        pContext->UnBindTexture(0, *pTextureMetalDiffuse);
       }
 
       {

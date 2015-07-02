@@ -134,6 +134,8 @@
     <None Include="..\shaders\fog.vert" />
     <None Include="..\shaders\font.frag" />
     <None Include="..\shaders\font.vert" />
+    <None Include="..\shaders\glass.frag" />
+    <None Include="..\shaders\glass.vert" />
     <None Include="..\shaders\lambert.frag" />
     <None Include="..\shaders\lambert.vert" />
     <None Include="..\shaders\lighting.header" />
