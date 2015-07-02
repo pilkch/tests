@@ -11,7 +11,7 @@ uniform float fShininess;
 
 smooth in vec3 vertOutNormal;
 
-out vec4 fragmentColor;
+out vec4 fragmentColour;
 
 float stepmix(float edge0, float edge1, float E, float x)
 {
@@ -54,5 +54,5 @@ void main()
     sf = step(0.5, sf);
   }
 
-  fragmentColor = vec4(ambientMaterial + (df * Diffuse) + (sf * specularMaterial), 1.0);
+  fragmentColour = vec4(ambientMaterial + (df * Diffuse) + (sf * specularMaterial), 1.0);
 }

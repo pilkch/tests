@@ -2,9 +2,9 @@
 
 uniform vec3 colour;
 
-out vec4 fragmentColor;
+out vec4 fragmentColour;
 
 void main()
 {
-  fragmentColor = vec4(colour, 1.0);
+  fragmentColour = vec4(colour, 1.0);
 }

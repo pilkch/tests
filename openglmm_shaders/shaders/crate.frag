@@ -8,7 +8,7 @@ smooth in vec2 vertOutTexCoord0;
 smooth in vec2 vertOutTexCoord1;
 smooth in vec2 vertOutTexCoord2;
 
-out vec4 fragmentColor;
+out vec4 fragmentColour;
 
 void main()
 {
@@ -16,5 +16,5 @@ void main()
   vec4 lightmap = texture2D(texUnit1, vertOutTexCoord1);
   vec4 detail = texture2D(texUnit2, vertOutTexCoord2);
 
-  fragmentColor = vec4((diffuse * lightmap * detail).rgb, 1.0);
+  fragmentColour = vec4((diffuse * lightmap * detail).rgb, 1.0);
 }

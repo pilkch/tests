@@ -18,7 +18,7 @@ smooth in vec2 vertOutTexCoord1;
 
 smooth in float vertOutZ; // Distance from the camera to the pixel
 
-out vec4 fragmentColor;
+out vec4 fragmentColour;
 
 
 float CalculateFogLinear(float distanceToEye)
@@ -46,5 +46,5 @@ void main()
   vec3 diffuse = texture2D(texUnit0, vertOutTexCoord0).rgb;
   vec3 detail = texture2D(texUnit1, vertOutTexCoord1).rgb;
 
-  fragmentColor = vec4(mix(fog.colour.rgb, diffuse * detail, CalculateFogLinear(vertOutZ)), 1.0);
+  fragmentColour = vec4(mix(fog.colour.rgb, diffuse * detail, CalculateFogLinear(vertOutZ)), 1.0);
 }
