@@ -2360,11 +2360,6 @@ void cApplication::Run()
         // Set our constants
         pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
 
-        const float fresnelR = 0.15f;
-        const float fresnelG = 2.0f;
-        const float fresnelB = 0.0f;
-        pContext->SetShaderConstant("fresnelValues", spitfire::math::cColour3(fresnelR, fresnelG, fresnelB));
-
         {
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane2);
             pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[0] * matObjectRotation);
