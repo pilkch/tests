@@ -30,7 +30,7 @@ vec3 refract(vec3 i, vec3 n, float eta)
 // F(a) = F(0) + (1- cos(a))^5 * (1- F(0))
 // Calculate fresnel term. You can approximate it with 1.0-dot(normal, viewpos)
 //
-float fast_fresnel(vec3 I, vec3 N, vec3 fresnelValues)
+float fast_fresnel(vec3 I, vec3 N)
 {
   float bias = fresnelValues.x;
   float power = fresnelValues.y;
@@ -76,7 +76,7 @@ void main()
 
   //------ Find the Fresnel term
   //
-  float fresnelTerm = fast_fresnel(-incident, normal, fresnelValues);
+  float fresnelTerm = fast_fresnel(-incident, normal);
   //float fresnelTerm = very_fast_fresnel(-incident, normal);
 
   //------ Write the final pixel.
