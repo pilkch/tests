@@ -1887,19 +1887,6 @@ void cApplication::Run()
 
     if (bUpdateShaderConstants) {
       // Set our shader constants
-      pContext->BindShader(*pShaderMetal);
-        // Setup lighting
-        pContext->SetShaderConstant("light.ambientColour", lightDirectionalAmbientColour);
-        pContext->SetShaderConstant("light.diffuseColour", lightDirectionalDiffuseColour);
-        pContext->SetShaderConstant("light.specularColour", lightDirectionalSpecularColour);
-
-        // Setup materials
-        pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
-        pContext->SetShaderConstant("material.diffuseColour", materialDiffuseColour);
-        pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
-        pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
-      pContext->UnBindShader(*pShaderMetal);
-
       pContext->BindShader(*pShaderFog);
         pContext->SetShaderConstant("fog.colour", fogColour);
         pContext->SetShaderConstant("fog.fStart", fFogStart);
@@ -1961,12 +1948,6 @@ void cApplication::Run()
     const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
 
     const spitfire::math::cVec3 lightDirection = (spitfire::math::cVec3(0.0f, 0.0f, 0.0f) - lightDirectionalPosition).GetNormalised();
-
-    // Set up the metal shader
-    pContext->BindShader(*pShaderMetal);
-      pContext->SetShaderConstant("matView", matView);
-      pContext->SetShaderConstant("light.direction", lightDirection);
-    pContext->UnBindShader(*pShaderMetal);
 
     // Set up the lights shader
     pContext->BindShader(*pShaderLights);
@@ -2338,7 +2319,7 @@ void cApplication::Run()
 
 
       // Render the lights
-      {
+      /*{
         pContext->BindShader(*pShaderMetal);
 
         {
@@ -2364,52 +2345,67 @@ void cApplication::Run()
         }
 
         pContext->UnBindShader(*pShaderMetal);
-      }
+      }*/
 
 
       // Render the metal objects
-      pContext->BindShader(*pShaderMetal);
 
       {
-        pContext->SetShaderConstant("material.ambientColour", materialAmbientColour);
+        pContext->BindTexture(0, *pTextureMetalDiffuse);
+        pContext->BindTexture(1, *pTextureMetalSpecular);
+        pContext->BindTextureCubeMap(2, *pTextureCubeMap);
+
+        pContext->BindShader(*pShaderMetal);
+
+        // Set our constants
+        pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
+
+        const float fresnelR = 0.15f;
+        const float fresnelG = 2.0f;
+        const float fresnelB = 0.0f;
+        pContext->SetShaderConstant("fresnelValues", spitfire::math::cColour3(fresnelR, fresnelG, fresnelB));
 
         {
-          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane0);
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[0] * matObjectRotation);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlane0);
-          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlane0);
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane2);
+            pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[0] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlane2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlane2);
         }
 
         {
-          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCube0);
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[1] * matObjectRotation);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCube0);
-          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCube0);
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCube2);
+            pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[1] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCube2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCube2);
         }
 
         {
-          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox0);
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[2] * matObjectRotation);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox0);
-          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox0);
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox2);
+            pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[2] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox2);
         }
 
         {
-          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[3] * matObjectRotation);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
-          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere2);
+            pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[3] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere2);
         }
 
         {
-          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[4] * matObjectRotation);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot0);
-          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
+            pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[4] * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
         }
+
+        pContext->UnBindShader(*pShaderMetal);
+
+        pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
+        pContext->UnBindTexture(1, *pTextureMetalSpecular);
+        pContext->UnBindTexture(0, *pTextureMetalDiffuse);
       }
-
-      pContext->UnBindShader(*pShaderMetal);
 
 
       // Render the textured objects

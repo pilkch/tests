@@ -1,56 +1,61 @@
 #version 330
 
-precision highp float;
+// http://www.geeks3d.com/20101008/shader-library-chromatic-aberration-demo-glsl/
 
-uniform mat4 matView;
-uniform mat4 matModelView;
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec2 texCoord0;
+layout(location = 3) in vec2 texCoord1; // Unused
+
+uniform mat4 matModel;
 uniform mat4 matModelViewProjection;
-uniform mat3 matNormal;
+uniform vec3 cameraPosition;
 
-struct cLight
-{
-  vec3 direction;
-  vec4 ambientColour;
-  vec4 diffuseColour;
-  vec4 specularColour;
-};
-uniform cLight light;
-
-struct cMaterial
-{
-  vec4 ambientColour;
-  vec4 diffuseColour;
-  vec4 specularColour;
-  float fShininess;
-};
-uniform cMaterial material;
-
-#define POSITION 0
-#define NORMAL 1
-layout(location = POSITION) in vec3 position;
-layout(location = NORMAL) in vec3 normal;
-
-smooth out vec3 vertOutPosition;
+// Outputs for fragment program
+out vec3 vertOutPosition;
 smooth out vec3 vertOutNormal;
-smooth out vec3 vertOutLightDirection;
+smooth out vec2 vertOutTexCoord0;
+smooth out vec3 N;
+smooth out vec3 E;
+
+mat3 GetLinearPart( mat4 m )
+{
+  mat3 result;
+
+  result[0][0] = m[0][0]; 
+  result[0][1] = m[0][1]; 
+  result[0][2] = m[0][2]; 
+
+  result[1][0] = m[1][0]; 
+  result[1][1] = m[1][1]; 
+  result[1][2] = m[1][2]; 
+
+  result[2][0] = m[2][0]; 
+  result[2][1] = m[2][1]; 
+  result[2][2] = m[2][2]; 
+
+  return result;
+}
 
 void main()
 {
-  // All vertex shaders should write the transformed homogeneous clip space
-  // vertex position into the gl_Position variables.
-  vec4 pos = vec4(position, 1.0);
+  // Output position
+  gl_Position = matModelViewProjection * vec4(position, 1.0);
 
-  gl_Position = matModelViewProjection * pos;
+  // Texture coordinates for glossMap
+  vertOutTexCoord0 = texCoord0;
 
-  // Transform the vertex position into eye space. We use this later on to
-  // calculate the view (eye) vector.
-  pos = matModelView * pos;
-  vertOutPosition = pos.xyz / pos.w;
+  mat3 ModelWorld3x3 = GetLinearPart(matModel);
 
-  // Transform the light direction into eye space. Directional lights are
-  // specified in world space. For example, a directional light aimed along
-  // the world negative z axis has the direction vector (0, 0, -1).
-  vertOutLightDirection = vec3(matView * vec4(-light.direction, 0.0f));
+  // World space position
+  vec4 WorldPos = matModel *  vec4(position, 1.0);
 
-  vertOutNormal = matNormal * normal;
+  // World space normal
+  N = ModelWorld3x3 * normal;
+
+  // find world space eye vector
+  E = WorldPos.xyz - cameraPosition.xyz;
+
+  vertOutNormal = mat3(transpose(inverse(matModel))) * normal;
+  vertOutPosition = vec3(matModel * vec4(position, 1.0f));
 }
