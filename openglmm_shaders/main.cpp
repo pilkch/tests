@@ -2102,12 +2102,10 @@ void cApplication::Run()
 
       pContext->BindShader(*pShaderCubeMap);
 
-      pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot * matObjectRotation);
-
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCubeMappedTeapot * matObjectRotation);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationCubeMappedTeapot * matObjectRotation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
       }
@@ -2140,12 +2138,10 @@ void cApplication::Run()
 
       pContext->BindShader(*pShaderCubeMap);
 
-      pContext->SetShaderConstant("matModel", matTranslationCubeMappedTeapot * matObjectRotation);
-
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       {
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCubeMappedTeapot * matObjectRotation);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationCubeMappedTeapot * matObjectRotation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
       }
@@ -2218,7 +2214,6 @@ void cApplication::Run()
 
         {
           pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationGlassTeapot * matObjectRotation);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationGlassTeapot * matObjectRotation);
 
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
         }
@@ -2531,8 +2526,7 @@ void cApplication::Run()
       {
         {
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane2);
-          pContext->SetShaderConstant("matModel", matTranslationArray[15] * matObjectRotation);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[15] * matObjectRotation);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[15] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlane2);
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlane2);
         }
@@ -2540,7 +2534,7 @@ void cApplication::Run()
         {
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCube2);
           pContext->SetShaderConstant("matModel", matTranslationArray[16] * matObjectRotation);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[16] * matObjectRotation);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[16] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCube2);
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCube2);
         }
@@ -2548,7 +2542,7 @@ void cApplication::Run()
         {
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox2);
           pContext->SetShaderConstant("matModel", matTranslationArray[17] * matObjectRotation);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[17] * matObjectRotation);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[17] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox2);
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox2);
         }
@@ -2556,7 +2550,7 @@ void cApplication::Run()
         {
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere2);
           pContext->SetShaderConstant("matModel", matTranslationArray[18] * matObjectRotation);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[18] * matObjectRotation);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[18] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere2);
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere2);
         }
@@ -2564,7 +2558,7 @@ void cApplication::Run()
         {
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
           pContext->SetShaderConstant("matModel", matTranslationArray[19] * matObjectRotation);
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[19] * matObjectRotation);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[19] * matObjectRotation);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot2);
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
         }

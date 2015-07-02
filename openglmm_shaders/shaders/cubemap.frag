@@ -1,7 +1,5 @@
 #version 330
 
-#include <math.header>
-
 uniform samplerCube texUnit0; // Cubemap texture
 
 uniform vec3 cameraPos;
