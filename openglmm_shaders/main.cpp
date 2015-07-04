@@ -757,34 +757,34 @@ void cApplication::CreateNormalMappedCube()
   // Upper Square
   builder.PushBackQuad(
     spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z),
-    spitfire::math::cVec3(0.0f, 0.0f, 1.0f),
+    spitfire::math::cVec3(0.0f, 1.0f, 0.0f),
     spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f)
   );
 
   // Bottom Square
   builder.PushBackQuad(
     spitfire::math::cVec3(vMin.x, vMin.y, vMin.z), spitfire::math::cVec3(vMin.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMin.y, vMin.z),
-    spitfire::math::cVec3(0.0f, 0.0f, -1.0f),
+    spitfire::math::cVec3(0.0f, -1.0f, 0.0f),
     spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
   );
 
   // Side Squares
   builder.PushBackQuad(
     spitfire::math::cVec3(vMin.x, vMax.y, vMin.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMin.z),
-    spitfire::math::cVec3(0.0f, 1.0f, 0.0f),
+    spitfire::math::cVec3(0.0f, 0.0f, 1.0f),
     spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f)
   );
 
   builder.PushBackQuad(
     spitfire::math::cVec3(vMax.x, vMin.y, vMin.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMin.y, vMin.z),
-    spitfire::math::cVec3(0.0f, -1.0f, 0.0f),
+    spitfire::math::cVec3(0.0f, 0.0f, -1.0f),
     spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
   );
 
   // Front
   builder.PushBackQuad(
     spitfire::math::cVec3(vMax.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMin.z),
-    spitfire::math::cVec3(0.0f, -1.0f, 0.0f),
+    spitfire::math::cVec3(1.0f, 0.0f, 0.0f),
     spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f)
   );
 
@@ -2314,7 +2314,7 @@ void cApplication::Run()
 
         pContext->BindStaticVertexBufferObject(parallaxNormalMap.vbo);
 
-        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationParallaxNormalMap * matObjectRotation);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationParallaxNormalMap * matObjectRotation);
 
         pContext->DrawStaticVertexBufferObjectTriangles(parallaxNormalMap.vbo);
 
