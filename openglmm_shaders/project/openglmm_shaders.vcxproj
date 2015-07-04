@@ -124,7 +124,9 @@
     <None Include="..\shaders\carpaint.vert" />
     <None Include="..\shaders\celshader.frag" />
     <None Include="..\shaders\celshader.vert" />
+    <None Include="..\shaders\colour.frag" />
     <None Include="..\shaders\colour.header" />
+    <None Include="..\shaders\colour.vert" />
     <None Include="..\shaders\colourblind.frag" />
     <None Include="..\shaders\crate.frag" />
     <None Include="..\shaders\crate.vert" />

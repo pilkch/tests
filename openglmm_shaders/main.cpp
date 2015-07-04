@@ -285,6 +285,7 @@ private:
   opengl::cTexture* pTextureNormalMapNormal;
   opengl::cTexture* pTextureNormalMapHeight;
 
+  opengl::cShader* pShaderColour;
   opengl::cShader* pShaderCubeMap;
   opengl::cShader* pShaderCarPaint;
   opengl::cShader* pShaderGlass;
@@ -390,6 +391,7 @@ cApplication::cApplication() :
   pTextureNormalMapNormal(nullptr),
   pTextureNormalMapHeight(nullptr),
 
+  pShaderColour(nullptr),
   pShaderCubeMap(nullptr),
   pShaderCarPaint(nullptr),
   pShaderGlass(nullptr),
@@ -674,7 +676,7 @@ spitfire::math::cVec4 cGeometryBuilder_v3_n3_t2_tangent4::CalculateTangentVector
   // shader's vertex shader.
 
   const spitfire::math::cVec3 bitangent = normal.CrossProduct(t);
-  float handedness = (bitangent.DotProduct(b) < 0.0f) ? -1.0f : 1.0f;
+  const float handedness = (bitangent.DotProduct(b) < 0.0f) ? -1.0f : 1.0f;
 
   spitfire::math::cVec4 tangent;
 
@@ -1286,6 +1288,9 @@ void cApplication::Destroy()
 
 void cApplication::CreateShaders()
 {
+  pShaderColour = pContext->CreateShader(TEXT("shaders/colour.vert"), TEXT("shaders/colour.frag"));
+  assert(pShaderColour != nullptr);
+
   pShaderCubeMap = pContext->CreateShader(TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
   assert(pShaderCubeMap != nullptr);
 
@@ -1369,6 +1374,10 @@ void cApplication::DestroyShaders()
   if (pShaderCubeMap != nullptr) {
     pContext->DestroyShader(pShaderCubeMap);
     pShaderCubeMap = nullptr;
+  }
+  if (pShaderColour != nullptr) {
+    pContext->DestroyShader(pShaderColour);
+    pShaderColour = nullptr;
   }
 
   if (pShaderMetal != nullptr) {
@@ -1637,6 +1646,8 @@ void cApplication::Run()
   assert(pTextureNormalMapHeight->IsValid());
   assert(pTextureNormalMapNormal != nullptr);
   assert(pTextureNormalMapNormal->IsValid());
+  assert(pShaderColour != nullptr);
+  assert(pShaderColour->IsCompiledProgram());
   assert(pShaderCubeMap != nullptr);
   assert(pShaderCubeMap->IsCompiledProgram());
   assert(pShaderCarPaint != nullptr);
@@ -1794,13 +1805,13 @@ void cApplication::Run()
 
 
   // Green directional light
-  const spitfire::math::cVec3 lightDirectionalPosition(5.0f, 5.0f, 10.0f);
+  const spitfire::math::cVec3 lightDirectionalPosition(5.0f, 5.0f, 5.0f);
   const spitfire::math::cColour lightDirectionalAmbientColour(0.2f, 0.25f, 0.2f);
   const spitfire::math::cColour lightDirectionalDiffuseColour(0.6f, 0.8f, 0.6f);
   const spitfire::math::cColour lightDirectionalSpecularColour(0.0f, 1.0f, 0.0f);
 
   // Red point light
-  const spitfire::math::cVec3 lightPointPosition(-5.0f, -5.0f, 1.0f);
+  const spitfire::math::cVec3 lightPointPosition(-5.0f, 5.0f, -5.0f);
   const spitfire::math::cColour lightPointColour(0.25f, 0.0f, 0.0f);
   const float lightPointAmbient = 0.15f;
   const float lightPointConstantAttenuation = 0.3f;
@@ -1808,7 +1819,7 @@ void cApplication::Run()
   const float lightPointExpAttenuation = 0.00008f;
 
   // Blue spot light
-  const spitfire::math::cVec3 lightSpotPosition(0.0f, -16.0f, 1.0f);
+  const spitfire::math::cVec3 lightSpotPosition(0.0f, 5.0f, 4.0f);
   const spitfire::math::cVec3 lightSpotDirection(0.0f, 1.0f, 0.0f);
   const spitfire::math::cColour lightSpotColour(0.0f, 0.0f, 0.25f);
   //const float lightSpotAmbient = 0.15f;
@@ -2319,33 +2330,44 @@ void cApplication::Run()
 
 
       // Render the lights
-      /*{
-        pContext->BindShader(*pShaderMetal);
+      {
+        pContext->BindShader(*pShaderColour);
 
         {
-          pContext->SetShaderConstant("material.ambientColour", lightPointColour);
+          pContext->SetShaderConstant("colour", lightDirectionalDiffuseColour);
+
+          spitfire::math::cMat4 matTransform;
+          matTransform.SetTranslation(lightDirectionalPosition);
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+        }
+
+        {
+          pContext->SetShaderConstant("colour", lightPointColour);
 
           spitfire::math::cMat4 matTransform;
           matTransform.SetTranslation(lightPointPosition);
-          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPointLight);
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
             pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPointLight);
-          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPointLight);
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
         }
 
         {
-          pContext->SetShaderConstant("material.ambientColour", lightSpotColour);
+          pContext->SetShaderConstant("colour", lightSpotColour);
 
           spitfire::math::cMat4 matTransform;
           matTransform.SetTranslation(lightSpotPosition);
-          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSpotLight);
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
             pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSpotLight);
-          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSpotLight);
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
         }
 
-        pContext->UnBindShader(*pShaderMetal);
-      }*/
+        pContext->UnBindShader(*pShaderColour);
+      }
 
 
       // Render the metal objects
