@@ -791,7 +791,7 @@ void cApplication::CreateNormalMappedCube()
   // Back
   builder.PushBackQuad(
     spitfire::math::cVec3(vMin.x, vMin.y, vMin.z), spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMin.z),
-    spitfire::math::cVec3(0.0f, 0.0f, 1.0f),
+    spitfire::math::cVec3(-1.0f, 0.0f, 0.0f),
     spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f)
   );
 
