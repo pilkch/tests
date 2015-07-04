@@ -2224,7 +2224,8 @@ void cApplication::Run()
 
         // Black silhouette
         {
-          glEnable(GL_CULL_FACE); // enable culling
+          if (bIsWireframe) pContext->DisableWireframe();
+
           glCullFace(GL_CW); // enable culling of front faces
           glDepthMask(GL_FALSE); // enable writes to Z-buffer
 
@@ -2246,10 +2247,11 @@ void cApplication::Run()
 
           pContext->UnBindShader(*pShaderSilhouette);
 
-          glCullFace(GL_CW); // enable culling of back faces
           glDepthMask(GL_FALSE); // disable writes to Z-buffer
           glEnable(GL_DEPTH_TEST);
           glDepthMask(GL_TRUE);
+
+          if (bIsWireframe) pContext->EnableWireframe();
         }
 
         // Cel shaded
