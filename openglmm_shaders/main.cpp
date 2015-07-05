@@ -1934,6 +1934,9 @@ void cApplication::Run()
       pContext->UnBindShader(*pShaderLights);
 
       pContext->BindShader(*parallaxNormalMap.pShader);
+        // Set up scale bias
+        pContext->SetShaderConstant("ParallaxScaleBias", spitfire::math::cVec2(0.01f, 0.01f));
+
         // Directional light
         pContext->SetShaderConstant("directionalLight.ambientColour", lightDirectionalAmbientColour);
         pContext->SetShaderConstant("directionalLight.diffuseColour", lightDirectionalDiffuseColour);
@@ -1977,14 +1980,6 @@ void cApplication::Run()
       pContext->SetShaderConstant("lightSpotLight.position", matView * lightSpotPosition);
       pContext->SetShaderConstant("lightSpotLight.direction", matView * lightSpotDirection);
     pContext->UnBindShader(*pShaderLights);
-
-    // Set up the pallax normal map shader
-    pContext->BindShader(*parallaxNormalMap.pShader);
-      pContext->SetShaderConstant("matView", matView);
-
-      // Directional light
-      pContext->SetShaderConstant("directionalLight.direction", lightDirection);
-    pContext->UnBindShader(*parallaxNormalMap.pShader);
 
     // Set up the cube map shader
     pContext->BindShader(*pShaderCubeMap);
@@ -2313,6 +2308,9 @@ void cApplication::Run()
         pContext->BindTexture(3, *pTextureNormalMapHeight);
 
         pContext->BindShader(*parallaxNormalMap.pShader);
+
+        // Set up the shader uniforms
+        pContext->SetShaderConstant("directionalLight.direction", (parallaxNormalMapPosition - lightDirectionalPosition).GetNormalised());
 
         pContext->BindStaticVertexBufferObject(parallaxNormalMap.vbo);
 
