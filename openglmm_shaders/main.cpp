@@ -211,7 +211,7 @@ private:
   void CreateSphere(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fRadius);
   void CreateTeapot(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreateGear(opengl::cStaticVertexBufferObject& vbo);
-  
+
   void CreateTestImage(opengl::cStaticVertexBufferObject& vbo, size_t nTextureWidth, size_t nTextureHeight);
 
   void CreateNormalMappedCube();
@@ -756,43 +756,43 @@ void cApplication::CreateNormalMappedCube()
 
   // Upper Square
   builder.PushBackQuad(
-    spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z),
+    spitfire::math::cVec3(vMin.x, vMax.y, vMin.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMin.z),
     spitfire::math::cVec3(0.0f, 1.0f, 0.0f),
-    spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f)
+    spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
   );
 
   // Bottom Square
   builder.PushBackQuad(
-    spitfire::math::cVec3(vMin.x, vMin.y, vMin.z), spitfire::math::cVec3(vMin.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMin.y, vMin.z),
+    spitfire::math::cVec3(vMax.x, vMin.y, vMin.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMin.y, vMin.z),
     spitfire::math::cVec3(0.0f, -1.0f, 0.0f),
     spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
   );
 
   // Side Squares
   builder.PushBackQuad(
-    spitfire::math::cVec3(vMin.x, vMax.y, vMin.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMin.z),
-    spitfire::math::cVec3(0.0f, 0.0f, 1.0f),
-    spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f)
+    spitfire::math::cVec3(vMin.x, vMin.y, vMin.z), spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMin.z),
+    spitfire::math::cVec3(-1.0f, 0.0f, 0.0f),
+    spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
   );
 
   builder.PushBackQuad(
-    spitfire::math::cVec3(vMax.x, vMin.y, vMin.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMin.y, vMin.z),
-    spitfire::math::cVec3(0.0f, 0.0f, -1.0f),
+    spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMin.z), spitfire::math::cVec3(vMax.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z),
+    spitfire::math::cVec3(1.0f, 0.0f, 0.0f),
     spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
   );
 
   // Front
   builder.PushBackQuad(
-    spitfire::math::cVec3(vMax.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMin.z),
-    spitfire::math::cVec3(1.0f, 0.0f, 0.0f),
-    spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f)
+    spitfire::math::cVec3(vMax.x, vMin.y, vMin.z), spitfire::math::cVec3(vMin.x, vMin.y, vMin.z), spitfire::math::cVec3(vMin.x, vMax.y, vMin.z), spitfire::math::cVec3(vMax.x, vMax.y, vMin.z),
+    spitfire::math::cVec3(0.0f, 0.0f, -1.0f),
+    spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
   );
 
   // Back
   builder.PushBackQuad(
-    spitfire::math::cVec3(vMin.x, vMin.y, vMin.z), spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMin.z),
-    spitfire::math::cVec3(-1.0f, 0.0f, 0.0f),
-    spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(0.0f, 0.0f), spitfire::math::cVec2(0.0f, 1.0f)
+    spitfire::math::cVec3(vMin.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMin.y, vMax.z), spitfire::math::cVec3(vMax.x, vMax.y, vMax.z), spitfire::math::cVec3(vMin.x, vMax.y, vMax.z),
+    spitfire::math::cVec3(0.0f, 0.0f, 1.0f),
+    spitfire::math::cVec2(1.0f, 0.0f), spitfire::math::cVec2(1.0f, 1.0f), spitfire::math::cVec2(0.0f, 1.0f), spitfire::math::cVec2(0.0f, 0.0f)
   );
 
   parallaxNormalMap.vbo.SetData(pGeometryDataPtr);
