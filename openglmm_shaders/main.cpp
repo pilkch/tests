@@ -115,7 +115,7 @@ void cFreeLookCamera::MoveZ(float ymmod)
 
 void cFreeLookCamera::RotateX(float xrmod)
 {
-  fRotationRight -= xrmod;
+  fRotationRight += xrmod;
 }
 
 void cFreeLookCamera::RotateY(float yrmod)
@@ -139,8 +139,12 @@ spitfire::math::cMat4 cFreeLookCamera::CalculateViewMatrix() const
   matTranslation.TranslateMatrix(-position);
 
   const spitfire::math::cQuaternion rotation = -GetRotation();
-  
-  return (rotation.GetMatrix() * matTranslation);
+
+  // For some reason we have a translation that needs to be cancelled out
+  spitfire::math::cMat4 matTranslation2;
+  matTranslation2.TranslateMatrix(spitfire::math::cVec3(0.0f, 0.0f, 1.0f));
+
+  return (matTranslation2 * (rotation.GetMatrix() * matTranslation));
 }
 
 
@@ -1437,7 +1441,7 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
     //LOG("Mouse move");
 
     if (fabs(event.GetX() - (pWindow->GetWidth() * 0.5f)) > 0.5f) {
-      camera.RotateX(-0.08f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
+      camera.RotateX(0.08f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
     }
 
     if (fabs(event.GetY() - (pWindow->GetHeight() * 0.5f)) > 1.5f) {
