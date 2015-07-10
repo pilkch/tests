@@ -216,6 +216,7 @@ private:
   void CreateTeapot(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreateGear(opengl::cStaticVertexBufferObject& vbo);
 
+  void CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo);
   void CreateTestImage(opengl::cStaticVertexBufferObject& vbo, size_t nTextureWidth, size_t nTextureHeight);
 
   void CreateNormalMappedCube();
@@ -295,6 +296,8 @@ private:
   opengl::cShader* pShaderGlass;
   opengl::cShader* pShaderSilhouette;
   opengl::cShader* pShaderCelShaded;
+  opengl::cShader* pShaderSmoke;
+  opengl::cShader* pShaderFire;
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderLambert;
   opengl::cShader* pShaderPassThrough;
@@ -336,6 +339,9 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectSpotLight;
 
   cShaderVBOPair parallaxNormalMap;
+
+  cTextureVBOPair smoke;
+  cTextureVBOPair fire;
 
   std::vector<cTextureVBOPair*> testImages;
 
@@ -401,6 +407,8 @@ cApplication::cApplication() :
   pShaderGlass(nullptr),
   pShaderSilhouette(nullptr),
   pShaderCelShaded(nullptr),
+  pShaderSmoke(nullptr),
+  pShaderFire(nullptr),
   pShaderLambert(nullptr),
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
@@ -945,6 +953,42 @@ void cApplication::CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& st
   staticVertexBufferObject.Compile2D();
 }
 
+void cApplication::CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo)
+{
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const spitfire::math::cVec3 vNormal(0.0f, 0.0f, -1.0f);
+
+  const float fBaseSize = 1.0f;
+  const float fSizeVariation = 0.5f;
+
+  for (size_t i = 0; i < 30; i++) {
+    const spitfire::math::cVec3 position(spitfire::math::randomMinusOneToPlusOnef(), 1.0f + spitfire::math::randomMinusOneToPlusOnef(), spitfire::math::randomMinusOneToPlusOnef());
+
+    const float fWidth = fBaseSize + (fSizeVariation * spitfire::math::randomMinusOneToPlusOnef());
+    const float fHeight = fWidth;
+
+    const float_t fHalfWidth = fWidth * 0.5f;
+    const float_t fHalfHeight = fHeight * 0.5f;
+    const spitfire::math::cVec3 vMin(-fHalfWidth, -fHalfHeight, 0.0f);
+    const spitfire::math::cVec3 vMax(fHalfWidth, fHalfHeight, 0.0f);
+
+    opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
+
+    // Add a front facing rectangle
+    builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
+    builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(1.0, 1.0));
+    builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 1.0));
+    builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(1.0, 0.0f));
+    builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(1.0, 1.0));
+    builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
+  }
+
+  vbo.SetData(pGeometryDataPtr);
+
+  vbo.Compile();
+}
+
 void cApplication::CreateTestImage(opengl::cStaticVertexBufferObject& vbo, size_t nTextureWidth, size_t nTextureHeight)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
@@ -1083,6 +1127,15 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectTeapot);
   CreateScreenRectVBO(staticVertexBufferObjectScreenRectTeapot, 0.25f, 0.25f);
 
+  smoke.pTexture = pContext->CreateTexture(TEXT("textures/particle_smoke.png"));
+  assert(smoke.pTexture != nullptr);
+  pContext->CreateStaticVertexBufferObject(smoke.vbo);
+  CreateParticleSystem(smoke.vbo);
+
+  fire.pTexture = pContext->CreateTexture(TEXT("textures/particle_fire.png"));
+  assert(fire.pTexture != nullptr);
+  pContext->CreateStaticVertexBufferObject(fire.vbo);
+  CreateParticleSystem(fire.vbo);
 
   const spitfire::string_t sTestImagesPath = TEXT("textures/testimages/");
   for (spitfire::filesystem::cFolderIterator iter(sTestImagesPath); iter.IsValid(); iter.Next()) {
@@ -1266,6 +1319,20 @@ void cApplication::Destroy()
 
   testImages.clear();
 
+  // Destroy our smoke
+  if (smoke.pTexture != nullptr) {
+    pContext->DestroyTexture(smoke.pTexture);
+    smoke.pTexture = nullptr;
+  }
+  pContext->DestroyStaticVertexBufferObject(smoke.vbo);
+
+  // Destroy our fire
+  if (fire.pTexture != nullptr) {
+    pContext->DestroyTexture(fire.pTexture);
+    fire.pTexture = nullptr;
+  }
+  pContext->DestroyStaticVertexBufferObject(fire.vbo);
+
   // Destroy our text VBO
   pContext->DestroyStaticVertexBufferObject(textVBO);
 
@@ -1308,6 +1375,12 @@ void cApplication::CreateShaders()
 
   pShaderCelShaded = pContext->CreateShader(TEXT("shaders/celshader.vert"), TEXT("shaders/celshader.frag"));
   assert(pShaderCelShaded != nullptr);
+
+  pShaderSmoke = pContext->CreateShader(TEXT("shaders/smoke.vert"), TEXT("shaders/smoke.frag"));
+  assert(pShaderSmoke != nullptr);
+
+  pShaderFire = pContext->CreateShader(TEXT("shaders/fire.vert"), TEXT("shaders/fire.frag"));
+  assert(pShaderFire != nullptr);
 
   pShaderLambert = pContext->CreateShader(TEXT("shaders/lambert.vert"), TEXT("shaders/lambert.frag"));
   assert(pShaderLambert != nullptr);
@@ -1359,10 +1432,18 @@ void cApplication::DestroyShaders()
     pShaderLights = nullptr;
   }
 
+  if (pShaderSmoke != nullptr) {
+    pContext->DestroyShader(pShaderSmoke);
+    pShaderSmoke = nullptr;
+  }
+  if (pShaderFire != nullptr) {
+    pContext->DestroyShader(pShaderFire);
+    pShaderFire = nullptr;
+  }
   if (pShaderCelShaded != nullptr) {
       pContext->DestroyShader(pShaderCelShaded);
       pShaderCelShaded = nullptr;
-    }
+  }
   if (pShaderSilhouette != nullptr) {
     pContext->DestroyShader(pShaderSilhouette);
     pShaderSilhouette = nullptr;
@@ -1662,6 +1743,10 @@ void cApplication::Run()
   assert(pShaderSilhouette->IsCompiledProgram());
   assert(pShaderCelShaded != nullptr);
   assert(pShaderCelShaded->IsCompiledProgram());
+  assert(pShaderSmoke != nullptr);
+  assert(pShaderSmoke->IsCompiledProgram());
+  assert(pShaderFire != nullptr);
+  assert(pShaderFire->IsCompiledProgram());
   assert(pShaderLambert != nullptr);
   assert(pShaderLambert->IsCompiledProgram());
   assert(pShaderLights != nullptr);
@@ -1710,6 +1795,15 @@ void cApplication::Run()
 
   assert(staticVertexBufferObjectPointLight.IsCompiled());
   assert(staticVertexBufferObjectSpotLight.IsCompiled());
+
+  assert(smoke.pTexture != nullptr);
+  assert(smoke.pTexture->IsValid());
+  assert(smoke.vbo.IsCompiled());
+
+  assert(fire.pTexture != nullptr);
+  assert(fire.pTexture->IsValid());
+  assert(fire.vbo.IsCompiled());
+
   assert(parallaxNormalMap.vbo.IsCompiled());
 
   // Print the input instructions
@@ -1771,6 +1865,16 @@ void cApplication::Run()
   spitfire::math::cMat4 matTranslationCelShadedTeapot;
   matTranslationCelShadedTeapot.SetTranslation(positionCelShadedTeapot);
 
+  // Smoke
+  const spitfire::math::cVec3 positionSmoke(-12.0f * fSpacingX, 1.5f, (-1.0f * fSpacingZ));
+  spitfire::math::cMat4 matTranslationSmoke;
+  matTranslationSmoke.SetTranslation(positionSmoke);
+
+  // Fire
+  const spitfire::math::cVec3 positionFire(-12.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
+  spitfire::math::cMat4 matTranslationFire;
+  matTranslationFire.SetTranslation(positionFire);
+  
   // Parallax normal mapping
   const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationParallaxNormalMap;
@@ -1952,6 +2056,10 @@ void cApplication::Run()
         pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
         pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
       pContext->UnBindShader(*parallaxNormalMap.pShader);
+
+      pContext->BindShader(*pShaderFire);
+        pContext->SetShaderConstant("diffuseColour", spitfire::math::cColour3(1.0f, 0.3f, 0.0f));
+      pContext->UnBindShader(*pShaderFire);
 
       bUpdateShaderConstants = false;
     }
@@ -2529,13 +2637,7 @@ void cApplication::Run()
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
 
-
-      // Render the cubemapped objects
-
-
-
-
-      // Render the cube mapped teapot
+      // Render the cube mapped objects
       pContext->BindTextureCubeMap(0, *pTextureCubeMap);
 
       pContext->BindShader(*pShaderCubeMap);
@@ -2669,6 +2771,7 @@ void cApplication::Run()
         }
       }
 
+
       // Render some gui in 3d space
       {
         pContext->DisableDepthTesting();
@@ -2700,6 +2803,59 @@ void cApplication::Run()
         }
 
         pContext->EnableDepthTesting();
+      }
+
+
+      // Render smoke
+      {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        pContext->BindTexture(0, *smoke.pTexture);
+
+        pContext->BindShader(*pShaderSmoke);
+
+        pContext->BindStaticVertexBufferObject(smoke.vbo);
+
+        {
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationSmoke * matObjectRotation);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(smoke.vbo);
+        }
+
+        pContext->UnBindStaticVertexBufferObject(smoke.vbo);
+
+        pContext->UnBindShader(*pShaderSmoke);
+
+        pContext->UnBindTexture(0, *smoke.pTexture);
+
+        glDisable(GL_BLEND);
+      }
+
+      // Render fire
+      {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+        pContext->BindTexture(0, *fire.pTexture);
+
+        pContext->BindShader(*pShaderFire);
+
+        pContext->BindStaticVertexBufferObject(fire.vbo);
+
+        {
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationFire * matObjectRotation);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(fire.vbo);
+        }
+
+        pContext->UnBindStaticVertexBufferObject(fire.vbo);
+
+        pContext->UnBindShader(*pShaderFire);
+
+        pContext->UnBindTexture(0, *fire.pTexture);
+
+        glDisable(GL_BLEND);
       }
 
       pContext->EndRenderToTexture(*pTextureFrameBufferObjectScreen);

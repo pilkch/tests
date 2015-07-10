@@ -132,6 +132,8 @@
     <None Include="..\shaders\crate.vert" />
     <None Include="..\shaders\cubemap.frag" />
     <None Include="..\shaders\cubemap.vert" />
+    <None Include="..\shaders\fire.frag" />
+    <None Include="..\shaders\fire.vert" />
     <None Include="..\shaders\fog.frag" />
     <None Include="..\shaders\fog.vert" />
     <None Include="..\shaders\font.frag" />
@@ -157,6 +159,8 @@
     <None Include="..\shaders\sepia.frag" />
     <None Include="..\shaders\silhouette.frag" />
     <None Include="..\shaders\silhouette.vert" />
+    <None Include="..\shaders\smoke.frag" />
+    <None Include="..\shaders\smoke.vert" />
     <None Include="..\shaders\tealandorange.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
