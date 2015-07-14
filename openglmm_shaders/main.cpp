@@ -961,9 +961,13 @@ void cApplication::CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo)
 
   const float fBaseSize = 1.0f;
   const float fSizeVariation = 0.5f;
+  const spitfire::math::cVec3 positionVariation(2.0f, 2.0f, 2.0f);
+
+  // NOTE: We use an extra set of texture coordinates on the end to say where the center point of that specific particle is
+  opengl::cGeometryBuilder_v3_n3_t2_user3 builder(*pGeometryDataPtr);
 
   for (size_t i = 0; i < 30; i++) {
-    const spitfire::math::cVec3 position(spitfire::math::randomMinusOneToPlusOnef(), 1.0f + spitfire::math::randomMinusOneToPlusOnef(), spitfire::math::randomMinusOneToPlusOnef());
+    const spitfire::math::cVec3 position(positionVariation * spitfire::math::cVec3(spitfire::math::randomMinusOneToPlusOnef(), spitfire::math::randomZeroToOnef(), spitfire::math::randomMinusOneToPlusOnef()));
 
     const float fWidth = fBaseSize + (fSizeVariation * spitfire::math::randomMinusOneToPlusOnef());
     const float fHeight = fWidth;
@@ -973,15 +977,13 @@ void cApplication::CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo)
     const spitfire::math::cVec3 vMin(-fHalfWidth, -fHalfHeight, 0.0f);
     const spitfire::math::cVec3 vMax(fHalfWidth, fHalfHeight, 0.0f);
 
-    opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
-
     // Add a front facing rectangle
-    builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
-    builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(1.0, 1.0));
-    builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 1.0));
-    builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(1.0, 0.0f));
-    builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(1.0, 1.0));
-    builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 0.0f));
+    builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 0.0f), position);
+    builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(1.0, 1.0), position);
+    builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 1.0), position);
+    builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(1.0, 0.0f), position);
+    builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), vNormal, spitfire::math::cVec2(1.0, 1.0), position);
+    builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), vNormal, spitfire::math::cVec2(0.0f, 0.0f), position);
   }
 
   vbo.SetData(pGeometryDataPtr);
@@ -2808,6 +2810,7 @@ void cApplication::Run()
 
       // Render smoke
       {
+        glDepthMask(GL_FALSE);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -2815,10 +2818,13 @@ void cApplication::Run()
 
         pContext->BindShader(*pShaderSmoke);
 
+        // We split up the object rotation from the normal model matrix so that we can apply it to each particle in the VBO, otherwise we would accidentally rotate each particle into an unknown rotation and billboarding wouldn't work
+        pContext->SetShaderConstant("matObjectRotation", matObjectRotation);
+
         pContext->BindStaticVertexBufferObject(smoke.vbo);
 
         {
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationSmoke * matObjectRotation);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationSmoke * matObjectRotation);
 
           pContext->DrawStaticVertexBufferObjectTriangles(smoke.vbo);
         }
@@ -2830,10 +2836,12 @@ void cApplication::Run()
         pContext->UnBindTexture(0, *smoke.pTexture);
 
         glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
       }
 
       // Render fire
       {
+        glDepthMask(GL_FALSE);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
@@ -2841,10 +2849,13 @@ void cApplication::Run()
 
         pContext->BindShader(*pShaderFire);
 
+        // We split up the object rotation from the normal model matrix so that we can apply it to each particle in the VBO, otherwise we would accidentally rotate each particle into an unknown rotation and billboarding wouldn't work
+        pContext->SetShaderConstant("matObjectRotation", matObjectRotation);
+
         pContext->BindStaticVertexBufferObject(fire.vbo);
 
         {
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationFire * matObjectRotation);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationFire * matObjectRotation);
 
           pContext->DrawStaticVertexBufferObjectTriangles(fire.vbo);
         }
@@ -2856,6 +2867,7 @@ void cApplication::Run()
         pContext->UnBindTexture(0, *fire.pTexture);
 
         glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
       }
 
       pContext->EndRenderToTexture(*pTextureFrameBufferObjectScreen);
