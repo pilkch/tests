@@ -139,12 +139,12 @@ spitfire::math::cMat4 cFreeLookCamera::CalculateViewMatrix() const
   matTranslation.TranslateMatrix(-position);
 
   const spitfire::math::cQuaternion rotation = -GetRotation();
+  const spitfire::math::cMat4 matRotation = rotation.GetMatrix();
 
-  // For some reason we have a translation that needs to be cancelled out
-  spitfire::math::cMat4 matTranslation2;
-  matTranslation2.TranslateMatrix(spitfire::math::cVec3(0.0f, 0.0f, 1.0f));
+  spitfire::math::cMat4 matTargetTranslation;
+  matTargetTranslation.TranslateMatrix(spitfire::math::cVec3(0.0f, 0.0f, 1.0f));
 
-  return (matTranslation2 * (rotation.GetMatrix() * matTranslation));
+  return ((matTargetTranslation * matRotation) * matTranslation);
 }
 
 
