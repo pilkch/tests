@@ -1564,7 +1564,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_SPACE: {
-        LOG("spacebar down");
+        //LOG("spacebar down");
         bIsRotating = false;
         break;
       }
