@@ -966,7 +966,7 @@ void cApplication::CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo)
   // NOTE: We use an extra set of texture coordinates on the end to say where the center point of that specific particle is
   opengl::cGeometryBuilder_v3_n3_t2_user3 builder(*pGeometryDataPtr);
 
-  for (size_t i = 0; i < 30; i++) {
+  for (size_t i = 0; i < 100; i++) {
   // Normals point out from the corners at 45 degrees to very roughly approximate the normals of a sphere
   const spitfire::math::cVec3 normalTopLeft(-0.717f, 0.717f, 0.0f);
   const spitfire::math::cVec3 normalTopRight(0.717f, 0.717f, 0.0f);
