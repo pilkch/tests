@@ -957,22 +957,20 @@ void cApplication::CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  const spitfire::math::cVec3 vNormal(0.0f, 0.0f, -1.0f);
-
-  const float fBaseSize = 1.0f;
-  const float fSizeVariation = 0.5f;
-  const spitfire::math::cVec3 positionVariation(2.0f, 2.0f, 2.0f);
+  const float fBaseSize = 0.3f;
+  const float fSizeVariation = 0.1f;
+  const spitfire::math::cVec3 positionVariation(3.0f, 3.0f, 3.0f);
 
   // NOTE: We use an extra set of texture coordinates on the end to say where the center point of that specific particle is
   opengl::cGeometryBuilder_v3_n3_t2_user3 builder(*pGeometryDataPtr);
 
-  for (size_t i = 0; i < 100; i++) {
   // Normals point out from the corners at 45 degrees to very roughly approximate the normals of a sphere
   const spitfire::math::cVec3 normalTopLeft(-0.717f, 0.717f, 0.0f);
   const spitfire::math::cVec3 normalTopRight(0.717f, 0.717f, 0.0f);
   const spitfire::math::cVec3 normalBottomLeft(-0.717f, -0.717f, 0.0f);
   const spitfire::math::cVec3 normalBottomRight(0.717f, -0.717f, 0.0f);
 
+  for (size_t i = 0; i < 100; i++) {
     const spitfire::math::cVec3 position(positionVariation * spitfire::math::cVec3(spitfire::math::randomMinusOneToPlusOnef(), spitfire::math::randomZeroToOnef(), spitfire::math::randomMinusOneToPlusOnef()));
 
     const float fWidth = fBaseSize + (fSizeVariation * spitfire::math::randomMinusOneToPlusOnef());
