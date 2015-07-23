@@ -7,6 +7,10 @@ precision highp float;
 // Using a similar technique to Brutal Legend
 // http://drewskillman.com/GDC2010_VFX.pdf
 
+// Near and far clip planes (could also be passed as parameters, but usually are engine dependant constants, so using #define is cheaper)
+#define ZNEAR 0.1
+#define ZFAR 1000.0
+
 uniform sampler2D texUnit0; // Diffuse texture
 uniform sampler2DRect texUnit1; // Depth buffer
 
@@ -26,16 +30,48 @@ uniform cSun sun;
 
 smooth in vec2 vertOutTexCoord0;
 
-//const float tolerance = 0.01;
 smooth in vec3 N;
 smooth in vec3 L;
 
+const float fTolerance = 0.01;
+
 out vec4 fragmentColour;
+
+// Linear depth from depth buffer
+// http://web.archive.org/web/20130416194336/http://olivers.posterous.com/linear-depth-in-glsl-for-real
+// http://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer
+
+float LinearDepth(float value)
+{
+  float z_b = value;
+  float z_n = 2.0 * z_b - 1.0;
+  float z_e = 2.0 * ZNEAR * ZFAR / (ZFAR + ZNEAR - z_n * (ZFAR - ZNEAR));
+  return z_e;
+}
 
 void main()
 {
   vec4 albedo = texture(texUnit0, vertOutTexCoord0);
-  //if (albedo.a < tolerance) discard;
+  if (albedo.a < fTolerance) discard;
+
+  vec2 texCoord1 = gl_FragCoord.xy;
+  float fDepthMapDepth = -texture(texUnit1, texCoord1).r;
+  float fFragmentDepth = -gl_FragCoord.z;
+  //if (LinearDepth(fFragmentDepth) < LinearDepth(fDepthMapDepth)) discard;
+
+  //float fDiscard = (LinearDepth(fFragmentDepth) < LinearDepth(fDepthMapDepth)) ? 1.0 : 0.0;
+
+  // TODO: There are still some bugs where particles are not culled if they are about 5 meters from the camera and behind an opaque object
+  // It may be due to one of these:
+  // 1) Non-linear depth buffer coordinates
+  // 2) Incorrectly checking a linear depth against a non-linear depth, so it kind of works
+
+  // Soft particle edges (Fixes the hard cut that happens when a particle intersects an opaque polygon)
+  // http://www.informatik.uni-oldenburg.de/~trigger/page7.html
+  // http://blog.wolfire.com/2010/04/Soft-Particles
+  // http://developer.download.nvidia.com/whitepapers/2007/SDK10/SoftParticles_hi.pdf
+  float fScale = 20.0f;
+  float fSoftness = 1.0 - clamp((fDepthMapDepth - fFragmentDepth) * fScale, 0.0, 1.0);
 
   // Lambert lighting
   vec3 ambient = ambientColour;
@@ -43,7 +79,7 @@ void main()
   vec3 diffuse = lightColour * fLambertDiffuse;
 
 
-  //fragmentColour = vec4((ambient + diffuse) * colour * albedo.rgb, albedo.a * fSoftness);
+  fragmentColour = vec4((ambient + diffuse) * colour * albedo.rgb, albedo.a * fSoftness);
   //fragmentColour = vec4((ambient + diffuse) * colour * albedo.rgb, 1.0 + 0.0001 * (albedo.a + fSoftness));
-  fragmentColour = vec4(vec3(fDiscard, 1.0 - fDiscard, 0.0) + 0.001 * ((ambient + diffuse) * colour * albedo.rgb), albedo.a + fSoftness);
+  //fragmentColour = vec4(vec3(fDiscard, 1.0 - fDiscard, 1.0 - fSoftness) + 0.001 * ((ambient + diffuse) * colour * albedo.rgb), albedo.a * fSoftness);
 }
