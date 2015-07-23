@@ -2,14 +2,11 @@
 
 precision highp float;
 
+#include <math.header>
 #include <lighting.header>
 
 // Using a similar technique to Brutal Legend
 // http://drewskillman.com/GDC2010_VFX.pdf
-
-// Near and far clip planes (could also be passed as parameters, but usually are engine dependant constants, so using #define is cheaper)
-#define ZNEAR 0.1
-#define ZFAR 1000.0
 
 uniform sampler2D texUnit0; // Diffuse texture
 uniform sampler2DRect texUnit1; // Depth buffer
@@ -36,18 +33,6 @@ smooth in vec3 L;
 const float fTolerance = 0.01;
 
 out vec4 fragmentColour;
-
-// Linear depth from depth buffer
-// http://web.archive.org/web/20130416194336/http://olivers.posterous.com/linear-depth-in-glsl-for-real
-// http://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer
-
-float LinearDepth(float value)
-{
-  float z_b = value;
-  float z_n = 2.0 * z_b - 1.0;
-  float z_e = 2.0 * ZNEAR * ZFAR / (ZFAR + ZNEAR - z_n * (ZFAR - ZNEAR));
-  return z_e;
-}
 
 void main()
 {
