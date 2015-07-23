@@ -2896,7 +2896,7 @@ void cApplication::Run()
 
       // Render smoke
       {
-        //glDepthMask(GL_FALSE);
+        glDepthMask(GL_FALSE);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -2933,7 +2933,7 @@ void cApplication::Run()
         pContext->UnBindTexture(0, *smoke.pTexture);
 
         glDisable(GL_BLEND);
-        //glDepthMask(GL_TRUE);
+        glDepthMask(GL_TRUE);
       }
 
       // Render fire
