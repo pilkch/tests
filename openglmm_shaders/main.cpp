@@ -3000,6 +3000,10 @@ void cApplication::Run()
         RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pFrameBuffer, *pShaderScreenRect);
       }
 
+      // Draw the scene depth texture
+      RenderScreenRectangleDepthTexture(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[0], *pShaderScreenRect);
+      // Draw the particles depth texture
+      RenderScreenRectangleDepthTexture(0.25f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[1], *pShaderScreenRect);
       // Draw the teapot texture
       RenderScreenRectangle(0.75f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectTeapot, *pShaderScreenRect);
 
