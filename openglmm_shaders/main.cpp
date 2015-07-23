@@ -2753,6 +2753,29 @@ void cApplication::Run()
       pContext->UnBindShader(*pShaderLambert);
 
 
+
+      // Render an extra textured teapot under the smoke
+      {
+        pContext->BindTexture(0, *pTextureDiffuse);
+        pContext->BindTexture(1, *pTextureLightMap);
+        pContext->BindTexture(2, *pTextureDetail);
+
+        pContext->BindShader(*pShaderCrate);
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot3);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationSmoke);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot3);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot3);
+        }
+
+        pContext->UnBindShader(*pShaderCrate);
+
+        pContext->UnBindTexture(2, *pTextureDetail);
+        pContext->UnBindTexture(1, *pTextureLightMap);
+        pContext->UnBindTexture(0, *pTextureDiffuse);
+      }
+
       // Render the test images
       {
         const size_t n = testImages.size();
