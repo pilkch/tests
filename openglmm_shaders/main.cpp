@@ -228,7 +228,8 @@ private:
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateGuiRectangle(opengl::cStaticVertexBufferObject& staticVertexBufferObject, size_t nTextureWidth, size_t nTextureHeight);
-  
+
+  void RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader);
   void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
@@ -274,7 +275,7 @@ private:
   opengl::cStaticVertexBufferObject textVBO;
 
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectTeapot;
-  opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreen;
+  opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreenColourAndDepth[2];
 
   opengl::cTexture* pTextureDiffuse;
   opengl::cTexture* pTextureLightMap;
@@ -385,7 +386,6 @@ cApplication::cApplication() :
   pFont(nullptr),
 
   pTextureFrameBufferObjectTeapot(nullptr),
-  pTextureFrameBufferObjectScreen(nullptr),
 
   pTextureDiffuse(nullptr),
   pTextureLightMap(nullptr),
@@ -423,6 +423,9 @@ cApplication::cApplication() :
 
   colourBlindMode(COLOUR_BLIND_MODE::PROTANOPIA)
 {
+  pTextureFrameBufferObjectScreenColourAndDepth[0] = nullptr;
+  pTextureFrameBufferObjectScreenColourAndDepth[1] = nullptr;
+
   // Set our main thread
   spitfire::util::SetMainThread();
 
@@ -1073,8 +1076,10 @@ bool cApplication::Create()
   pTextureFrameBufferObjectTeapot = pContext->CreateTextureFrameBufferObject(resolution.width, resolution.height, opengl::PIXELFORMAT::R8G8B8A8);
   assert(pTextureFrameBufferObjectTeapot != nullptr);
 
-  pTextureFrameBufferObjectScreen = pContext->CreateTextureFrameBufferObject(resolution.width, resolution.height, opengl::PIXELFORMAT::R8G8B8A8);
-  assert(pTextureFrameBufferObjectScreen != nullptr);
+  for (size_t i = 0; i < 2; i++) {
+    pTextureFrameBufferObjectScreenColourAndDepth[i] = pContext->CreateTextureFrameBufferObjectWithDepth(resolution.width, resolution.height);
+    assert(pTextureFrameBufferObjectScreenColourAndDepth[i] != nullptr);
+  }
 
   pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
   assert(pTextureDiffuse != nullptr);
@@ -1305,9 +1310,11 @@ void cApplication::Destroy()
     pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectTeapot);
     pTextureFrameBufferObjectTeapot = nullptr;
   }
-  if (pTextureFrameBufferObjectScreen != nullptr) {
-    pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectScreen);
-    pTextureFrameBufferObjectScreen = nullptr;
+  for (size_t i = 0; i < 2; i++) {
+    if (pTextureFrameBufferObjectScreenColourAndDepth[i] != nullptr) {
+      pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectScreenColourAndDepth[i]);
+      pTextureFrameBufferObjectScreenColourAndDepth[i] = nullptr;
+    }
   }
 
 
@@ -1483,6 +1490,30 @@ void cApplication::DestroyShaders()
     pContext->DestroyShader(pShaderCrate);
     pShaderCrate = nullptr;
   }
+}
+
+void cApplication::RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader)
+{
+  spitfire::math::cMat4 matModelView2D;
+  matModelView2D.SetTranslation(x, y, 0.0f);
+
+  pContext->BindTextureDepthBuffer(0, texture);
+
+  pContext->BindShader(shader);
+
+  pContext->BindStaticVertexBufferObject2D(vbo);
+
+  {
+    pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
+
+    pContext->DrawStaticVertexBufferObjectTriangles2D(vbo);
+  }
+
+  pContext->UnBindStaticVertexBufferObject2D(vbo);
+
+  pContext->UnBindShader(shader);
+
+  pContext->UnBindTextureDepthBuffer(0, texture);
 }
 
 void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader)
@@ -2227,13 +2258,15 @@ void cApplication::Run()
     }
 
     {
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[0];
+
       // Render the scene into a texture for later
       // Use Cornflower blue as the background colour
       // http://en.wikipedia.org/wiki/Cornflower_blue
       const spitfire::math::cColour clearColour(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
       pContext->SetClearColour(clearColour);
 
-      pContext->BeginRenderToTexture(*pTextureFrameBufferObjectScreen);
+      pContext->BeginRenderToTexture(*pFrameBuffer);
 
       if (bIsWireframe) pContext->EnableWireframe();
 
@@ -2834,14 +2867,41 @@ void cApplication::Run()
         pContext->EnableDepthTesting();
       }
 
+      pContext->EndRenderToTexture(*pFrameBuffer);
+    }
+
+
+    // Ping pong to the other texture so that we can render our particle systems now that we have a depth buffer
+    {
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[1];
+
+      // Render the scene into a texture for later
+      // Use Cornflower blue as the background colour
+      // http://en.wikipedia.org/wiki/Cornflower_blue
+      const spitfire::math::cColour clearColour(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
+      pContext->SetClearColour(clearColour);
+
+      pContext->BeginRenderToTexture(*pFrameBuffer);
+
+      // Now draw an overlay of our rendered textures
+      pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
+        // Draw the existing scene
+        glDepthMask(GL_FALSE);
+        RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *(pTextureFrameBufferObjectScreenColourAndDepth[0]), *pShaderScreenRect);
+        glDepthMask(GL_TRUE);
+      pContext->EndRenderMode2D();
+
+
+      if (bIsWireframe) pContext->EnableWireframe();
 
       // Render smoke
       {
-        glDepthMask(GL_FALSE);
+        //glDepthMask(GL_FALSE);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         pContext->BindTexture(0, *smoke.pTexture);
+        pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[0]);
 
         pContext->BindShader(*pShaderSmoke);
 
@@ -2869,10 +2929,11 @@ void cApplication::Run()
 
         pContext->UnBindShader(*pShaderSmoke);
 
+        pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[0]);
         pContext->UnBindTexture(0, *smoke.pTexture);
 
         glDisable(GL_BLEND);
-        glDepthMask(GL_TRUE);
+        //glDepthMask(GL_TRUE);
       }
 
       // Render fire
@@ -2906,8 +2967,9 @@ void cApplication::Run()
         glDepthMask(GL_TRUE);
       }
 
-      pContext->EndRenderToTexture(*pTextureFrameBufferObjectScreen);
+      pContext->EndRenderToTexture(*pFrameBuffer);
     }
+
 
     {
       // Render the frame buffer objects to the screen
@@ -2920,20 +2982,22 @@ void cApplication::Run()
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
 
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[1];
+
       if (GetActiveSimplePostRenderShadersCount() != 0) {
         if (bIsSplitScreenSimplePostEffectShaders) {
           // Draw the screen texture
-          RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRect);
+          RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pFrameBuffer, *pShaderScreenRect);
 
           // Draw the shaders split screen texture
-          RenderScreenRectangle(0.25f, 0.5f, staticVertexBufferObjectScreenRectHalfScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRectSimplePostRender);
+          RenderScreenRectangle(0.25f, 0.5f, staticVertexBufferObjectScreenRectHalfScreen, *pFrameBuffer, *pShaderScreenRectSimplePostRender);
         } else {
           // Draw the shaders screen texture
-          RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRectSimplePostRender);
+          RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pFrameBuffer, *pShaderScreenRectSimplePostRender);
         }
       } else {
         // Draw the screen texture
-        RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pTextureFrameBufferObjectScreen, *pShaderScreenRect);
+        RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pFrameBuffer, *pShaderScreenRect);
       }
 
       // Draw the teapot texture

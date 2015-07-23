@@ -8,6 +8,7 @@ precision highp float;
 // http://drewskillman.com/GDC2010_VFX.pdf
 
 uniform sampler2D texUnit0; // Diffuse texture
+uniform sampler2DRect texUnit1; // Depth buffer
 
 uniform vec3 ambientColour;
 uniform vec3 skyColour; // Add some light towards the top of the particle

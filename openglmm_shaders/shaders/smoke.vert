@@ -61,9 +61,6 @@ void main()
   gl_Position = matProjection * modelViewPosition;
 
 
-  // Tell the fragment shader our depth
-  // http://stackoverflow.com/questions/16131963/depth-as-distance-to-camera-plane-in-glsl/16137020#16137020
-  vertOutDepth = -modelViewPosition.z;
   // Lambert lighting
   // Create a normal that points out from the center to this vertex
   vec4 modelViewParticleCentre = (modelView * vec4(0.0, 0.0, 0.0, 1.0) + tansformedParticleCentre);
