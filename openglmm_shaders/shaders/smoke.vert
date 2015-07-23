@@ -1,5 +1,7 @@
 #version 330
 
+precision highp float;
+
 // Using a similar technique to Brutal Legend
 // http://drewskillman.com/GDC2010_VFX.pdf
 
@@ -12,6 +14,8 @@ uniform mat4 matProjection;
 
 uniform mat4 matObjectRotation;
 
+uniform vec3 lightPosition;
+
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 texCoord0;
@@ -21,6 +25,9 @@ layout(location = 3) in vec3 user0; // User data for the centre of the current p
 smooth out vec2 vertOutTexCoord0;
 
 smooth out float vertOutDepth;
+
+smooth out vec3 N;
+smooth out vec3 L;
 
 void main()
 {
@@ -57,6 +64,13 @@ void main()
   // Tell the fragment shader our depth
   // http://stackoverflow.com/questions/16131963/depth-as-distance-to-camera-plane-in-glsl/16137020#16137020
   vertOutDepth = -modelViewPosition.z;
+  // Lambert lighting
+  // Create a normal that points out from the center to this vertex
+  vec4 modelViewParticleCentre = (modelView * vec4(0.0, 0.0, 0.0, 1.0) + tansformedParticleCentre);
+  N = normalize(modelViewPosition.xyz - modelViewParticleCentre.xyz);
+
+  vec3 positionCameraSpace = modelViewPosition.xyz;
+  L = normalize((matView * vec4(lightPosition, 1.0)).xyz - positionCameraSpace);
 
 
   // Pass on the texture coordinates

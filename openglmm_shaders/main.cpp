@@ -2825,6 +2825,15 @@ void cApplication::Run()
         // We split up the object rotation from the normal model matrix so that we can apply it to each particle in the VBO, otherwise we would accidentally rotate each particle into an unknown rotation and billboarding wouldn't work
         pContext->SetShaderConstant("matObjectRotation", matObjectRotation);
 
+        const spitfire::math::cColour3 blue(0.4f, 0.78f, 1.0f);
+        const spitfire::math::cColour3 white(1.0f, 1.0f, 1.0f);
+        pContext->SetShaderConstant("ambientColour", blue);
+        pContext->SetShaderConstant("colour", white);
+
+        const spitfire::math::cColour3 pink(0.83f, 0.19f, 0.55f);
+        pContext->SetShaderConstant("lightColour", pink);
+        pContext->SetShaderConstant("lightPosition", lightDirectionalPosition);
+
         pContext->BindStaticVertexBufferObject(smoke.vbo);
 
         {
