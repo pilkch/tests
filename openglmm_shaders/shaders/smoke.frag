@@ -42,7 +42,7 @@ void main()
   vec2 texCoord1 = gl_FragCoord.xy;
   float fDepthMapDepth = -texture(texUnit1, texCoord1).r;
   float fFragmentDepth = -gl_FragCoord.z;
-  //if (LinearDepth(fFragmentDepth) < LinearDepth(fDepthMapDepth)) discard;
+  if (LinearDepth(fFragmentDepth) < LinearDepth(fDepthMapDepth)) discard;
 
   //float fDiscard = (LinearDepth(fFragmentDepth) < LinearDepth(fDepthMapDepth)) ? 1.0 : 0.0;
 
@@ -62,7 +62,6 @@ void main()
   vec3 ambient = ambientColour;
   float fLambertDiffuse = CalculateLambertDiffuse(normalize(L), normalize(N));
   vec3 diffuse = lightColour * fLambertDiffuse;
-
 
   fragmentColour = vec4((ambient + diffuse) * colour * albedo.rgb, albedo.a * fSoftness);
   //fragmentColour = vec4((ambient + diffuse) * colour * albedo.rgb, 1.0 + 0.0001 * (albedo.a + fSoftness));
