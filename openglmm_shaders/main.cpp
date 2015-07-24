@@ -2943,6 +2943,7 @@ void cApplication::Run()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
         pContext->BindTexture(0, *fire.pTexture);
+        pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[0]);
 
         pContext->BindShader(*pShaderFire);
 
@@ -2961,6 +2962,7 @@ void cApplication::Run()
 
         pContext->UnBindShader(*pShaderFire);
 
+        pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[0]);
         pContext->UnBindTexture(0, *fire.pTexture);
 
         glDisable(GL_BLEND);

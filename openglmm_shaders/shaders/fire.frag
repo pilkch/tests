@@ -1,6 +1,11 @@
 #version 330
 
+precision highp float;
+
+#include <math.header>
+
 uniform sampler2D texUnit0; // Diffuse texture
+uniform sampler2DRect texUnit1; // Depth buffer
 
 uniform vec3 diffuseColour;
 
@@ -15,12 +20,19 @@ struct cSun
 
 uniform cSun sun;
 
+const float fTolerance = 0.01;
+
 smooth in vec2 vertOutTexCoord0;
 
 out vec4 fragmentColour;
 
 void main()
 {
+  vec2 texCoord1 = gl_FragCoord.xy;
+  float fDepthMapDepth = -texture(texUnit1, texCoord1).r;
+  float fFragmentDepth = -gl_FragCoord.z;
+  if (LinearDepth(fFragmentDepth) < LinearDepth(fDepthMapDepth)) discard;
+
   vec4 albedo = texture(texUnit0, vertOutTexCoord0);
 
   fragmentColour = vec4(diffuseColour, 1.0) * albedo;

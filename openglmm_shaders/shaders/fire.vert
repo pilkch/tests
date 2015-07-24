@@ -1,5 +1,7 @@
 #version 330
 
+precision highp float;
+
 #define FIRE_SPHERICAL_BILLBOARD
 
 uniform mat4 matModel;
