@@ -967,11 +967,11 @@ void cApplication::CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo)
   // NOTE: We use an extra set of texture coordinates on the end to say where the center point of that specific particle is
   opengl::cGeometryBuilder_v3_n3_t2_user3 builder(*pGeometryDataPtr);
 
-  // Normals point out from the corners at 45 degrees to very roughly approximate the normals of a sphere
-  const spitfire::math::cVec3 normalTopLeft(-0.717f, 0.717f, 0.0f);
-  const spitfire::math::cVec3 normalTopRight(0.717f, 0.717f, 0.0f);
-  const spitfire::math::cVec3 normalBottomLeft(-0.717f, -0.717f, 0.0f);
-  const spitfire::math::cVec3 normalBottomRight(0.717f, -0.717f, 0.0f);
+  // Normals point out from the corners at angle slightly towards the front to very roughly approximate the normals on the front half of a sphere
+  const spitfire::math::cVec3 normalTopLeft(-0.57735f, 0.57735f, 0.57735f);
+  const spitfire::math::cVec3 normalTopRight(0.57735f, 0.57735f, 0.57735f);
+  const spitfire::math::cVec3 normalBottomLeft(-0.57735f, -0.57735f, 0.57735f);
+  const spitfire::math::cVec3 normalBottomRight(0.57735f, -0.57735f, 0.57735f);
 
   for (size_t i = 0; i < 100; i++) {
     const spitfire::math::cVec3 position(positionVariation * spitfire::math::cVec3(spitfire::math::randomMinusOneToPlusOnef(), spitfire::math::randomZeroToOnef(), spitfire::math::randomMinusOneToPlusOnef()));
