@@ -45,7 +45,8 @@ void main()
   vec2 texCoord1 = gl_FragCoord.xy;
   float fDepthMapDepth = -texture(texUnit1, texCoord1).r;
   float fFragmentDepth = -gl_FragCoord.z;
-  if (LinearDepth(fNear, fFar, fFragmentDepth) < LinearDepth(fNear, fFar, fDepthMapDepth)) discard;
+  float fFadeDepth = 0.001f;
+  if ((LinearDepth(fNear, fFar, fFragmentDepth) + fFadeDepth) < LinearDepth(fNear, fFar, fDepthMapDepth)) discard;
 
   //float fDiscard = (LinearDepth(fNear, fFar, fFragmentDepth) < LinearDepth(fNear, fFar, fDepthMapDepth)) ? 1.0 : 0.0;
 
