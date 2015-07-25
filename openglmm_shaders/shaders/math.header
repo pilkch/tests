@@ -104,14 +104,10 @@ float simplexNoise(vec2 v)
 // http://web.archive.org/web/20130416194336/http://olivers.posterous.com/linear-depth-in-glsl-for-real
 // http://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer
 
-// Near and far clip planes (Could be passed as parameters instead)
-#define ZNEAR 0.1
-#define ZFAR 1000.0
-
-float LinearDepth(float value)
+float LinearDepth(float fNear, float fFar, float value)
 {
   float z_b = value;
   float z_n = 2.0 * z_b - 1.0;
-  float z_e = 2.0 * ZNEAR * ZFAR / (ZFAR + ZNEAR - z_n * (ZFAR - ZNEAR));
+  float z_e = 2.0 * fNear * fFar / (fFar + fNear - z_n * (fFar - fNear));
   return z_e;
 }

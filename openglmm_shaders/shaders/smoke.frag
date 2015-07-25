@@ -11,6 +11,9 @@ precision highp float;
 uniform sampler2D texUnit0; // Diffuse texture
 uniform sampler2DRect texUnit1; // Depth buffer
 
+uniform float fNear;
+uniform float fFar;
+
 uniform vec3 ambientColour;
 uniform vec3 skyColour; // Add some light towards the top of the particle
 
@@ -42,9 +45,9 @@ void main()
   vec2 texCoord1 = gl_FragCoord.xy;
   float fDepthMapDepth = -texture(texUnit1, texCoord1).r;
   float fFragmentDepth = -gl_FragCoord.z;
-  if (LinearDepth(fFragmentDepth) < LinearDepth(fDepthMapDepth)) discard;
+  if (LinearDepth(fNear, fFar, fFragmentDepth) < LinearDepth(fNear, fFar, fDepthMapDepth)) discard;
 
-  //float fDiscard = (LinearDepth(fFragmentDepth) < LinearDepth(fDepthMapDepth)) ? 1.0 : 0.0;
+  //float fDiscard = (LinearDepth(fNear, fFar, fFragmentDepth) < LinearDepth(fNear, fFar, fDepthMapDepth)) ? 1.0 : 0.0;
 
   // TODO: There are still some bugs where particles are not culled if they are about 5 meters from the camera and behind an opaque object
   // It may be due to one of these:

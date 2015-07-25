@@ -7,6 +7,9 @@ precision highp float;
 uniform sampler2D texUnit0; // Diffuse texture
 uniform sampler2DRect texUnit1; // Depth buffer
 
+uniform float fNear;
+uniform float fFar;
+
 uniform vec3 diffuseColour;
 
 uniform vec3 ambientColour;
@@ -31,7 +34,7 @@ void main()
   vec2 texCoord1 = gl_FragCoord.xy;
   float fDepthMapDepth = -texture(texUnit1, texCoord1).r;
   float fFragmentDepth = -gl_FragCoord.z;
-  if (LinearDepth(fFragmentDepth) < LinearDepth(fDepthMapDepth)) discard;
+  if (LinearDepth(fNear, fFar, fFragmentDepth) < LinearDepth(fNear, fFar, fDepthMapDepth)) discard;
 
   vec4 albedo = texture(texUnit0, vertOutTexCoord0);
 
