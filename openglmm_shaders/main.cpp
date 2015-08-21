@@ -251,12 +251,23 @@ private:
   bool bIsMovingRight;
   bool bIsMovingBackward;
 
+  bool bIsFocalLengthIncrease;
+  bool bIsFocalLengthDecrease;
+  bool bIsFStopIncrease;
+  bool bIsFStopDecrease;
+
   bool bIsDirectionalLightOn;
   bool bIsPointLightOn;
   bool bIsSpotLightOn;
 
   bool bIsRotating;
   bool bIsWireframe;
+
+  bool bIsDOFBokeh;
+  bool bDOFShowFocus;
+  float fFocalLengthmm; // Focal length in mm
+  float fFStop; // f-stop value
+
   bool bIsSplitScreenSimplePostEffectShaders; // Tells us whether to split the screen down the middle when a simple post effect shader is active
 
   bool bIsDone;
@@ -303,6 +314,7 @@ private:
   opengl::cShader* pShaderLambert;
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
+  opengl::cShader* pShaderScreenRectDOFBokeh;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectLargeTeapot;
   #ifdef BUILD_LARGE_STATUE_MODEL
@@ -370,12 +382,23 @@ cApplication::cApplication() :
   bIsMovingRight(false),
   bIsMovingBackward(false),
 
+  bIsFocalLengthIncrease(false),
+  bIsFocalLengthDecrease(false),
+  bIsFStopIncrease(false),
+  bIsFStopDecrease(false),
+
   bIsDirectionalLightOn(true),
   bIsPointLightOn(true),
   bIsSpotLightOn(true),
 
   bIsRotating(true),
   bIsWireframe(false),
+
+  bIsDOFBokeh(true),
+  bDOFShowFocus(false),
+  fFocalLengthmm(18.0f),
+  fFStop(3.6f),
+
   bIsSplitScreenSimplePostEffectShaders(true),
 
   bIsDone(false),
@@ -413,6 +436,7 @@ cApplication::cApplication() :
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
+  pShaderScreenRectDOFBokeh(nullptr),
 
   pShaderCrate(nullptr),
   pShaderFog(nullptr),
@@ -451,6 +475,10 @@ void cApplication::CreateText()
   lines.push_back(spitfire::string_t(TEXT("Point light: ")) + (bIsPointLightOn ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Spotlight: ")) + (bIsSpotLightOn ? TEXT("On") : TEXT("Off")));
   lines.push_back(TEXT(""));
+
+  lines.push_back(spitfire::string_t(TEXT("DOF bokeh: ")) + (bIsDOFBokeh ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Focal length:") + spitfire::string::ToString(fFocalLengthmm) + TEXT("mm")));
+  lines.push_back(spitfire::string_t(TEXT("f stops:") + spitfire::string::ToString(fFStop)));
 
   // Post render shaders
   if (GetActiveSimplePostRenderShadersCount() == 0) {
@@ -1410,6 +1438,9 @@ void cApplication::CreateShaders()
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(pShaderScreenRect != nullptr);
 
+  pShaderScreenRectDOFBokeh = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/dofbokeh.frag"));
+  assert(pShaderScreenRectDOFBokeh != nullptr);
+
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
   assert(pShaderCrate != nullptr);
 
@@ -1422,6 +1453,10 @@ void cApplication::CreateShaders()
 
 void cApplication::DestroyShaders()
 {
+  if (pShaderScreenRectDOFBokeh != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectDOFBokeh);
+    pShaderScreenRectDOFBokeh = nullptr;
+  }
   if (pShaderScreenRect != nullptr) {
     pContext->DestroyShader(pShaderScreenRect);
     pShaderScreenRect = nullptr;
@@ -1594,6 +1629,24 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsMovingRight = true;
         break;
       }
+
+      case SDLK_v: {
+        bIsFocalLengthDecrease = true;
+        break;
+      }
+      case SDLK_b: {
+        bIsFocalLengthIncrease = true;
+        break;
+      }
+      case SDLK_n: {
+        bIsFStopDecrease = true;
+        break;
+      }
+      case SDLK_m: {
+        bIsFStopIncrease = true;
+        break;
+      }
+
       case SDLK_SPACE: {
         //LOG("spacebar down");
         bIsRotating = false;
@@ -1623,6 +1676,28 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsMovingRight = false;
         break;
       }
+
+      case SDLK_v: {
+        bIsFocalLengthDecrease = false;
+        break;
+      }
+      case SDLK_b: {
+        bIsFocalLengthIncrease = false;
+        break;
+      }
+      case SDLK_n: {
+        bIsFStopDecrease = false;
+        break;
+      }
+      case SDLK_m: {
+        bIsFStopIncrease = false;
+        break;
+      }
+      case SDLK_c: {
+        bDOFShowFocus = !bDOFShowFocus;
+        break;
+      }
+
       case SDLK_F5: {
         bReloadShaders = true;
         bSimplePostRenderDirty = true;
@@ -1680,6 +1755,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_5: {
+        bIsDOFBokeh = !bIsDOFBokeh;
+        break;
+      }
+      case SDLK_7: {
         bIsSplitScreenSimplePostEffectShaders = !bIsSplitScreenSimplePostEffectShaders;
         break;
       }
@@ -1794,6 +1873,8 @@ void cApplication::Run()
   assert(pShaderPassThrough->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
+  assert(pShaderScreenRectDOFBokeh != nullptr);
+  assert(pShaderScreenRectDOFBokeh->IsCompiledProgram());
 
   assert(staticVertexBufferObjectLargeTeapot.IsCompiled());
   #ifdef BUILD_LARGE_STATUE_MODEL
@@ -2027,6 +2108,14 @@ void cApplication::Run()
       rotation.SetFromAxisAngle(spitfire::math::v3Up, fAngleRadians);
 
       matObjectRotation.SetRotation(rotation);
+
+      const float fFocalLengthDelta = 2.0f;
+      if (bIsFocalLengthIncrease) fFocalLengthmm = min(250.0f, fFocalLengthmm + fFocalLengthDelta);
+      if (bIsFocalLengthDecrease) fFocalLengthmm = max(10.0f, fFocalLengthmm - fFocalLengthDelta);
+
+      const float fFStopDelta = 0.1f;
+      if (bIsFStopIncrease) fFStop = min(30.0f, fFStop + fFStopDelta);
+      if (bIsFStopDecrease) fFStop = max(0.1f, fFStop - fFStopDelta);
 
       previousUpdateTime = currentTime;
     }
@@ -2970,6 +3059,73 @@ void cApplication::Run()
       }
 
       pContext->EndRenderToTexture(*pFrameBuffer);
+    }
+
+
+
+
+    std::swap(currentFBO, otherFBO);
+
+
+    // Ping pong to the other texture so that we can render our particle systems now that we have a depth buffer
+
+    if (bIsDOFBokeh) {
+      // Render the frame buffer object with our shader
+      const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
+      pContext->SetClearColour(clearColour);
+
+      opengl::cTextureFrameBufferObject& frameBufferTo = *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO];
+      opengl::cTextureFrameBufferObject& frameBufferFrom = *pTextureFrameBufferObjectScreenColourAndDepth[currentFBO];
+
+      pContext->BeginRenderToTexture(frameBufferTo);
+
+      pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
+
+
+      pContext->BindTexture(0, frameBufferFrom);
+      pContext->BindTextureDepthBuffer(1, frameBufferFrom);
+
+      pContext->BindShader(*pShaderScreenRectDOFBokeh);
+
+      // Set our shader constants
+      pContext->SetShaderConstant("textureSize", spitfire::math::cVec2(float(resolution.width), float(resolution.height)));
+
+      pContext->SetShaderConstant("focalLength", fFocalLengthmm); //focal length in mm
+      pContext->SetShaderConstant("fstop", fFStop); //f-stop value
+      pContext->SetShaderConstant("showFocus", bDOFShowFocus); // Show debug focus point and focal range (red = focal point, green = focal range)
+
+      // Not required when using autofocus
+      //pContext->SetShaderConstant("focalDepth", fFocalDepth);
+
+
+      opengl::cStaticVertexBufferObject& vbo = staticVertexBufferObjectScreenRectScreen;
+
+      const float x = 0.5f;
+      const float y = 0.5f;
+
+      spitfire::math::cMat4 matModelView2D;
+      matModelView2D.SetTranslation(x, y, 0.0f);
+
+      pContext->BindStaticVertexBufferObject2D(vbo);
+
+      pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
+
+      pContext->DrawStaticVertexBufferObjectTriangles2D(vbo);
+
+      pContext->UnBindStaticVertexBufferObject2D(vbo);
+
+
+      pContext->UnBindShader(*pShaderScreenRectDOFBokeh);
+
+      pContext->UnBindTextureDepthBuffer(1, frameBufferFrom);
+      pContext->UnBindTexture(0, frameBufferFrom);
+
+
+      pContext->EndRenderMode2D();
+
+      pContext->EndRenderToTexture(frameBufferTo);
+
+      std::swap(currentFBO, otherFBO);
     }
 
 
