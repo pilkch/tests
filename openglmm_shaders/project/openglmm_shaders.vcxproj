@@ -127,6 +127,7 @@
     <None Include="..\shaders\colour.frag" />
     <None Include="..\shaders\colour.header" />
     <None Include="..\shaders\colour.vert" />
+    <None Include="..\shaders\colouranddepth2d.frag" />
     <None Include="..\shaders\colourblind.frag" />
     <None Include="..\shaders\crate.frag" />
     <None Include="..\shaders\crate.vert" />
@@ -141,6 +142,12 @@
     <None Include="..\shaders\font.vert" />
     <None Include="..\shaders\glass.frag" />
     <None Include="..\shaders\glass.vert" />
+    <None Include="..\shaders\hdr\blurh.frag" />
+    <None Include="..\shaders\hdr\blurv.frag" />
+    <None Include="..\shaders\hdr\bright_pixels.frag" />
+    <None Include="..\shaders\hdr\luminance.frag" />
+    <None Include="..\shaders\hdr\minification.frag" />
+    <None Include="..\shaders\hdr\tone_mapping.frag" />
     <None Include="..\shaders\lambert.frag" />
     <None Include="..\shaders\lambert.vert" />
     <None Include="..\shaders\lighting.header" />
