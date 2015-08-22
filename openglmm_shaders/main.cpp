@@ -287,6 +287,7 @@ private:
 
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectTeapot;
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreenColourAndDepth[2];
+  opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreenDepth;
 
   opengl::cTexture* pTextureDiffuse;
   opengl::cTexture* pTextureLightMap;
@@ -314,6 +315,7 @@ private:
   opengl::cShader* pShaderLambert;
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
+  opengl::cShader* pShaderScreenRectColourAndDepth;
   opengl::cShader* pShaderScreenRectDOFBokeh;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectLargeTeapot;
@@ -436,6 +438,7 @@ cApplication::cApplication() :
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
+  pShaderScreenRectColourAndDepth(nullptr),
   pShaderScreenRectDOFBokeh(nullptr),
 
   pShaderCrate(nullptr),
@@ -449,6 +452,8 @@ cApplication::cApplication() :
 {
   pTextureFrameBufferObjectScreenColourAndDepth[0] = nullptr;
   pTextureFrameBufferObjectScreenColourAndDepth[1] = nullptr;
+
+  pTextureFrameBufferObjectScreenDepth = nullptr;
 
   // Set our main thread
   spitfire::util::SetMainThread();
@@ -1338,6 +1343,12 @@ void cApplication::Destroy()
     pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectTeapot);
     pTextureFrameBufferObjectTeapot = nullptr;
   }
+
+  if (pTextureFrameBufferObjectScreenDepth != nullptr) {
+    pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectScreenDepth);
+    pTextureFrameBufferObjectScreenDepth = nullptr;
+  }
+
   for (size_t i = 0; i < 2; i++) {
     if (pTextureFrameBufferObjectScreenColourAndDepth[i] != nullptr) {
       pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectScreenColourAndDepth[i]);
@@ -1384,6 +1395,11 @@ void cApplication::Destroy()
   }
 
   DestroyShaders();
+
+  if (pShaderScreenRectColourAndDepth != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectColourAndDepth);
+    pShaderScreenRectColourAndDepth = nullptr;
+  }
 
   if (pShaderScreenRectSimplePostRender != nullptr) {
     pContext->DestroyShader(pShaderScreenRectSimplePostRender);
@@ -1438,6 +1454,9 @@ void cApplication::CreateShaders()
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(pShaderScreenRect != nullptr);
 
+  pShaderScreenRectColourAndDepth = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/colouranddepth2d.frag"));
+  assert(pShaderScreenRectColourAndDepth  != nullptr);
+
   pShaderScreenRectDOFBokeh = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/dofbokeh.frag"));
   assert(pShaderScreenRectDOFBokeh != nullptr);
 
@@ -1456,6 +1475,10 @@ void cApplication::DestroyShaders()
   if (pShaderScreenRectDOFBokeh != nullptr) {
     pContext->DestroyShader(pShaderScreenRectDOFBokeh);
     pShaderScreenRectDOFBokeh = nullptr;
+  }
+  if (pShaderScreenRectColourAndDepth != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectColourAndDepth);
+    pShaderScreenRectColourAndDepth = nullptr;
   }
   if (pShaderScreenRect != nullptr) {
     pContext->DestroyShader(pShaderScreenRect);
@@ -1873,6 +1896,8 @@ void cApplication::Run()
   assert(pShaderPassThrough->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
+  assert(pShaderScreenRectColourAndDepth != nullptr);
+  assert(pShaderScreenRectColourAndDepth->IsCompiledProgram());
   assert(pShaderScreenRectDOFBokeh != nullptr);
   assert(pShaderScreenRectDOFBokeh->IsCompiledProgram());
 
@@ -2346,8 +2371,11 @@ void cApplication::Run()
       pContext->EndRenderToTexture(*pTextureFrameBufferObjectTeapot);
     }
 
+    size_t currentFBO = 0;
+    size_t otherFBO = 1;
+
     {
-      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[0];
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[currentFBO];
 
       // Render the scene into a texture for later
       // Use Cornflower blue as the background colour
@@ -2957,12 +2985,38 @@ void cApplication::Run()
       }
 
       pContext->EndRenderToTexture(*pFrameBuffer);
+
+      std::swap(currentFBO, otherFBO);
+    }
+
+
+    // Copy the scene frame buffer object to our depth frame buffer object (We actually render it to get the copy, apparently rendering is faster than glBlitFrameBuffer)
+    // NOTE: The target frame buffer object actually has a colour and depth buffer attached, but we only care about the depth buffer
+    {
+      const spitfire::math::cColour clearColour(0.0f, 0.0f, 0.0f);
+      pContext->SetClearColour(clearColour);
+
+      pContext->BeginRenderToTexture(*pTextureFrameBufferObjectScreenDepth);
+
+      pContext->BindTexture(0, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
+      pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
+
+      pContext->BindShader(*pShaderScreenRectColourAndDepth);
+
+      RenderScreenRectangleShaderAndTextureAlreadySet();
+
+      pContext->UnBindShader(*pShaderScreenRectColourAndDepth);
+
+      pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
+      pContext->UnBindTexture(0, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
+
+      pContext->EndRenderToTexture(*pTextureFrameBufferObjectScreenDepth);
     }
 
 
     // Ping pong to the other texture so that we can render our particle systems now that we have a depth buffer
     {
-      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[1];
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[currentFBO];
 
       // Render the scene into a texture for later
       // Use Cornflower blue as the background colour
@@ -2990,7 +3044,7 @@ void cApplication::Run()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         pContext->BindTexture(0, *smoke.pTexture);
-        pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[0]);
+        pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
 
         pContext->BindShader(*pShaderSmoke);
 
@@ -3018,7 +3072,7 @@ void cApplication::Run()
 
         pContext->UnBindShader(*pShaderSmoke);
 
-        pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[0]);
+        pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
         pContext->UnBindTexture(0, *smoke.pTexture);
 
         glDisable(GL_BLEND);
@@ -3032,7 +3086,7 @@ void cApplication::Run()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
         pContext->BindTexture(0, *fire.pTexture);
-        pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[0]);
+        pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
 
         pContext->BindShader(*pShaderFire);
 
@@ -3051,7 +3105,7 @@ void cApplication::Run()
 
         pContext->UnBindShader(*pShaderFire);
 
-        pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[0]);
+        pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
         pContext->UnBindTexture(0, *fire.pTexture);
 
         glDisable(GL_BLEND);
@@ -3059,18 +3113,15 @@ void cApplication::Run()
       }
 
       pContext->EndRenderToTexture(*pFrameBuffer);
+
+      std::swap(currentFBO, otherFBO);
     }
-
-
-
-
-    std::swap(currentFBO, otherFBO);
 
 
     // Ping pong to the other texture so that we can render our particle systems now that we have a depth buffer
 
+    // Apply depth of field and bokeh
     if (bIsDOFBokeh) {
-      // Render the frame buffer object with our shader
       const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
       pContext->SetClearColour(clearColour);
 
@@ -3079,11 +3130,8 @@ void cApplication::Run()
 
       pContext->BeginRenderToTexture(frameBufferTo);
 
-      pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
-
-
       pContext->BindTexture(0, frameBufferFrom);
-      pContext->BindTextureDepthBuffer(1, frameBufferFrom);
+      pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenDepth);
 
       pContext->BindShader(*pShaderScreenRectDOFBokeh);
 
@@ -3097,37 +3145,17 @@ void cApplication::Run()
       // Not required when using autofocus
       //pContext->SetShaderConstant("focalDepth", fFocalDepth);
 
-
-      opengl::cStaticVertexBufferObject& vbo = staticVertexBufferObjectScreenRectScreen;
-
-      const float x = 0.5f;
-      const float y = 0.5f;
-
-      spitfire::math::cMat4 matModelView2D;
-      matModelView2D.SetTranslation(x, y, 0.0f);
-
-      pContext->BindStaticVertexBufferObject2D(vbo);
-
-      pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
-
-      pContext->DrawStaticVertexBufferObjectTriangles2D(vbo);
-
-      pContext->UnBindStaticVertexBufferObject2D(vbo);
-
+      RenderScreenRectangleShaderAndTextureAlreadySet();
 
       pContext->UnBindShader(*pShaderScreenRectDOFBokeh);
 
-      pContext->UnBindTextureDepthBuffer(1, frameBufferFrom);
+      pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenDepth);
       pContext->UnBindTexture(0, frameBufferFrom);
-
-
-      pContext->EndRenderMode2D();
 
       pContext->EndRenderToTexture(frameBufferTo);
 
       std::swap(currentFBO, otherFBO);
     }
-
 
     {
       // Render the frame buffer objects to the screen
@@ -3140,7 +3168,7 @@ void cApplication::Run()
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
 
-      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[1];
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[currentFBO];
 
       if (GetActiveSimplePostRenderShadersCount() != 0) {
         if (bIsSplitScreenSimplePostEffectShaders) {
@@ -3159,9 +3187,9 @@ void cApplication::Run()
       }
 
       // Draw the scene depth texture
-      RenderScreenRectangleDepthTexture(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[0], *pShaderScreenRect);
+      RenderScreenRectangleDepthTexture(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[currentFBO], *pShaderScreenRect);
       // Draw the particles depth texture
-      RenderScreenRectangleDepthTexture(0.25f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[1], *pShaderScreenRect);
+      RenderScreenRectangleDepthTexture(0.25f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO], *pShaderScreenRect);
       // Draw the teapot texture
       RenderScreenRectangle(0.75f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectTeapot, *pShaderScreenRect);
 
