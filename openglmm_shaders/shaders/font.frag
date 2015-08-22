@@ -7,7 +7,7 @@ const float tolerance = 0.8;
 smooth in vec4 vertOutColour;
 smooth in vec2 vertOutTexCoord0;
 
-out vec4 fragmentColor;
+out vec4 fragmentColour;
 
 void main()
 {
@@ -15,5 +15,5 @@ void main()
   if (diffuse.a < tolerance) discard;
 
   // TODO: Test with alpha = 1.0
-  fragmentColor = vec4(diffuse.rgb * vertOutColour.rgb, diffuse.a);
+  fragmentColour = vec4(diffuse.rgb * vertOutColour.rgb, diffuse.a);
 }

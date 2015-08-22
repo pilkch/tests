@@ -4,9 +4,9 @@ uniform sampler2DRect texUnit0; // Diffuse texture
 
 smooth in vec2 vertOutTexCoord;
 
-out vec4 fragmentColor;
+out vec4 fragmentColour;
 
 void main()
 {
-  fragmentColor = texture(texUnit0, vertOutTexCoord);
+  fragmentColour = texture(texUnit0, vertOutTexCoord);
 }
