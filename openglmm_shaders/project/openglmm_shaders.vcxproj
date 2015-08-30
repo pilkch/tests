@@ -117,7 +117,9 @@
     <ClCompile Include="..\..\..\library\src\spitfire\util\string.cpp" />
     <ClCompile Include="..\..\..\library\src\spitfire\util\thread.cpp" />
     <ClCompile Include="..\..\..\library\src\spitfire\util\timer.cpp" />
+    <ClCompile Include="..\hdr.cpp" />
     <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="..\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\shaders\carpaint.frag" />
@@ -170,6 +172,11 @@
     <None Include="..\shaders\smoke.frag" />
     <None Include="..\shaders\smoke.vert" />
     <None Include="..\shaders\tealandorange.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\hdr.h" />
+    <ClInclude Include="..\main.h" />
+    <ClInclude Include="..\util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
