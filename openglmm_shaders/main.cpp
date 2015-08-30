@@ -3560,13 +3560,6 @@ void cApplication::Run()
       std::swap(currentFBO, otherFBO);
     }
 
-    // Process our HDR image
-    if (bIsHDR) {
-      hdr.Render(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]));
-
-      std::swap(currentFBO, otherFBO);
-    }
-
     // Apply depth of field and bokeh
     if (bIsDOFBokeh) {
       const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
@@ -3604,6 +3597,13 @@ void cApplication::Run()
       std::swap(currentFBO, otherFBO);
     }
 
+    // Process our HDR image
+    if (bIsHDR) {
+      hdr.Render(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]));
+
+      std::swap(currentFBO, otherFBO);
+    }
+
     {
       // Render the frame buffer objects to the screen
       const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
@@ -3634,8 +3634,8 @@ void cApplication::Run()
       }
 
       // Draw the scene colour and depth buffer textures for debugging purposes
-      float x = 0.125f;
-      float y = 0.125f;
+      //float x = 0.125f;
+      //float y = 0.125f;
       /*RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenDepth, *pShaderScreenRect); x += 0.25f;
       RenderScreenRectangleDepthTexture(x, y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenDepth, *pShaderScreenRect); x += 0.25f;
 
