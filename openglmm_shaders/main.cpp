@@ -79,9 +79,6 @@ cApplication::cApplication() :
   bIsWireframe(false),
 
   bIsDOFBokeh(true),
-  bDOFShowFocus(false),
-  fFocalLengthmm(18.0f),
-  fFStop(3.6f),
 
   bIsHDR(false),
   bIsSplitScreenSimplePostEffectShaders(true),
@@ -122,7 +119,6 @@ cApplication::cApplication() :
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
   pShaderScreenRectColourAndDepth(nullptr),
-  pShaderScreenRectDOFBokeh(nullptr),
 
   pShaderCrate(nullptr),
   pShaderFog(nullptr),
@@ -145,6 +141,11 @@ cApplication::cApplication() :
   spitfire::util::TimeInit();
 }
 
+opengl::cResolution cApplication::GetResolution() const
+{
+  return resolution;
+}
+
 void cApplication::CreateText()
 {
   assert(pFont != nullptr);
@@ -165,8 +166,8 @@ void cApplication::CreateText()
   lines.push_back(TEXT(""));
 
   lines.push_back(spitfire::string_t(TEXT("DOF bokeh: ")) + (bIsDOFBokeh ? TEXT("On") : TEXT("Off")));
-  lines.push_back(spitfire::string_t(TEXT("Focal length:") + spitfire::string::ToString(fFocalLengthmm) + TEXT("mm")));
-  lines.push_back(spitfire::string_t(TEXT("f stops:") + spitfire::string::ToString(fFStop)));
+  lines.push_back(spitfire::string_t(TEXT("Focal length:") + spitfire::string::ToString(dofBokeh.GetFocalLengthmm()) + TEXT("mm")));
+  lines.push_back(spitfire::string_t(TEXT("f stops:") + spitfire::string::ToString(dofBokeh.GetFStop())));
 
   lines.push_back(TEXT("")); 
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
@@ -1100,6 +1101,7 @@ void cApplication::Destroy()
   }
 
   hdr.Destroy(*pContext);
+  dofBokeh.Destroy(*pContext);
 
   pContext = nullptr;
 
@@ -1152,9 +1154,6 @@ void cApplication::CreateShaders()
   pShaderScreenRectColourAndDepth = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/colouranddepth2d.frag"));
   assert(pShaderScreenRectColourAndDepth  != nullptr);
 
-  pShaderScreenRectDOFBokeh = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/dofbokeh.frag"));
-  assert(pShaderScreenRectDOFBokeh != nullptr);
-
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
   assert(pShaderCrate != nullptr);
 
@@ -1167,10 +1166,6 @@ void cApplication::CreateShaders()
 
 void cApplication::DestroyShaders()
 {
-  if (pShaderScreenRectDOFBokeh != nullptr) {
-    pContext->DestroyShader(pShaderScreenRectDOFBokeh);
-    pShaderScreenRectDOFBokeh = nullptr;
-  }
   if (pShaderScreenRectColourAndDepth != nullptr) {
     pContext->DestroyShader(pShaderScreenRectColourAndDepth);
     pShaderScreenRectColourAndDepth = nullptr;
@@ -1443,7 +1438,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_c: {
-        bDOFShowFocus = !bDOFShowFocus;
+        dofBokeh.SetDebugDOFShowFocus(!dofBokeh.IsDebugDOFShowFocus());
         break;
       }
 
@@ -1628,8 +1623,6 @@ void cApplication::Run()
   assert(pShaderScreenRect->IsCompiledProgram());
   assert(pShaderScreenRectColourAndDepth != nullptr);
   assert(pShaderScreenRectColourAndDepth->IsCompiledProgram());
-  assert(pShaderScreenRectDOFBokeh != nullptr);
-  assert(pShaderScreenRectDOFBokeh->IsCompiledProgram());
 
   assert(staticVertexBufferObjectLargeTeapot.IsCompiled());
   #ifdef BUILD_LARGE_STATUE_MODEL
@@ -1678,6 +1671,9 @@ void cApplication::Run()
   assert(fire.vbo.IsCompiled());
 
   assert(parallaxNormalMap.vbo.IsCompiled());
+
+  dofBokeh.Init(*pContext);
+  dofBokeh.Resize(*this, *pContext);
 
   hdr.Init(*pContext);
   hdr.Resize(*this, *pContext);
@@ -1867,13 +1863,11 @@ void cApplication::Run()
 
       matObjectRotation.SetRotation(rotation);
 
-      const float fFocalLengthDelta = 2.0f;
-      if (bIsFocalLengthIncrease) fFocalLengthmm = min(250.0f, fFocalLengthmm + fFocalLengthDelta);
-      if (bIsFocalLengthDecrease) fFocalLengthmm = max(10.0f, fFocalLengthmm - fFocalLengthDelta);
+      if (bIsFocalLengthIncrease) dofBokeh.IncreaseFocalLength();
+      if (bIsFocalLengthDecrease) dofBokeh.DecreaseFocalLength();
 
-      const float fFStopDelta = 0.1f;
-      if (bIsFStopIncrease) fFStop = min(30.0f, fFStop + fFStopDelta);
-      if (bIsFStopDecrease) fFStop = max(0.1f, fFStop - fFStopDelta);
+      if (bIsFStopIncrease) dofBokeh.IncreaseFStop();
+      if (bIsFStopDecrease) dofBokeh.IncreaseFStop();
 
       previousUpdateTime = currentTime;
     }
@@ -2852,37 +2846,7 @@ void cApplication::Run()
 
     // Apply depth of field and bokeh
     if (bIsDOFBokeh) {
-      const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
-      pContext->SetClearColour(clearColour);
-
-      opengl::cTextureFrameBufferObject& frameBufferTo = *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO];
-      opengl::cTextureFrameBufferObject& frameBufferFrom = *pTextureFrameBufferObjectScreenColourAndDepth[currentFBO];
-
-      pContext->BeginRenderToTexture(frameBufferTo);
-
-      pContext->BindTexture(0, frameBufferFrom);
-      pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenDepth);
-
-      pContext->BindShader(*pShaderScreenRectDOFBokeh);
-
-      // Set our shader constants
-      pContext->SetShaderConstant("textureSize", spitfire::math::cVec2(float(resolution.width), float(resolution.height)));
-
-      pContext->SetShaderConstant("focalLength", fFocalLengthmm); //focal length in mm
-      pContext->SetShaderConstant("fstop", fFStop); //f-stop value
-      pContext->SetShaderConstant("showFocus", bDOFShowFocus); // Show debug focus point and focal range (red = focal point, green = focal range)
-
-      // Not required when using autofocus
-      //pContext->SetShaderConstant("focalDepth", fFocalDepth);
-
-      RenderScreenRectangleShaderAndTextureAlreadySet();
-
-      pContext->UnBindShader(*pShaderScreenRectDOFBokeh);
-
-      pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenDepth);
-      pContext->UnBindTexture(0, frameBufferFrom);
-
-      pContext->EndRenderToTexture(frameBufferTo);
+      dofBokeh.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]), *pTextureFrameBufferObjectScreenDepth, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]));
 
       std::swap(currentFBO, otherFBO);
     }

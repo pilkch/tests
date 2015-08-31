@@ -117,6 +117,7 @@
     <ClCompile Include="..\..\..\library\src\spitfire\util\string.cpp" />
     <ClCompile Include="..\..\..\library\src\spitfire\util\thread.cpp" />
     <ClCompile Include="..\..\..\library\src\spitfire\util\timer.cpp" />
+    <ClCompile Include="..\dofbokeh.cpp" />
     <ClCompile Include="..\hdr.cpp" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\util.cpp" />
@@ -174,6 +175,7 @@
     <None Include="..\shaders\tealandorange.frag" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\dofbokeh.h" />
     <ClInclude Include="..\hdr.h" />
     <ClInclude Include="..\main.h" />
     <ClInclude Include="..\util.h" />

@@ -53,6 +53,7 @@
 #include <libopenglmm/cWindow.h>
 
 // Application headers
+#include "dofbokeh.h"
 #include "hdr.h"
 #include "util.h"
 
@@ -66,12 +67,15 @@ class cApplication : public opengl::cWindowEventListener, public opengl::cInputE
 public:
   cApplication();
 
+  friend class cDOFBokeh;
   friend class cHDR;
 
   bool Create();
   void Destroy();
 
   void Run();
+
+  opengl::cResolution GetResolution() const;
 
 protected:
   // Called from cHDR
@@ -141,9 +145,6 @@ private:
   bool bIsWireframe;
 
   bool bIsDOFBokeh;
-  bool bDOFShowFocus;
-  float fFocalLengthmm; // Focal length in mm
-  float fFStop; // f-stop value
 
   bool bIsHDR;
   bool bIsSplitScreenSimplePostEffectShaders; // Tells us whether to split the screen down the middle when a simple post effect shader is active
@@ -194,7 +195,6 @@ private:
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
   opengl::cShader* pShaderScreenRectColourAndDepth;
-  opengl::cShader* pShaderScreenRectDOFBokeh;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectLargeTeapot;
 #ifdef BUILD_LARGE_STATUE_MODEL
@@ -238,6 +238,7 @@ private:
 
   std::vector<cTextureVBOPair*> testImages;
 
+  cDOFBokeh dofBokeh;
   cHDR hdr;
 
   std::vector<cSimplePostRenderShader> simplePostRenderShaders;
