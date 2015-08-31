@@ -60,6 +60,8 @@ class cApplication;
 class cHDR
 {
 public:
+  cHDR();
+
   void Init(opengl::cContext& context);
   void Destroy(opengl::cContext& context);
 
@@ -67,6 +69,7 @@ public:
 
   void Render(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output);
 
+private:
   opengl::cTextureFrameBufferObject* LuminanceBuffer;
   cTextureFrameBufferObjectVBOPair MinificationBuffer[8];
   opengl::cTextureFrameBufferObject* LDRColorBuffer;
@@ -84,8 +87,6 @@ public:
   opengl::cStaticVertexBufferObject bloomToScreenVBO[4];
 
   float *data;
-
-  float Intensity;
 };
 
 #endif // HDR_H

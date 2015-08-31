@@ -55,6 +55,23 @@
 
 // ** cHDR
 
+cHDR::cHDR() :
+  LuminanceBuffer(nullptr),
+  LDRColorBuffer(nullptr),
+  BrightPixelsBuffer(nullptr),
+
+  pShaderPassThrough(nullptr),
+  Luminance(nullptr),
+  Minification(nullptr),
+  ToneMapping(nullptr),
+  BrightPixels(nullptr),
+  BlurH(nullptr),
+  BlurV(nullptr),
+
+  data(nullptr)
+{
+}
+
 void cHDR::Init(opengl::cContext& context)
 {
   pShaderPassThrough = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
@@ -74,8 +91,6 @@ void cHDR::Init(opengl::cContext& context)
   context.UnBindShader(*BlurV);
 
   data = new float[4096];
-
-  Intensity = 2.0f;
 }
 
 void cHDR::Destroy(opengl::cContext& context)
