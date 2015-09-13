@@ -93,6 +93,7 @@ cApplication::cApplication() :
   pTextureFrameBufferObjectTeapot(nullptr),
 
   pTextureDiffuse(nullptr),
+  pTextureFelt(nullptr),
   pTextureLightMap(nullptr),
   pTextureDetail(nullptr),
   pTextureCubeMap(nullptr),
@@ -121,6 +122,7 @@ cApplication::cApplication() :
   pShaderScreenRectColourAndDepth(nullptr),
 
   pShaderCrate(nullptr),
+  pShaderShadowMapping(nullptr),
   pShaderFog(nullptr),
   pShaderMetal(nullptr),
 
@@ -219,6 +221,20 @@ void cApplication::CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nT
 
   opengl::cGeometryBuilder builder;
   builder.CreatePlane(fWidth, fDepth, *pGeometryDataPtr, nTextureCoordinates);
+
+  vbo.SetData(pGeometryDataPtr);
+
+  vbo.Compile();
+}
+
+void cApplication::CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fSizeMeters, float fTextureWidthWorldSpaceMeters)
+{
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fTextureUV = fSizeMeters / fTextureWidthWorldSpaceMeters;
+
+  opengl::cGeometryBuilder builder;
+  builder.CreatePlane(fSizeMeters, fSizeMeters, fTextureUV, fTextureUV, *pGeometryDataPtr, nTextureCoordinates);
 
   vbo.SetData(pGeometryDataPtr);
 
@@ -810,6 +826,8 @@ bool cApplication::Create()
 
   pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
   assert(pTextureDiffuse != nullptr);
+  pTextureFelt = pContext->CreateTexture(TEXT("textures/felt.png"));
+  assert(pTextureFelt != nullptr);
   pTextureLightMap = pContext->CreateTexture(TEXT("textures/lightmap.png"));
   assert(pTextureLightMap != nullptr);
   pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
@@ -887,6 +905,11 @@ bool cApplication::Create()
     }
   }
 
+  // Create our floor
+  const float fFloorSize = 20.0f;
+  const float fTextureWidthWorldSpaceMeters = 1.0f;
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
+  CreatePlane(staticVertexBufferObjectPlaneFloor, 2, fFloorSize, fTextureWidthWorldSpaceMeters);
 
   const float fRadius = 1.0f;
 
@@ -974,6 +997,8 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube0);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPlane0);
 
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
+
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectTeapot);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectHalfScreen);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
@@ -1027,6 +1052,10 @@ void cApplication::Destroy()
   if (pTextureLightMap != nullptr) {
     pContext->DestroyTexture(pTextureLightMap);
     pTextureLightMap = nullptr;
+  }
+  if (pTextureFelt != nullptr) {
+    pContext->DestroyTexture(pTextureFelt);
+    pTextureFelt = nullptr;
   }
   if (pTextureDiffuse != nullptr) {
     pContext->DestroyTexture(pTextureDiffuse);
@@ -1157,6 +1186,9 @@ void cApplication::CreateShaders()
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
   assert(pShaderCrate != nullptr);
 
+  pShaderShadowMapping = pContext->CreateShader(TEXT("shaders/shadowmapping2.vert"), TEXT("shaders/shadowmapping2.frag"));
+  assert(pShaderShadowMapping != nullptr);
+
   pShaderFog = pContext->CreateShader(TEXT("shaders/fog.vert"), TEXT("shaders/fog.frag"));
   assert(pShaderFog != nullptr);
 
@@ -1233,6 +1265,10 @@ void cApplication::DestroyShaders()
   if (pShaderFog != nullptr) {
     pContext->DestroyShader(pShaderFog);
     pShaderFog = nullptr;
+  }
+  if (pShaderShadowMapping != nullptr) {
+    pContext->DestroyShader(pShaderShadowMapping);
+    pShaderShadowMapping = nullptr;
   }
   if (pShaderCrate != nullptr) {
     pContext->DestroyShader(pShaderCrate);
@@ -1575,6 +1611,8 @@ void cApplication::Run()
   assert(pFont->IsValid());
   assert(pTextureDiffuse != nullptr);
   assert(pTextureDiffuse->IsValid());
+  assert(pTextureFelt != nullptr);
+  assert(pTextureFelt->IsValid());
   assert(pTextureLightMap != nullptr);
   assert(pTextureLightMap->IsValid());
   assert(pTextureDetail != nullptr);
@@ -1635,10 +1673,14 @@ void cApplication::Run()
 
   assert(pShaderCrate != nullptr);
   assert(pShaderCrate->IsCompiledProgram());
+  assert(pShaderShadowMapping != nullptr);
+  assert(pShaderShadowMapping->IsCompiledProgram());
   assert(pShaderFog != nullptr);
   assert(pShaderFog->IsCompiledProgram());
   assert(pShaderMetal != nullptr);
   assert(pShaderMetal->IsCompiledProgram());
+
+  assert(staticVertexBufferObjectPlaneFloor.IsCompiled());
 
   assert(staticVertexBufferObjectPlane0.IsCompiled());
   assert(staticVertexBufferObjectCube0.IsCompiled());
@@ -1687,6 +1729,11 @@ void cApplication::Run()
   camera.SetPosition(spitfire::math::cVec3(-6.5f, 2.5f, 7.0f));
   camera.RotateX(90.0f);
   camera.RotateY(45.0f);
+
+  // Set up the translation for our floor
+  const spitfire::math::cVec3 floorPosition(0.0f, -1.0f, 0.0f);
+  spitfire::math::cMat4 matTranslationFloor;
+  matTranslationFloor.SetTranslation(floorPosition);
 
   // Set up the translations for our objects
   const size_t columns = 5; // 5 types of objects
@@ -2417,6 +2464,28 @@ void cApplication::Run()
         pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
         pContext->UnBindTexture(1, *pTextureMetalSpecular);
         pContext->UnBindTexture(0, *pTextureMetalDiffuse);
+      }
+
+
+
+
+      // Render shadow mapped objects
+      {
+        pContext->BindTexture(0, *pTextureFelt);
+        pContext->BindTexture(1, *pTextureLightMap);
+
+        pContext->BindShader(*pShaderShadowMapping);
+
+        // Render the ground
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationFloor);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlaneFloor);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
+
+        pContext->UnBindShader(*pShaderShadowMapping);
+
+        pContext->UnBindTexture(1, *pTextureLightMap);
+        pContext->UnBindTexture(0, *pTextureFelt);
       }
 
 

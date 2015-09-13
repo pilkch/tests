@@ -91,6 +91,7 @@ private:
 
   void CreateText();
   void CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
+  void CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fSizeMeters, float fTextureWidthWorldSpaceMeters);
   void CreateCube(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreateBox(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreateSphere(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fRadius);
@@ -169,6 +170,7 @@ private:
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreenDepth;
 
   opengl::cTexture* pTextureDiffuse;
+  opengl::cTexture* pTextureFelt;
   opengl::cTexture* pTextureLightMap;
   opengl::cTexture* pTextureDetail;
   opengl::cTextureCubeMap* pTextureCubeMap;
@@ -196,6 +198,7 @@ private:
   opengl::cShader* pShaderScreenRect;
   opengl::cShader* pShaderScreenRectColourAndDepth;
 
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectPlaneFloor;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectLargeTeapot;
 #ifdef BUILD_LARGE_STATUE_MODEL
   opengl::cStaticVertexBufferObject staticVertexBufferObjectStatue;
@@ -206,6 +209,7 @@ private:
 
 
   opengl::cShader* pShaderCrate;
+  opengl::cShader* pShaderShadowMapping;
   opengl::cShader* pShaderFog;
   opengl::cShader* pShaderMetal;
 
