@@ -64,6 +64,8 @@ public:
   void SetPosition(const spitfire::math::cVec3& position);
   void SetRotation(const spitfire::math::cQuaternion& rotation);
 
+  void LookAt(const spitfire::math::cVec3& eye, const spitfire::math::cVec3& target, const spitfire::math::cVec3 up); // Places the camera at the eye position and looks at the target
+
   void MoveX(float fDistance);
   void MoveZ(float fDistance);
   void RotateX(float fDegrees);

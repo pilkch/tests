@@ -77,6 +77,15 @@ void cFreeLookCamera::SetRotation(const spitfire::math::cQuaternion& rotation)
   fRotationUp = euler.z;
 }
 
+void cFreeLookCamera::LookAt(const spitfire::math::cVec3& eye, const spitfire::math::cVec3& target, const spitfire::math::cVec3 up)
+{
+  spitfire::math::cMat4 matView;
+  matView.LookAt(eye, target, up);
+
+  SetPosition(eye);
+  SetRotation(matView.GetRotation());
+}
+
 void cFreeLookCamera::MoveX(float xmmod)
 {
   const spitfire::math::cQuaternion rotation = GetRotation();
