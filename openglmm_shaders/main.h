@@ -55,6 +55,7 @@
 // Application headers
 #include "dofbokeh.h"
 #include "hdr.h"
+#include "shadowmapping.h"
 #include "util.h"
 
 // Test various lights, unfortunately it is a very large model which takes ages to load, so it is disabled by default
@@ -69,6 +70,7 @@ public:
 
   friend class cDOFBokeh;
   friend class cHDR;
+  friend class cShadowMapping;
 
   bool Create();
   void Destroy();
@@ -196,6 +198,7 @@ private:
   opengl::cShader* pShaderLambert;
   opengl::cShader* pShaderPassThrough;
   opengl::cShader* pShaderScreenRect;
+  opengl::cShader* pShaderScreenRectDepthShadow;
   opengl::cShader* pShaderScreenRectColourAndDepth;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPlaneFloor;
@@ -209,7 +212,6 @@ private:
 
 
   opengl::cShader* pShaderCrate;
-  opengl::cShader* pShaderShadowMapping;
   opengl::cShader* pShaderFog;
   opengl::cShader* pShaderMetal;
 
@@ -244,6 +246,7 @@ private:
 
   cDOFBokeh dofBokeh;
   cHDR hdr;
+  cShadowMapping shadowMapping;
 
   std::vector<cSimplePostRenderShader> simplePostRenderShaders;
   bool bSimplePostRenderDirty;

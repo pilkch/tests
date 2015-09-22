@@ -54,6 +54,7 @@
 // Application headers
 #include "main.h"
 #include "hdr.h"
+#include "shadowmapping.h"
 
 // ** cApplication
 
@@ -119,10 +120,10 @@ cApplication::cApplication() :
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
   pShaderScreenRect(nullptr),
+  pShaderScreenRectDepthShadow(nullptr),
   pShaderScreenRectColourAndDepth(nullptr),
 
   pShaderCrate(nullptr),
-  pShaderShadowMapping(nullptr),
   pShaderFog(nullptr),
   pShaderMetal(nullptr),
 
@@ -909,7 +910,7 @@ bool cApplication::Create()
   const float fFloorSize = 20.0f;
   const float fTextureWidthWorldSpaceMeters = 1.0f;
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
-  CreatePlane(staticVertexBufferObjectPlaneFloor, 2, fFloorSize, fTextureWidthWorldSpaceMeters);
+  CreatePlane(staticVertexBufferObjectPlaneFloor, 1, fFloorSize, fTextureWidthWorldSpaceMeters);
 
   const float fRadius = 1.0f;
 
@@ -1123,12 +1124,17 @@ void cApplication::Destroy()
     pContext->DestroyShader(pShaderScreenRectColourAndDepth);
     pShaderScreenRectColourAndDepth = nullptr;
   }
+  if (pShaderScreenRectDepthShadow != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectDepthShadow);
+    pShaderScreenRectDepthShadow = nullptr;
+  }
 
   if (pShaderScreenRectSimplePostRender != nullptr) {
     pContext->DestroyShader(pShaderScreenRectSimplePostRender);
     pShaderScreenRectSimplePostRender = nullptr;
   }
 
+  shadowMapping.Destroy(*pContext);
   hdr.Destroy(*pContext);
   dofBokeh.Destroy(*pContext);
 
@@ -1180,14 +1186,14 @@ void cApplication::CreateShaders()
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(pShaderScreenRect != nullptr);
 
+  pShaderScreenRectDepthShadow = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/debugshadowmaptexture2d.frag"));
+  assert(pShaderScreenRectDepthShadow != nullptr);
+
   pShaderScreenRectColourAndDepth = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/colouranddepth2d.frag"));
   assert(pShaderScreenRectColourAndDepth  != nullptr);
 
   pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
   assert(pShaderCrate != nullptr);
-
-  pShaderShadowMapping = pContext->CreateShader(TEXT("shaders/shadowmapping2.vert"), TEXT("shaders/shadowmapping2.frag"));
-  assert(pShaderShadowMapping != nullptr);
 
   pShaderFog = pContext->CreateShader(TEXT("shaders/fog.vert"), TEXT("shaders/fog.frag"));
   assert(pShaderFog != nullptr);
@@ -1198,6 +1204,10 @@ void cApplication::CreateShaders()
 
 void cApplication::DestroyShaders()
 {
+  if (pShaderScreenRectDepthShadow != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectDepthShadow);
+    pShaderScreenRectDepthShadow = nullptr;
+  }
   if (pShaderScreenRectColourAndDepth != nullptr) {
     pContext->DestroyShader(pShaderScreenRectColourAndDepth);
     pShaderScreenRectColourAndDepth = nullptr;
@@ -1265,10 +1275,6 @@ void cApplication::DestroyShaders()
   if (pShaderFog != nullptr) {
     pContext->DestroyShader(pShaderFog);
     pShaderFog = nullptr;
-  }
-  if (pShaderShadowMapping != nullptr) {
-    pContext->DestroyShader(pShaderShadowMapping);
-    pShaderShadowMapping = nullptr;
   }
   if (pShaderCrate != nullptr) {
     pContext->DestroyShader(pShaderCrate);
@@ -1659,6 +1665,8 @@ void cApplication::Run()
   assert(pShaderPassThrough->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
+  assert(pShaderScreenRectDepthShadow != nullptr);
+  assert(pShaderScreenRectDepthShadow->IsCompiledProgram());
   assert(pShaderScreenRectColourAndDepth != nullptr);
   assert(pShaderScreenRectColourAndDepth->IsCompiledProgram());
 
@@ -1673,8 +1681,6 @@ void cApplication::Run()
 
   assert(pShaderCrate != nullptr);
   assert(pShaderCrate->IsCompiledProgram());
-  assert(pShaderShadowMapping != nullptr);
-  assert(pShaderShadowMapping->IsCompiledProgram());
   assert(pShaderFog != nullptr);
   assert(pShaderFog->IsCompiledProgram());
   assert(pShaderMetal != nullptr);
@@ -1719,6 +1725,8 @@ void cApplication::Run()
 
   hdr.Init(*pContext);
   hdr.Resize(*this, *pContext);
+
+  shadowMapping.Init(*pContext);
 
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
@@ -1838,7 +1846,7 @@ void cApplication::Run()
   const spitfire::math::cColour lightDirectionalSpecularColour(0.0f, 1.0f, 0.0f);
 
   // Red point light
-  const spitfire::math::cVec3 lightPointPosition(-5.0f, 5.0f, -5.0f);
+  const spitfire::math::cVec3 lightPointPosition(-6.0f, 6.0f, -6.0f);
   const spitfire::math::cColour lightPointColour(0.25f, 0.0f, 0.0f);
   const float lightPointAmbient = 0.15f;
   const float lightPointConstantAttenuation = 0.3f;
@@ -1997,8 +2005,7 @@ void cApplication::Run()
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
     const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
-
-    const spitfire::math::cVec3 lightDirection = (spitfire::math::cVec3(0.0f, 0.0f, 0.0f) - lightDirectionalPosition).GetNormalised();
+    const spitfire::math::cVec3 lightDirection(spitfire::math::cVec3(-1.0f, -1.0f, 0.0f).GetNormalised());
 
     // Set up the lights shader
     pContext->BindShader(*pShaderLights);
@@ -2143,6 +2150,29 @@ void cApplication::Run()
       if (bIsWireframe) pContext->DisableWireframe();
 
       pContext->EndRenderToTexture(*pTextureFrameBufferObjectTeapot);
+    }
+
+    {
+      // Render our shadow map
+      shadowMapping.BeginRenderToShadowMap(*pContext);
+
+      const int half = 20;
+      const int interval = 5;
+      for (int z = -(half); z < half; z += interval) {
+        for (int y = -(half); y < half; y += interval) {
+          for (int x = -(half); x < half; x += interval) {
+            const spitfire::math::cVec3 position = spitfire::math::cVec3(float(x), float(y), float(z));
+            shadowMapping.RenderObjectToShadowMapSetMatrices(*pContext, lightPointPosition, lightDirection, position, rotation);
+
+            opengl::cStaticVertexBufferObject& vbo = staticVertexBufferObjectLargeTeapot;
+            pContext->BindStaticVertexBufferObject(vbo);
+            pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+            pContext->UnBindStaticVertexBufferObject(vbo);
+          }
+        }
+      }
+
+      shadowMapping.EndRenderToShadowMap(*pContext);
     }
 
     size_t currentFBO = 0;
@@ -2472,19 +2502,47 @@ void cApplication::Run()
       // Render shadow mapped objects
       {
         pContext->BindTexture(0, *pTextureFelt);
-        pContext->BindTexture(1, *pTextureLightMap);
+        pContext->BindTextureDepthBuffer(1, shadowMapping.GetShadowMapTexture());
 
-        pContext->BindShader(*pShaderShadowMapping);
+        pContext->BindShader(shadowMapping.GetShadowMapShader());
+
+        //pContext->SetShaderConstant("LightPosition_worldspace", lightPointPosition);
+        pContext->SetShaderConstant("DepthBiasMVP", shadowMapping.GetDepthBiasMVP());
+        pContext->SetShaderConstant("LightInvDirection_worldspace", shadowMapping.GetLightInvDirectionWorldSpace());
 
         // Render the ground
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationFloor);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlaneFloor);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
+        
+        const int half = 20;
+        const int interval = 5;
+        for (int z = -(half); z < half; z += interval) {
+          for (int y = -(half); y < half; y += interval) {
+            for (int x = -(half); x < half; x += interval) {
+              const spitfire::math::cVec3 position = spitfire::math::cVec3(float(x), float(y), float(z));
 
-        pContext->UnBindShader(*pShaderShadowMapping);
+              spitfire::math::cMat4 matObjectTranslation;
+              matObjectTranslation.SetTranslation(position);
 
-        pContext->UnBindTexture(1, *pTextureLightMap);
+              spitfire::math::cMat4 matObjectRotation;
+              matObjectRotation.SetRotation(rotation);
+
+              const spitfire::math::cMat4 matModel = matObjectTranslation * matObjectRotation;
+
+              opengl::cStaticVertexBufferObject& vbo = staticVertexBufferObjectLargeTeapot;
+              pContext->BindStaticVertexBufferObject(vbo);
+              pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matModel);
+              pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+              pContext->UnBindStaticVertexBufferObject(vbo);
+            }
+          }
+        }
+
+        pContext->UnBindShader(shadowMapping.GetShadowMapShader());
+
+        pContext->UnBindTextureDepthBuffer(1, shadowMapping.GetShadowMapTexture());
         pContext->UnBindTexture(0, *pTextureFelt);
       }
 
@@ -2981,12 +3039,23 @@ void cApplication::Run()
         RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(hdr.BloomBuffer[i].pTexture), *pShaderScreenRect); x += 0.25f;
       }*/
 
+      spitfire::math::cVec2 position(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f));
+
+      // Draw the shadow map depth texture
+      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, shadowMapping.GetShadowMapTexture(), *pShaderScreenRectDepthShadow);
+      position += spitfire::math::cVec2(0.25f, 0.0f);
+
       // Draw the scene depth texture
-      RenderScreenRectangleDepthTexture(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[currentFBO], *pShaderScreenRect);
+      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[currentFBO], *pShaderScreenRect);
+      position += spitfire::math::cVec2(0.25f, 0.0f);
+
       // Draw the particles depth texture
-      RenderScreenRectangleDepthTexture(0.25f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO], *pShaderScreenRect);
+      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO], *pShaderScreenRect);
+      position += spitfire::math::cVec2(0.25f, 0.0f);
+
       // Draw the teapot texture
-      RenderScreenRectangle(0.75f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f), staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectTeapot, *pShaderScreenRect);
+      RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectTeapot, *pShaderScreenRect);
+      position += spitfire::math::cVec2(0.25f, 0.0f);
 
 
       // Draw the text overlay

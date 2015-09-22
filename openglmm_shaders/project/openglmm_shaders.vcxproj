@@ -120,6 +120,7 @@
     <ClCompile Include="..\dofbokeh.cpp" />
     <ClCompile Include="..\hdr.cpp" />
     <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="..\shadowmapping.cpp" />
     <ClCompile Include="..\util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -136,6 +137,9 @@
     <None Include="..\shaders\crate.vert" />
     <None Include="..\shaders\cubemap.frag" />
     <None Include="..\shaders\cubemap.vert" />
+    <None Include="..\shaders\debugshadowmaptexture2d.frag" />
+    <None Include="..\shaders\depthrendertotexture.frag" />
+    <None Include="..\shaders\depthrendertotexture.vert" />
     <None Include="..\shaders\dofbokeh.frag" />
     <None Include="..\shaders\fire.frag" />
     <None Include="..\shaders\fire.vert" />
@@ -168,6 +172,8 @@
     <None Include="..\shaders\passthrough2d.frag" />
     <None Include="..\shaders\passthrough2d.vert" />
     <None Include="..\shaders\sepia.frag" />
+    <None Include="..\shaders\shadowmapping.frag" />
+    <None Include="..\shaders\shadowmapping.vert" />
     <None Include="..\shaders\silhouette.frag" />
     <None Include="..\shaders\silhouette.vert" />
     <None Include="..\shaders\smoke.frag" />
@@ -178,6 +184,7 @@
     <ClInclude Include="..\dofbokeh.h" />
     <ClInclude Include="..\hdr.h" />
     <ClInclude Include="..\main.h" />
+    <ClInclude Include="..\shadowmapping.h" />
     <ClInclude Include="..\util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
