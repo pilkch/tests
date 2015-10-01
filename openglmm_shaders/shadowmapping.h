@@ -61,23 +61,31 @@ public:
   void Init(opengl::cContext& context);
   void Destroy(opengl::cContext& context);
 
-  void BeginRenderToShadowMap(opengl::cContext& context);
+  void BeginRenderToShadowMap(opengl::cContext& context, const spitfire::math::cVec3& lightPosition, const spitfire::math::cVec3& lightDirection);
   void EndRenderToShadowMap(opengl::cContext& context);
 
-  void RenderObjectToShadowMapSetMatrices(opengl::cContext& context, const spitfire::math::cVec3& lightPosition, const spitfire::math::cVec3& lightDirection, const spitfire::math::cVec3& objectPosition, const spitfire::math::cQuaternion& objectRotation);
+  void RenderObjectToShadowMapSetMatrices(opengl::cContext& context, const spitfire::math::cMat4& matModel);
 
+  size_t GetShadowMapTextureSize() const;
   opengl::cTextureFrameBufferObject& GetShadowMapTexture();
   opengl::cShader& GetRenderToShadowMapShader();
   opengl::cShader& GetShadowMapShader();
 
-  spitfire::math::cMat4 GetDepthMVP() const;
-  spitfire::math::cMat4 GetDepthBiasMVP() const;
-  spitfire::math::cVec3 GetLightInvDirectionWorldSpace() const;
+  spitfire::math::cMat4 GetDepthMVP(const spitfire::math::cMat4& matModel) const;
+  spitfire::math::cMat4 GetDepthBiasMVP(const spitfire::math::cMat4& matModel) const;
+  spitfire::math::cVec3 GetLightInvDirection() const;
 
 private:
+  void CalculateMatrices(opengl::cContext& context, const spitfire::math::cVec3& lightPosition, const spitfire::math::cVec3& lightDirection);
+
+  size_t uShadowMapTextureSize;
   opengl::cTextureFrameBufferObject* pTextureDepthTexture;
   opengl::cShader* pShaderRenderToDepthTexture;
   opengl::cShader* pShaderShadowMap;
+
+  spitfire::math::cVec3 lightInvDir;
+  spitfire::math::cMat4 matProjection;
+  spitfire::math::cMat4 matView;
 };
 
 #endif // SHADOWMAPPING_H

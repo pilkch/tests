@@ -143,6 +143,7 @@ private:
   bool bIsDirectionalLightOn;
   bool bIsPointLightOn;
   bool bIsSpotLightOn;
+  spitfire::math::cVec3 lightPointPosition;
 
   bool bIsRotating;
   bool bIsWireframe;

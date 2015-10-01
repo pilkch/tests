@@ -75,6 +75,7 @@ cApplication::cApplication() :
   bIsDirectionalLightOn(true),
   bIsPointLightOn(true),
   bIsSpotLightOn(true),
+  lightPointPosition(-2.3f, 7.0f, 0.8f),
 
   bIsRotating(true),
   bIsWireframe(false),
@@ -907,7 +908,7 @@ bool cApplication::Create()
   }
 
   // Create our floor
-  const float fFloorSize = 20.0f;
+  const float fFloorSize = 100.0f;
   const float fTextureWidthWorldSpaceMeters = 1.0f;
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
   CreatePlane(staticVertexBufferObjectPlaneFloor, 1, fFloorSize, fTextureWidthWorldSpaceMeters);
@@ -1846,7 +1847,6 @@ void cApplication::Run()
   const spitfire::math::cColour lightDirectionalSpecularColour(0.0f, 1.0f, 0.0f);
 
   // Red point light
-  const spitfire::math::cVec3 lightPointPosition(-6.0f, 6.0f, -6.0f);
   const spitfire::math::cColour lightPointColour(0.25f, 0.0f, 0.0f);
   const float lightPointAmbient = 0.15f;
   const float lightPointConstantAttenuation = 0.3f;
@@ -2005,7 +2005,7 @@ void cApplication::Run()
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
     const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
-    const spitfire::math::cVec3 lightDirection(spitfire::math::cVec3(-1.0f, -1.0f, 0.0f).GetNormalised());
+    const spitfire::math::cVec3 lightDirection(0.1f, -1.0f, 0.0f);
 
     // Set up the lights shader
     pContext->BindShader(*pShaderLights);
@@ -2154,15 +2154,21 @@ void cApplication::Run()
 
     {
       // Render our shadow map
-      shadowMapping.BeginRenderToShadowMap(*pContext);
+      shadowMapping.BeginRenderToShadowMap(*pContext, lightPointPosition, lightDirection);
 
-      const int half = 20;
+      // Render occluding objects
+      const int half = 6;
       const int interval = 5;
       for (int z = -(half); z < half; z += interval) {
-        for (int y = -(half); y < half; y += interval) {
+        for (int y = 1; y < half; y += interval) {
           for (int x = -(half); x < half; x += interval) {
             const spitfire::math::cVec3 position = spitfire::math::cVec3(float(x), float(y), float(z));
-            shadowMapping.RenderObjectToShadowMapSetMatrices(*pContext, lightPointPosition, lightDirection, position, rotation);
+            spitfire::math::cMat4 matTranslation;
+            matTranslation.SetTranslation(position);
+            spitfire::math::cMat4 matRotation;
+            matRotation.SetRotation(-rotation);
+            const spitfire::math::cMat4 matModel = matTranslation * matRotation;
+            shadowMapping.RenderObjectToShadowMapSetMatrices(*pContext, matModel);
 
             opengl::cStaticVertexBufferObject& vbo = staticVertexBufferObjectLargeTeapot;
             pContext->BindStaticVertexBufferObject(vbo);
@@ -2507,19 +2513,20 @@ void cApplication::Run()
         pContext->BindShader(shadowMapping.GetShadowMapShader());
 
         //pContext->SetShaderConstant("LightPosition_worldspace", lightPointPosition);
-        pContext->SetShaderConstant("DepthBiasMVP", shadowMapping.GetDepthBiasMVP());
-        pContext->SetShaderConstant("LightInvDirection_worldspace", shadowMapping.GetLightInvDirectionWorldSpace());
 
         // Render the ground
+        const spitfire::math::cMat4& matModel = matTranslationFloor;
+        pContext->SetShaderConstant("DepthBiasMVP", shadowMapping.GetDepthBiasMVP(matModel));
+        pContext->SetShaderConstant("LightInvDirection_worldspace", matModel * shadowMapping.GetLightInvDirection());
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationFloor);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matModel);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlaneFloor);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
-        
-        const int half = 20;
+
+        const int half = 6;
         const int interval = 5;
         for (int z = -(half); z < half; z += interval) {
-          for (int y = -(half); y < half; y += interval) {
+          for (int y = 1; y < half; y += interval) {
             for (int x = -(half); x < half; x += interval) {
               const spitfire::math::cVec3 position = spitfire::math::cVec3(float(x), float(y), float(z));
 
@@ -2527,9 +2534,11 @@ void cApplication::Run()
               matObjectTranslation.SetTranslation(position);
 
               spitfire::math::cMat4 matObjectRotation;
-              matObjectRotation.SetRotation(rotation);
+              matObjectRotation.SetRotation(-rotation);
 
               const spitfire::math::cMat4 matModel = matObjectTranslation * matObjectRotation;
+              pContext->SetShaderConstant("DepthBiasMVP", shadowMapping.GetDepthBiasMVP(matModel));
+              pContext->SetShaderConstant("LightInvDirection_worldspace", matModel * shadowMapping.GetLightInvDirection());
 
               opengl::cStaticVertexBufferObject& vbo = staticVertexBufferObjectLargeTeapot;
               pContext->BindStaticVertexBufferObject(vbo);

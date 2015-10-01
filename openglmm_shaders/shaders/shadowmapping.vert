@@ -25,6 +25,7 @@ void main()
   // Output position of the vertex, in clip space : matModelViewProjection * position
   gl_Position =  matModelViewProjection * vec4(position, 1.0);
 
+  // Calculate our shadow coordinate
   ShadowCoord = DepthBiasMVP * vec4(position, 1.0);
 
   // Position of the vertex, in worldspace : matModel * position

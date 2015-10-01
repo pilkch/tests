@@ -56,6 +56,7 @@
 // ** cShadowMapping
 
 cShadowMapping::cShadowMapping() :
+  uShadowMapTextureSize(2048),
   pTextureDepthTexture(nullptr),
   pShaderShadowMap(nullptr),
   pShaderRenderToDepthTexture(nullptr)
@@ -68,7 +69,7 @@ void cShadowMapping::Init(opengl::cContext& context)
   assert(pShaderRenderToDepthTexture != nullptr);
   pShaderShadowMap = context.CreateShader(TEXT("shaders/shadowmapping.vert"), TEXT("shaders/shadowmapping.frag"));
   assert(pShaderShadowMap != nullptr);
-  pTextureDepthTexture = context.CreateTextureFrameBufferObjectDepthShadowOnly(1024, 1024);
+  pTextureDepthTexture = context.CreateTextureFrameBufferObjectDepthShadowOnly(uShadowMapTextureSize, uShadowMapTextureSize);
   assert(pTextureDepthTexture != nullptr);
 }
 
@@ -88,7 +89,35 @@ void cShadowMapping::Destroy(opengl::cContext& context)
   }
 }
 
-void cShadowMapping::BeginRenderToShadowMap(opengl::cContext& context)
+size_t cShadowMapping::GetShadowMapTextureSize() const
+{
+  return uShadowMapTextureSize;
+}
+
+void cShadowMapping::CalculateMatrices(opengl::cContext& context, const spitfire::math::cVec3& lightPosition, const spitfire::math::cVec3& lightDirection)
+{
+  // Compute the MVP matrix from the light's point of view
+  //glm::mat4 depthProjectionMatrix = glm::ortho<float>(-10, 10, -10, 10, -10, 20);
+  //glm::mat4 depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+  // or, for spot light :
+  //glm::vec3 lightPos(5, 20, 20);
+  //glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
+  //glm::mat4 depthViewMatrix = glm::lookAt(lightPos, lightPos-lightInvDir, glm::vec3(0,1,0));
+
+  lightInvDir = (-lightDirection).GetNormalised();
+
+#if 0
+  matProjection.SetOrtho(-10, 10, -10, 10, -10, 20);
+
+  matView.LookAt(lightPosition, lightPosition + lightDirection, spitfire::math::v3Up);
+#else
+  matProjection = context.CalculateProjectionMatrix(90.0f);
+
+  matView.LookAt(lightPosition, lightPosition + lightDirection, spitfire::math::v3Up);
+#endif
+}
+
+void cShadowMapping::BeginRenderToShadowMap(opengl::cContext& context, const spitfire::math::cVec3& lightPosition, const spitfire::math::cVec3& lightDirection)
 {
   const spitfire::math::cColour clearColour(0.0f, 0.0f, 0.0f);
   context.SetClearColour(clearColour);
@@ -98,6 +127,8 @@ void cShadowMapping::BeginRenderToShadowMap(opengl::cContext& context)
   glDisable(GL_CULL_FACE);
 
   context.BindShader(*pShaderRenderToDepthTexture);
+
+  CalculateMatrices(context, lightPosition, lightDirection);
 }
 
 void cShadowMapping::EndRenderToShadowMap(opengl::cContext& context)
@@ -109,52 +140,9 @@ void cShadowMapping::EndRenderToShadowMap(opengl::cContext& context)
   context.EndRenderToTexture(*pTextureDepthTexture);
 }
 
-spitfire::math::cVec3 lightInvDir;
-spitfire::math::cMat4 matDepthMVP;
-spitfire::math::cMat4 matDepthBiasMVP;
-
-void cShadowMapping::RenderObjectToShadowMapSetMatrices(opengl::cContext& context, const spitfire::math::cVec3& lightPosition, const spitfire::math::cVec3& lightDirection, const spitfire::math::cVec3& objectPosition, const spitfire::math::cQuaternion& objectRotation)
+void cShadowMapping::RenderObjectToShadowMapSetMatrices(opengl::cContext& context, const spitfire::math::cMat4& matModel)
 {
-  // Compute the MVP matrix from the light's point of view
-  //glm::mat4 depthProjectionMatrix = glm::ortho<float>(-10, 10, -10, 10, -10, 20);
-  //glm::mat4 depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-  // or, for spot light :
-  //glm::vec3 lightPos(5, 20, 20);
-  //glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
-  //glm::mat4 depthViewMatrix = glm::lookAt(lightPos, lightPos-lightInvDir, glm::vec3(0,1,0));
-
-  lightInvDir = -lightDirection;
-
-#if 0
-  spitfire::math::cMat4 matProjection;
-  matProjection.SetOrtho(-10, 10, -10, 10, -10, 20);
-
-  spitfire::math::cMat4 matView;
-  matView.LookAt(lightInvDir, spitfire::math::v3Zero, spitfire::math::v3Up);
-
-  const spitfire::math::cMat4 matModel; // Identity matrix
-  matDepthMVP = matProjection * matView * matModel;
-
-  context.SetShaderConstant("matModelViewProjection", matDepthMVP);
-#else
-  const spitfire::math::cMat4 matProjection = context.CalculateProjectionMatrix();
-
-  cFreeLookCamera camera;
-  ASSERT(lightDirection.GetMagnitude() >= 0.0f);
-  camera.LookAt(lightPosition, lightPosition - lightDirection, spitfire::math::v3Up);
-
-  const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
-
-  spitfire::math::cMat4 matObjectTranslation;
-  matObjectTranslation.SetTranslation(objectPosition);
-
-  spitfire::math::cMat4 matObjectRotation;
-  matObjectRotation.SetRotation(objectRotation);
-
-  const spitfire::math::cMat4 matModel = matObjectTranslation * matObjectRotation;
-
   context.SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matModel);
-#endif
 }
 
 opengl::cTextureFrameBufferObject& cShadowMapping::GetShadowMapTexture()
@@ -175,12 +163,12 @@ opengl::cShader& cShadowMapping::GetShadowMapShader()
   return *pShaderShadowMap;
 }
 
-spitfire::math::cMat4 cShadowMapping::GetDepthMVP() const
+spitfire::math::cMat4 cShadowMapping::GetDepthMVP(const spitfire::math::cMat4& matModel) const
 {
-  return matDepthMVP;
+  return matProjection * matView * matModel;
 }
 
-spitfire::math::cMat4 cShadowMapping::GetDepthBiasMVP() const
+spitfire::math::cMat4 cShadowMapping::GetDepthBiasMVP(const spitfire::math::cMat4& matModel) const
 {
   const spitfire::math::cMat4 matBias(
     0.5, 0.0, 0.0, 0.0,
@@ -189,12 +177,12 @@ spitfire::math::cMat4 cShadowMapping::GetDepthBiasMVP() const
     0.5, 0.5, 0.5, 1.0
   );
 
-  const spitfire::math::cMat4 depthBiasMVP = matBias * matDepthMVP;
+  const spitfire::math::cMat4 matDepthMVP = GetDepthMVP(matModel);
 
-  return depthBiasMVP;
+  return matBias * matDepthMVP;
 }
 
-spitfire::math::cVec3 cShadowMapping::GetLightInvDirectionWorldSpace() const
+spitfire::math::cVec3 cShadowMapping::GetLightInvDirection() const
 {
   return lightInvDir;
 }

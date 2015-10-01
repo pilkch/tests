@@ -37,12 +37,30 @@ vec2 poissonDisk[16] = vec2[](
   vec2(0.14383161, -0.14100790)
 );
 
-// Returns a random number based on a vec3 and an int.
-float random(vec3 seed, int i)
+float CalculateShadow()
 {
-  vec4 seed4 = vec4(seed,i);
-  float dot_product = dot(seed4, vec4(12.9898,78.233,45.164,94.673));
-  return fract(sin(dot_product) * 43758.5453);
+  float fVisibility = 1.0;
+
+  // Fixed bias, or...
+  float fBias = 0.005;
+
+  // ...variable bias (Pass cosTheta as a parameter)
+  // float fBias = 0.005 * tan(acos(cosTheta));
+  // fBias = clamp(fBias, 0.0, 0.01);
+
+  // Sample the shadow map 4 times
+  for (int i = 0; i < 4; i++) {
+    // being fully in the shadow will eat up 4 * 0.2 = 0.8
+    // 0.2 potentially remain, which is quite dark.
+    float fShadowValue = texture(texUnit1, vec3(ShadowCoord.xy + poissonDisk[i] / 700.0,  (ShadowCoord.z - fBias) / ShadowCoord.w));
+    fVisibility -= 0.2 * (1.0 - fShadowValue);
+  }
+
+  // For spot lights, use either one of these lines instead.
+  //if (texture(texUnit1, (ShadowCoord.xy / ShadowCoord.w)) < (ShadowCoord.z - fBias) / ShadowCoord.w) fVisibility = 0.0;
+  //if (texture(texUnit1, ShadowCoord.xyw) < (ShadowCoord.z - fBias) / ShadowCoord.w) fVisibility = 0.0;
+
+  return 1.0 - fVisibility;
 }
 
 void main()
@@ -80,55 +98,17 @@ void main()
   //  - Looking elsewhere -> < 1
   float cosAlpha = clamp(dot(E, R), 0.0, 1.0);
 
-  float visibility = 1.0;
-
-  // Fixed bias, or...
-  float bias = 0.005;
-
-  // ...variable bias
-  // float bias = 0.005 * tan(acos(cosTheta));
-  // bias = clamp(bias, 0.0, 0.01);
-
-  // Sample the shadow map 4 times
-  for (int i = 0; i < 4; i++) {
-    // use either :
-    //  - Always the same samples.
-    //    Gives a fixed pattern in the shadow, but no noise
-    int index = i;
-    //  - A random sample, based on the pixel's screen location. 
-    //    No banding, but the shadow moves with the camera, which looks weird.
-    // int index = int(16.0*random(gl_FragCoord.xyy, i))%16;
-    //  - A random sample, based on the pixel's position in world space.
-    //    The position is rounded to the millimeter to avoid too much aliasing
-    // int index = int(16.0*random(floor(Position_worldspace.xyz*1000.0), i))%16;
-
-    // being fully in the shadow will eat up 4*0.2 = 0.8
-    // 0.2 potentially remain, which is quite dark.
-    visibility -= 0.2 * (1.0 - texture(texUnit1, vec3(ShadowCoord.xy + poissonDisk[index] / 700.0,  (ShadowCoord.z - bias) / ShadowCoord.w)));
-  }
-
-  // For spot lights, use either one of these lines instead.
-  // if (texture(texUnit1, (ShadowCoord.xy / ShadowCoord.w)).z < (ShadowCoord.z - bias) / ShadowCoord.w)
-  // if (textureProj(texUnit1, ShadowCoord.xyw).z < (ShadowCoord.z - bias) / ShadowCoord.w)
+  // Calculate our light visibility
+  float fShadow = CalculateShadow();
+  float fVisibility = 1.0 - fShadow;
 
   vec3 colour = 
     // Ambient : simulates indirect lighting
     MaterialAmbientColor +
     // Diffuse : "color" of the object
-    visibility * MaterialDiffuseColor * LightColor * LightPower * cosTheta +
+    fVisibility * MaterialDiffuseColor * LightColor * LightPower * cosTheta +
     // Specular : reflective highlight, like a mirror
-    visibility * MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha, 5.0);
+    fVisibility * MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha, 5.0);
 
   fragmentColour = vec4(colour, 1.0);
-
-
-
-
-  /*const float fDepth = 1.0;
-  const float epsilon = 0.00001;
-
-  // fShadowFactor is now a floating-point value between 0 (fully blocked) and 1 (fully unblocked)
-  float fShadowFactor = texture(texUnit1, vec3(vertOutTexCoord0, fDepth + epsilon));
-
-  fragmentColour = vec4(0.1 * colour + 0.9 * vec3(1.0 - fShadowFactor, 0.0, fShadowFactor), 1.0);*/
 }
