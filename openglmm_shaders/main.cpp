@@ -67,6 +67,11 @@ cApplication::cApplication() :
   bIsMovingRight(false),
   bIsMovingBackward(false),
 
+  moveLightForward(SDLK_t),
+  moveLightBack(SDLK_g),
+  moveLightLeft(SDLK_f),
+  moveLightRight(SDLK_h),
+
   bIsFocalLengthIncrease(false),
   bIsFocalLengthDecrease(false),
   bIsFStopIncrease(false),
@@ -1393,6 +1398,12 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
 void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
 {
   //LOG("");
+
+  moveLightForward.Process(event.GetKeyCode(), event.IsKeyDown());
+  moveLightBack.Process(event.GetKeyCode(), event.IsKeyDown());
+  moveLightLeft.Process(event.GetKeyCode(), event.IsKeyDown());
+  moveLightRight.Process(event.GetKeyCode(), event.IsKeyDown());
+
   if (event.IsKeyDown()) {
     switch (event.GetKeyCode()) {
       case SDLK_ESCAPE: {
@@ -1910,6 +1921,12 @@ void cApplication::Run()
       if (bIsMovingBackward) camera.MoveZ(-fDistance);
       if (bIsMovingLeft) camera.MoveX(-fDistance);
       if (bIsMovingRight) camera.MoveX(fDistance);
+
+      // Update the light position
+      if (moveLightForward.bDown) lightPointPosition.z += fDistance;
+      if (moveLightBack.bDown) lightPointPosition.z -= fDistance;
+      if (moveLightLeft.bDown) lightPointPosition.x -= fDistance;
+      if (moveLightRight.bDown) lightPointPosition.x += fDistance;
 
       // Update object rotation
       if (bIsRotating) fAngleRadians += float(uiUpdateDelta) * fRotationSpeed;

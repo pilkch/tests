@@ -61,6 +61,15 @@
 // Test various lights, unfortunately it is a very large model which takes ages to load, so it is disabled by default
 //#define BUILD_LARGE_STATUE_MODEL
 
+struct KeyBoolPair {
+  KeyBoolPair(unsigned int _key) : key(_key), bDown(false) {}
+
+  void Process(unsigned int _key, bool _bDown) { if (_key == key) bDown = _bDown; }
+
+  unsigned int key;
+  bool bDown;
+};
+
 // ** cApplication
 
 class cApplication : public opengl::cWindowEventListener, public opengl::cInputEventListener
@@ -134,6 +143,11 @@ private:
   bool bIsMovingLeft;
   bool bIsMovingRight;
   bool bIsMovingBackward;
+
+  KeyBoolPair moveLightForward;
+  KeyBoolPair moveLightBack;
+  KeyBoolPair moveLightLeft;
+  KeyBoolPair moveLightRight;
 
   bool bIsFocalLengthIncrease;
   bool bIsFocalLengthDecrease;
