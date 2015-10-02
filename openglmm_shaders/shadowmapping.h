@@ -71,6 +71,8 @@ public:
   opengl::cShader& GetRenderToShadowMapShader();
   opengl::cShader& GetShadowMapShader();
 
+  spitfire::math::cMat4 GetView() const { return matView; }
+
   spitfire::math::cMat4 GetDepthMVP(const spitfire::math::cMat4& matModel) const;
   spitfire::math::cMat4 GetDepthBiasMVP(const spitfire::math::cMat4& matModel) const;
   spitfire::math::cVec3 GetLightInvDirection() const;
