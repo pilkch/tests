@@ -101,14 +101,14 @@ void cHDR::Destroy(opengl::cContext& context)
 
   context.DestroyTextureFrameBufferObject(LuminanceBuffer);
   for (size_t i = 0; i < 8; i++) {
-    context.DestroyTextureFrameBufferObject(MinificationBuffer[i].pTexture);
-    context.DestroyStaticVertexBufferObject(MinificationBuffer[i].vbo);
+    if (MinificationBuffer[i].pTexture != nullptr) context.DestroyTextureFrameBufferObject(MinificationBuffer[i].pTexture);
+    if (MinificationBuffer[i].vbo.IsCompiled()) context.DestroyStaticVertexBufferObject(MinificationBuffer[i].vbo);
   }
   context.DestroyTextureFrameBufferObject(LDRColorBuffer);
   context.DestroyTextureFrameBufferObject(BrightPixelsBuffer);
   for (size_t i = 0; i < 12; i++) {
-    context.DestroyTextureFrameBufferObject(BloomBuffer[i].pTexture);
-    context.DestroyStaticVertexBufferObject(BloomBuffer[i].vbo);
+    if (BloomBuffer[i].pTexture != nullptr) context.DestroyTextureFrameBufferObject(BloomBuffer[i].pTexture);
+    if (BloomBuffer[i].vbo.IsCompiled()) context.DestroyStaticVertexBufferObject(BloomBuffer[i].vbo);
   }
 
   context.DestroyShader(pShaderPassThrough);
