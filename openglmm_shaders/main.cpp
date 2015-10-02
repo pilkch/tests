@@ -72,6 +72,8 @@ cApplication::cApplication() :
   moveLightLeft(SDLK_f),
   moveLightRight(SDLK_h),
 
+  bIsCameraAtLightSource(false),
+
   bIsFocalLengthIncrease(false),
   bIsFocalLengthDecrease(false),
   bIsFStopIncrease(false),
@@ -1475,6 +1477,11 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
 
+      case SDLK_r: {
+        bIsCameraAtLightSource = !bIsCameraAtLightSource;
+        break;
+      }
+
       case SDLK_v: {
         bIsFocalLengthDecrease = false;
         break;
@@ -2021,7 +2028,7 @@ void cApplication::Run()
 
     const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
 
-    const spitfire::math::cMat4 matView = camera.CalculateViewMatrix();
+    const spitfire::math::cMat4 matView = (bIsCameraAtLightSource ? shadowMapping.GetView() : camera.CalculateViewMatrix());
     const spitfire::math::cVec3 lightDirection(0.1f, -1.0f, 0.0f);
 
     // Set up the lights shader
@@ -2439,7 +2446,7 @@ void cApplication::Run()
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
         }
 
-        {
+        if (!bIsCameraAtLightSource) {
           pContext->SetShaderConstant("colour", lightPointColour);
 
           spitfire::math::cMat4 matTransform;

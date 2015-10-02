@@ -149,6 +149,8 @@ private:
   KeyBoolPair moveLightLeft;
   KeyBoolPair moveLightRight;
 
+  bool bIsCameraAtLightSource; // Whether the camera is moving around as normal or looking at the scene from the light's point of view
+
   bool bIsFocalLengthIncrease;
   bool bIsFocalLengthDecrease;
   bool bIsFStopIncrease;
