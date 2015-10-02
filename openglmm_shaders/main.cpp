@@ -1923,10 +1923,10 @@ void cApplication::Run()
       if (bIsMovingRight) camera.MoveX(fDistance);
 
       // Update the light position
-      if (moveLightForward.bDown) lightPointPosition.z += fDistance;
-      if (moveLightBack.bDown) lightPointPosition.z -= fDistance;
-      if (moveLightLeft.bDown) lightPointPosition.x -= fDistance;
-      if (moveLightRight.bDown) lightPointPosition.x += fDistance;
+      if (moveLightForward.bDown) lightPointPosition.x += fDistance;
+      if (moveLightBack.bDown) lightPointPosition.x -= fDistance;
+      if (moveLightLeft.bDown) lightPointPosition.z -= fDistance;
+      if (moveLightRight.bDown) lightPointPosition.z += fDistance;
 
       // Update object rotation
       if (bIsRotating) fAngleRadians += float(uiUpdateDelta) * fRotationSpeed;
