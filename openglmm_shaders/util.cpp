@@ -157,6 +157,15 @@ pShader(nullptr)
 }
 
 
+// ** cShaderVBOPair
+
+cVBOShaderTexturePair::cVBOShaderTexturePair() :
+  pShader(nullptr),
+  pTexture(nullptr)
+{
+}
+
+
 // ** cSimplePostRenderShader
 
 cSimplePostRenderShader::cSimplePostRenderShader(const spitfire::string_t _sName, const spitfire::string_t& _sFragmentShaderFilePath) :

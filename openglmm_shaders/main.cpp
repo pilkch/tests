@@ -116,6 +116,8 @@ cApplication::cApplication() :
   pTextureNormalMapNormal(nullptr),
   pTextureNormalMapHeight(nullptr),
 
+  pTextureFlare(nullptr),
+
   pShaderColour(nullptr),
   pShaderCubeMap(nullptr),
   pShaderCarPaint(nullptr),
@@ -706,6 +708,39 @@ void cApplication::CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& st
   staticVertexBufferObject.Compile2D();
 }
 
+void cApplication::CreateLightBillboard()
+{
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  // NOTE: We use an extra set of texture coordinates on the end to say where the center point of that specific particle is
+  opengl::cGeometryBuilder_v3_n3_t2_user3 builder(*pGeometryDataPtr);
+
+  const spitfire::math::cVec3 normal(0.0f, 0.0f, -1.0f);
+
+  const spitfire::math::cVec3 position(0.0f, 0.0f, 0.0f);
+
+  const float fSize = 1.0f;
+  const float fWidth = fSize;
+  const float fHeight = fSize;
+
+  const float_t fHalfWidth = fWidth * 0.5f;
+  const float_t fHalfHeight = fHeight * 0.5f;
+  const spitfire::math::cVec3 vMin(-fHalfWidth, -fHalfHeight, 0.0f);
+  const spitfire::math::cVec3 vMax(fHalfWidth, fHalfHeight, 0.0f);
+
+  // Add a front facing rectangle
+  builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), normal, spitfire::math::cVec2(0.0f, 0.0f), position);
+  builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), normal, spitfire::math::cVec2(1.0, 1.0), position);
+  builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMin.y, 0.0f), normal, spitfire::math::cVec2(0.0f, 1.0), position);
+  builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMax.y, 0.0f), normal, spitfire::math::cVec2(1.0, 0.0f), position);
+  builder.PushBack(position + spitfire::math::cVec3(vMin.x, vMin.y, 0.0f), normal, spitfire::math::cVec2(1.0, 1.0), position);
+  builder.PushBack(position + spitfire::math::cVec3(vMax.x, vMax.y, 0.0f), normal, spitfire::math::cVec2(0.0f, 0.0f), position);
+
+  light.vbo.SetData(pGeometryDataPtr);
+
+  light.vbo.Compile();
+}
+
 void cApplication::CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
@@ -891,6 +926,13 @@ bool cApplication::Create()
 
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectTeapot);
   CreateScreenRectVBO(staticVertexBufferObjectScreenRectTeapot, 0.25f, 0.25f);
+
+  pContext->CreateStaticVertexBufferObject(light.vbo);
+  CreateLightBillboard();
+  light.pTexture = pContext->CreateTexture(TEXT("textures/light.png"));
+  assert(light.pTexture != nullptr);
+  pTextureFlare = pContext->CreateTexture(TEXT("textures/flare.png"));
+  assert(pTextureFlare != nullptr);
 
   smoke.pTexture = pContext->CreateTexture(TEXT("textures/particle_smoke.png"));
   assert(smoke.pTexture != nullptr);
@@ -1117,6 +1159,17 @@ void cApplication::Destroy()
   }
   pContext->DestroyStaticVertexBufferObject(fire.vbo);
 
+  // Destroy our light
+  if (pTextureFlare != nullptr) {
+    pContext->DestroyTexture(pTextureFlare);
+    pTextureFlare = nullptr;
+  }
+  if (light.pTexture != nullptr) {
+    pContext->DestroyTexture(light.pTexture);
+    light.pTexture = nullptr;
+  }
+  pContext->DestroyStaticVertexBufferObject(light.vbo);
+
   // Destroy our text VBO
   pContext->DestroyStaticVertexBufferObject(textVBO);
 
@@ -1172,6 +1225,9 @@ void cApplication::CreateShaders()
 
   pShaderCelShaded = pContext->CreateShader(TEXT("shaders/celshader.vert"), TEXT("shaders/celshader.frag"));
   assert(pShaderCelShaded != nullptr);
+
+  light.pShader = pContext->CreateShader(TEXT("shaders/billboard.vert"), TEXT("shaders/billboard.frag"));
+  assert(light.pShader != nullptr);
 
   pShaderSmoke = pContext->CreateShader(TEXT("shaders/smoke.vert"), TEXT("shaders/smoke.frag"));
   assert(pShaderSmoke != nullptr);
@@ -1243,6 +1299,10 @@ void cApplication::DestroyShaders()
     pShaderLights = nullptr;
   }
 
+  if (light.pShader != nullptr) {
+    pContext->DestroyShader(light.pShader);
+    light.pShader = nullptr;
+  }
   if (pShaderSmoke != nullptr) {
     pContext->DestroyShader(pShaderSmoke);
     pShaderSmoke = nullptr;
@@ -1670,6 +1730,12 @@ void cApplication::Run()
   assert(pShaderSilhouette->IsCompiledProgram());
   assert(pShaderCelShaded != nullptr);
   assert(pShaderCelShaded->IsCompiledProgram());
+  assert(light.pTexture != nullptr);
+  assert(light.pTexture->IsValid());
+  assert(light.pShader != nullptr);
+  assert(light.pShader->IsCompiledProgram());
+  assert(pTextureFlare != nullptr);
+  assert(pTextureFlare->IsValid());
   assert(pShaderSmoke != nullptr);
   assert(pShaderSmoke->IsCompiledProgram());
   assert(pShaderFire != nullptr);
@@ -1728,6 +1794,10 @@ void cApplication::Run()
 
   assert(staticVertexBufferObjectPointLight.IsCompiled());
   assert(staticVertexBufferObjectSpotLight.IsCompiled());
+
+  assert(light.pTexture != nullptr);
+  assert(light.pTexture->IsValid());
+  assert(light.vbo.IsCompiled());
 
   assert(smoke.pTexture != nullptr);
   assert(smoke.pTexture->IsValid());
@@ -1857,6 +1927,7 @@ void cApplication::Run()
   spitfire::durationms_t previousUpdateTime = spitfire::util::GetTimeMS();
   spitfire::durationms_t currentTime = spitfire::util::GetTimeMS();
 
+  const float fLightLuminanceIncrease0To1 = 0.3f;
 
   // Green directional light
   const spitfire::math::cVec3 lightDirectionalPosition(5.0f, 5.0f, 5.0f);
@@ -2923,6 +2994,88 @@ void cApplication::Run()
 
 
       if (bIsWireframe) pContext->EnableWireframe();
+
+      // Render the lights
+      {
+        glDepthMask(GL_FALSE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        struct TextureAndSizePair {
+          opengl::cTexture* pTexture;
+          float fSize;
+        };
+        const TextureAndSizePair pairs[] = {
+          //{ light.pTexture, 1.0f },
+          { pTextureFlare, 16.0f },
+        };
+
+        pContext->BindShader(*light.pShader);
+
+        pContext->BindStaticVertexBufferObject(light.vbo);
+
+        const size_t n = countof(pairs);
+
+        // Green directional light
+        for (size_t i = 0; i < n; i++) {
+          pContext->BindTexture(0, *pairs[i].pTexture);
+
+          pContext->SetShaderConstant("fSize", pairs[i].fSize);
+
+          pContext->SetShaderConstant("lightColour", util::ChangeLuminance(lightDirectionalDiffuseColour, fLightLuminanceIncrease0To1));
+
+          spitfire::math::cMat4 matTranslation;
+          matTranslation.SetTranslation(lightDirectionalPosition);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(light.vbo);
+
+          pContext->UnBindTexture(0, *pairs[i].pTexture);
+        }
+
+        // Red point light
+        if (!bIsCameraAtLightSource) {
+          for (size_t i = 0; i < n; i++) {
+            pContext->BindTexture(0, *pairs[i].pTexture);
+
+            pContext->SetShaderConstant("fSize", pairs[i].fSize);
+
+            pContext->SetShaderConstant("lightColour", util::ChangeLuminance(lightPointColour, fLightLuminanceIncrease0To1));
+
+            spitfire::math::cMat4 matTranslation;
+            matTranslation.SetTranslation(lightPointPosition);
+            pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation);
+
+            pContext->DrawStaticVertexBufferObjectTriangles(light.vbo);
+
+            pContext->UnBindTexture(0, *pairs[i].pTexture);
+          }
+        }
+
+        // Blue spot light
+        for (size_t i = 0; i < n; i++) {
+          pContext->BindTexture(0, *pairs[i].pTexture);
+
+          pContext->SetShaderConstant("fSize", pairs[i].fSize);
+
+          pContext->SetShaderConstant("lightColour", util::ChangeLuminance(lightSpotColour, fLightLuminanceIncrease0To1));
+
+          spitfire::math::cMat4 matTranslation;
+          matTranslation.SetTranslation(lightSpotPosition);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(light.vbo);
+
+          pContext->UnBindTexture(0, *pairs[i].pTexture);
+        }
+
+        pContext->UnBindStaticVertexBufferObject(light.vbo);
+
+        pContext->UnBindShader(*light.pShader);
+
+        glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
+      }
 
       // Render smoke
       {

@@ -109,6 +109,16 @@ public:
   opengl::cStaticVertexBufferObject vbo;
 };
 
+class cVBOShaderTexturePair
+{
+public:
+  cVBOShaderTexturePair();
+
+  opengl::cStaticVertexBufferObject vbo;
+  opengl::cShader* pShader;
+  opengl::cTexture* pTexture;
+};
+
 class cSimplePostRenderShader
 {
 public:

@@ -109,6 +109,7 @@ private:
   void CreateTeapot(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreateGear(opengl::cStaticVertexBufferObject& vbo);
 
+  void CreateLightBillboard();
   void CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo);
   void CreateTestImage(opengl::cStaticVertexBufferObject& vbo, size_t nTextureWidth, size_t nTextureHeight);
 
@@ -203,6 +204,8 @@ private:
   opengl::cTexture* pTextureNormalMapNormal;
   opengl::cTexture* pTextureNormalMapHeight;
 
+  opengl::cTexture* pTextureFlare;
+
   opengl::cShader* pShaderColour;
   opengl::cShader* pShaderCubeMap;
   opengl::cShader* pShaderCarPaint;
@@ -256,6 +259,7 @@ private:
 
   cShaderVBOPair parallaxNormalMap;
 
+  cVBOShaderTexturePair light;
   cTextureVBOPair smoke;
   cTextureVBOPair fire;
 

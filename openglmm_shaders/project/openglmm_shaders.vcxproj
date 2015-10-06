@@ -124,6 +124,8 @@
     <ClCompile Include="..\util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\shaders\billboard.frag" />
+    <None Include="..\shaders\billboard.vert" />
     <None Include="..\shaders\carpaint.frag" />
     <None Include="..\shaders\carpaint.vert" />
     <None Include="..\shaders\celshader.frag" />
