@@ -124,8 +124,6 @@ void cShadowMapping::BeginRenderToShadowMap(opengl::cContext& context, const spi
 
   context.BeginRenderToTexture(*pTextureDepthTexture);
 
-  glDisable(GL_CULL_FACE);
-
   context.BindShader(*pShaderRenderToDepthTexture);
 
   CalculateMatrices(context, lightPosition, lightDirection);
@@ -133,8 +131,6 @@ void cShadowMapping::BeginRenderToShadowMap(opengl::cContext& context, const spi
 
 void cShadowMapping::EndRenderToShadowMap(opengl::cContext& context)
 {
-  glEnable(GL_CULL_FACE);
-
   context.UnBindShader(*pShaderRenderToDepthTexture);
 
   context.EndRenderToTexture(*pTextureDepthTexture);

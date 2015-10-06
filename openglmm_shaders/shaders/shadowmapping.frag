@@ -39,6 +39,9 @@ vec2 poissonDisk[16] = vec2[](
 
 float CalculateShadow()
 {
+  // TODO: For some reason our resulting shadow is too small so we enlarge it here
+  const float fTextureScale = 0.1;
+
   float fVisibility = 1.0;
 
   // Fixed bias, or...
@@ -52,7 +55,7 @@ float CalculateShadow()
   for (int i = 0; i < 4; i++) {
     // being fully in the shadow will eat up 4 * 0.2 = 0.8
     // 0.2 potentially remain, which is quite dark.
-    float fShadowValue = texture(texUnit1, vec3(ShadowCoord.xy + poissonDisk[i] / 700.0,  (ShadowCoord.z - fBias) / ShadowCoord.w));
+    float fShadowValue = texture(texUnit1, vec3(ShadowCoord.xy * fTextureScale + poissonDisk[i] / 700.0,  (ShadowCoord.z - fBias) / ShadowCoord.w));
     fVisibility -= 0.2 * (1.0 - fShadowValue);
   }
 
