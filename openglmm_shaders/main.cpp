@@ -1874,7 +1874,7 @@ void cApplication::Run()
   // Blue spot light
   const spitfire::math::cVec3 lightSpotPosition(0.0f, 5.0f, 4.0f);
   const spitfire::math::cVec3 lightSpotDirection(0.0f, 1.0f, 0.0f);
-  const spitfire::math::cColour lightSpotColour(0.0f, 0.0f, 0.25f);
+  const spitfire::math::cColour lightSpotColour(0.0f, 0.0f, 1.0f);
   //const float lightSpotAmbient = 0.15f;
   //const float lightSpotConstantAttenuation = 0.3f;
   const float lightSpotLinearAttenuation = 0.002f;
@@ -2436,35 +2436,35 @@ void cApplication::Run()
         pContext->BindShader(*pShaderColour);
 
         {
-          pContext->SetShaderConstant("colour", lightDirectionalDiffuseColour);
+          pContext->SetShaderConstant("colour", util::ChangeLuminance(lightDirectionalDiffuseColour, fLightLuminanceIncrease0To1));
 
           spitfire::math::cMat4 matTransform;
           matTransform.SetTranslation(lightDirectionalPosition);
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
         }
 
         if (!bIsCameraAtLightSource) {
-          pContext->SetShaderConstant("colour", lightPointColour);
+          pContext->SetShaderConstant("colour", util::ChangeLuminance(lightPointColour, fLightLuminanceIncrease0To1));
 
           spitfire::math::cMat4 matTransform;
           matTransform.SetTranslation(lightPointPosition);
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
         }
 
         {
-          pContext->SetShaderConstant("colour", lightSpotColour);
+          pContext->SetShaderConstant("colour", util::ChangeLuminance(lightSpotColour, fLightLuminanceIncrease0To1));
 
           spitfire::math::cMat4 matTransform;
           matTransform.SetTranslation(lightSpotPosition);
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
-            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTransform);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
         }
 

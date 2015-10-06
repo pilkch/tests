@@ -119,4 +119,9 @@ public:
   bool bOn;
 };
 
+namespace util
+{
+  spitfire::math::cColour ChangeLuminance(const spitfire::math::cColour& colourRGB, float fLuminanceDifferenceMinusOneToPlusOne);
+}
+
 #endif // UTIL_H

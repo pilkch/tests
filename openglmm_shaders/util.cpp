@@ -165,3 +165,15 @@ sFragmentShaderFilePath(_sFragmentShaderFilePath),
 bOn(false)
 {
 }
+
+
+namespace util
+{
+  spitfire::math::cColour ChangeLuminance(const spitfire::math::cColour& colourRGB, float fLuminanceDifferenceMinusOneToPlusOne)
+  {
+    spitfire::math::cColourHSL colourHSL;
+    colourHSL.SetFromRGBA(colourRGB);
+    colourHSL.fLuminance0To1 += fLuminanceDifferenceMinusOneToPlusOne;
+    return colourHSL.GetRGBA();
+  }
+}
