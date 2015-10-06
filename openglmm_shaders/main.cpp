@@ -2975,6 +2975,7 @@ void cApplication::Run()
     // Ping pong to the other texture so that we can render our particle systems now that we have a depth buffer
     {
       opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[currentFBO];
+      opengl::cTextureFrameBufferObject* pFrameBufferLastRendered = pTextureFrameBufferObjectScreenColourAndDepth[otherFBO];
 
       // Render the scene into a texture for later
       // Use Cornflower blue as the background colour
@@ -2988,7 +2989,7 @@ void cApplication::Run()
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
         // Draw the existing scene
         glDepthMask(GL_FALSE);
-        RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *pShaderScreenRect);
+        RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pFrameBufferLastRendered, *pShaderScreenRect);
         glDepthMask(GL_TRUE);
       pContext->EndRenderMode2D();
 
@@ -3084,7 +3085,7 @@ void cApplication::Run()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         pContext->BindTexture(0, *smoke.pTexture);
-        pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
+        pContext->BindTextureDepthBuffer(1, *pFrameBufferLastRendered);
 
         pContext->BindShader(*pShaderSmoke);
 
@@ -3112,7 +3113,7 @@ void cApplication::Run()
 
         pContext->UnBindShader(*pShaderSmoke);
 
-        pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
+        pContext->UnBindTextureDepthBuffer(1, *pFrameBufferLastRendered);
         pContext->UnBindTexture(0, *smoke.pTexture);
 
         glDisable(GL_BLEND);
@@ -3126,7 +3127,7 @@ void cApplication::Run()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
         pContext->BindTexture(0, *fire.pTexture);
-        pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
+        pContext->BindTextureDepthBuffer(1, *pFrameBufferLastRendered);
 
         pContext->BindShader(*pShaderFire);
 
@@ -3145,7 +3146,7 @@ void cApplication::Run()
 
         pContext->UnBindShader(*pShaderFire);
 
-        pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
+        pContext->UnBindTextureDepthBuffer(1, *pFrameBufferLastRendered);
         pContext->UnBindTexture(0, *fire.pTexture);
 
         glDisable(GL_BLEND);
@@ -3159,14 +3160,14 @@ void cApplication::Run()
 
     // Apply depth of field and bokeh
     if (bIsDOFBokeh) {
-      dofBokeh.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]), *pTextureFrameBufferObjectScreenDepth, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]));
+      dofBokeh.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *pTextureFrameBufferObjectScreenDepth, *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
 
       std::swap(currentFBO, otherFBO);
     }
 
     // Process our HDR image
     if (bIsHDR) {
-      hdr.Render(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]));
+      hdr.Render(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
 
       std::swap(currentFBO, otherFBO);
     }
@@ -3182,7 +3183,7 @@ void cApplication::Run()
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
 
-      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[currentFBO];
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[otherFBO];
 
       if (GetActiveSimplePostRenderShadersCount() != 0) {
         if (bIsSplitScreenSimplePostEffectShaders) {
