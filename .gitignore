@@ -46,7 +46,11 @@ openglmm_heightmap/CMakeFiles
 openglmm_shaders/openglmm_shaders
 openglmm_shaders/build
 openglmm_shaders/CMakeFiles
+openglmm_shaders/bokeh
 openglmm_shaders/car paint shader
+openglmm_shaders/dirty lens
+openglmm_shaders/shadows
+openglmm_shaders/ssao
 permutations/*
 size_test/*
 source_cleaner/*
