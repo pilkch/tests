@@ -53,8 +53,6 @@
 
 // Application headers
 #include "main.h"
-#include "hdr.h"
-#include "shadowmapping.h"
 
 // ** cApplication
 
@@ -182,7 +180,7 @@ void cApplication::CreateText()
   lines.push_back(spitfire::string_t(TEXT("Focal length:") + spitfire::string::ToString(dofBokeh.GetFocalLengthmm()) + TEXT("mm")));
   lines.push_back(spitfire::string_t(TEXT("f stops:") + spitfire::string::ToString(dofBokeh.GetFStop())));
 
-  lines.push_back(TEXT("")); 
+  lines.push_back(TEXT(""));
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
 
   // Post render shaders
@@ -3165,10 +3163,18 @@ void cApplication::Run()
       std::swap(currentFBO, otherFBO);
     }
 
+
+
+
     // Process our HDR image
     if (bIsHDR) {
-      hdr.Render(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
+      hdr.RenderBloom(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
 
+      std::swap(currentFBO, otherFBO);
+    }
+
+    if (bIsHDR) {
+      hdr.RenderToneMapping(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
       std::swap(currentFBO, otherFBO);
     }
 
