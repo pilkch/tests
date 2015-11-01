@@ -55,6 +55,7 @@
 // Application headers
 #include "dofbokeh.h"
 #include "hdr.h"
+#include "lensflaredirt.h"
 #include "shadowmapping.h"
 #include "util.h"
 
@@ -79,6 +80,7 @@ public:
 
   friend class cDOFBokeh;
   friend class cHDR;
+  friend class cLensFlareDirt;
   friend class cShadowMapping;
 
   bool Create();
@@ -89,7 +91,7 @@ public:
   opengl::cResolution GetResolution() const;
 
 protected:
-  // Called from cHDR
+  // Called from cHDR and cLensFlareDirt
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fVBOWidth, float_t fVBOHeight, float_t fTextureWidth, float_t fTextureHeight);
   void RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader);
   void RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader, opengl::cStaticVertexBufferObject& staticVertexBufferObject);
@@ -168,6 +170,7 @@ private:
   bool bIsDOFBokeh;
 
   bool bIsHDR;
+  bool bIsLensFlareDirt;
   bool bIsSplitScreenSimplePostEffectShaders; // Tells us whether to split the screen down the middle when a simple post effect shader is active
 
   bool bIsDone;
@@ -267,6 +270,7 @@ private:
 
   cDOFBokeh dofBokeh;
   cHDR hdr;
+  cLensFlareDirt lensFlareDirt;
   cShadowMapping shadowMapping;
 
   std::vector<cSimplePostRenderShader> simplePostRenderShaders;

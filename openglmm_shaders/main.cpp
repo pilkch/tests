@@ -88,6 +88,7 @@ cApplication::cApplication() :
   bIsDOFBokeh(true),
 
   bIsHDR(false),
+  bIsLensFlareDirt(false),
   bIsSplitScreenSimplePostEffectShaders(true),
 
   bIsDone(false),
@@ -182,6 +183,7 @@ void cApplication::CreateText()
 
   lines.push_back(TEXT(""));
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Lens Flare and Dirt: ")) + (bIsLensFlareDirt ? TEXT("On") : TEXT("Off")));
 
   // Post render shaders
   if (GetActiveSimplePostRenderShadersCount() == 0) {
@@ -1195,6 +1197,7 @@ void cApplication::Destroy()
 
   shadowMapping.Destroy(*pContext);
   hdr.Destroy(*pContext);
+  lensFlareDirt.Destroy(*pContext);
   dofBokeh.Destroy(*pContext);
 
   pContext = nullptr;
@@ -1626,6 +1629,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_7: {
+        bIsLensFlareDirt = !bIsLensFlareDirt;
+        break;
+      }
+      case SDLK_8: {
         bIsSplitScreenSimplePostEffectShaders = !bIsSplitScreenSimplePostEffectShaders;
         break;
       }
@@ -1813,6 +1820,9 @@ void cApplication::Run()
   hdr.Init(*pContext);
   hdr.Resize(*this, *pContext);
 
+  lensFlareDirt.Init(*pContext);
+  lensFlareDirt.Resize(*this, *pContext);
+  
   shadowMapping.Init(*pContext);
 
   // Print the input instructions
@@ -3170,6 +3180,11 @@ void cApplication::Run()
     if (bIsHDR) {
       hdr.RenderBloom(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
 
+      std::swap(currentFBO, otherFBO);
+    }
+
+    if (bIsLensFlareDirt) {
+      lensFlareDirt.Render(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
       std::swap(currentFBO, otherFBO);
     }
 
