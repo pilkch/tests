@@ -2,7 +2,7 @@
 
 uniform sampler2DRect texUnit0;
 
-uniform float MaxRGBValue;
+uniform float fMaxRGBValue;
 
 smooth in vec2 vertOutTexCoord;
 
@@ -12,5 +12,5 @@ void main()
 {
   vec3 Color = texture(texUnit0, vertOutTexCoord).rgb;
 
-  fragmentColour = vec4(Color / MaxRGBValue, 1.0);
+  fragmentColour = vec4(Color / fMaxRGBValue, 1.0);
 }
