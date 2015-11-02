@@ -1821,7 +1821,7 @@ void cApplication::Run()
   hdr.Resize(*this, *pContext);
 
   lensFlareDirt.Init(*pContext);
-  lensFlareDirt.Resize(*this, *pContext);
+  lensFlareDirt.Resize(*pContext);
   
   shadowMapping.Init(*pContext);
 
@@ -3184,7 +3184,7 @@ void cApplication::Run()
     }
 
     if (bIsLensFlareDirt) {
-      lensFlareDirt.Render(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
+      lensFlareDirt.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
       std::swap(currentFBO, otherFBO);
     }
 

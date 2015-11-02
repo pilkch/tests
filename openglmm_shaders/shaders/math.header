@@ -10,6 +10,16 @@
 #define lerp(a, b, t) mix(a, b, t)
 #define saturate(a) clamp(a, 0.0, 1.0)
 
+float log10(float value)
+{
+  if (value < 1.0e-3) return log(1.0e-3) / log(10.0);
+
+  return log(value) / log(10.0);
+}
+
+// Ease functions
+// http://lektiondestages.blogspot.com.au/2011/07/ease-functions.html
+
 float min3(float a, float b, float c)
 {
   return ((a < b) ? min(a, c) : min(b, c));

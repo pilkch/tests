@@ -61,66 +61,48 @@ public:
   void Init(opengl::cContext& context);
   void Destroy(opengl::cContext& context);
 
-  void Resize(cApplication& application, opengl::cContext& context);
+  void Resize(opengl::cContext& context);
 
-  void Render(cApplication& application, float dt, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut);
+  void Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut);
 
 private:
   /*	Apply a Gaussian blur to the 0th color attachment of input fbo. The result
   is written to output fbo, which may be the same as in. */
   void gaussBlur(
-    opengl::cTextureFrameBufferObject* in,
-    opengl::cTextureFrameBufferObject* temp,
-    opengl::cTextureFrameBufferObject* out, // can be the same as in
+    cApplication& application,
+    opengl::cContext& context,
+    opengl::cTextureFrameBufferObject& in,
+    opengl::cTextureFrameBufferObject& temp,
+    opengl::cTextureFrameBufferObject& out, // can be the same as in
     int radius // blur kernel radius in texels
     );
 
-  /*	Renders to every mip level of the 0th color attachment of input fbo.
-  Assumes that shader is already in use. */
-  void renderToMipmap(
-    opengl::cTextureFrameBufferObject* fbo,
-    opengl::cShader* pShader,
-    int bindLocation = 0 // used as GL_TEXTURE0 + bindLocation
-    );
-
-  /*	Resize temp textures; call when changing tempBufferSize_. */
-  bool resizeTempBuffers();
+  void CreateTempBuffers(opengl::cContext& context);
+  void DestroyTempBuffers(opengl::cContext& context);
 
   opengl::cShader* shaderPostProcess_;
-  float exposure_; // exposure override
-
   opengl::cShader* shaderGaussBlur_;
-
   opengl::cShader* shaderScaleBias_;
-  float bloomScale_, bloomBias_;
-  float bloomBlurRadius_;
 
   //	lens flare:
   opengl::cTexture* texLensColor_; // radial feature colour
   opengl::cTexture* texLensDirt_;
   opengl::cTexture* texLensStar_; // dirt/diffraction starburst
   opengl::cShader* shaderLensflare_; // feature generation
-  float flareSamples_, flareDispersal_, flareHaloWidth_, flareDistortion_;
-  float flareScale_, flareBias_;
+  float flareSamples_;
+  float flareDispersal_;
+  float flareHaloWidth_;
+  float flareDistortion_;
+  float flareScale_;
+  float flareBias_;
   float flareBlurRadius_;
-  bool flareOnly_;
 
   //	render textures/framebuffers:
-  opengl::cTextureFrameBufferObject* fboHdr_;
   int tempBufferSize_; // divides render size
   float setTempBufferSize_; // slider controlled; sets tempBufferSize_
   opengl::cTextureFrameBufferObject* fboTempA_;
   opengl::cTextureFrameBufferObject* fboTempB_;
   opengl::cTextureFrameBufferObject* fboTempC_;
-
-  //	auto exposure:
-  opengl::cTextureFrameBufferObject* fboLuma_;
-  opengl::cTextureFrameBufferObject* fboAdaptLuma_[2];
-  opengl::cShader* shaderLuminance_;
-  opengl::cShader* shaderAvgMinMax_;
-  opengl::cShader* shaderLuminanceAdapt_;
-  int currentAdaptLuma_; // swap between fboAdaptLuma_ per frame
-  float adaptionRate_;
 };
 
 #endif // LENSFLAREDIRT_H

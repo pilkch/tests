@@ -269,7 +269,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
     // read downscaled LuminanceBuffer texture data -----------------------------------------------------------------------
     {
       const opengl::cTextureFrameBufferObject& downScaledLumincanceBuffer = *MinificationBuffer[i - 1].pTexture;
-      const GLenum textureType = downScaledLumincanceBuffer.IsRectangle() ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D;
+      const GLenum textureType = downScaledLumincanceBuffer.GetTextureType();
       glBindTexture(textureType, downScaledLumincanceBuffer.GetTexture());
       glGetTexImage(textureType, 0, GL_RGBA, GL_FLOAT, data);
       glBindTexture(textureType, 0);
