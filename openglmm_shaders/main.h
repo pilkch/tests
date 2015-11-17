@@ -121,12 +121,14 @@ private:
 #ifdef BUILD_LARGE_STATUE_MODEL
   void CreateStatueVBO();
 #endif
+  void CreateScreenRectVariableTextureSizeVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateGuiRectangle(opengl::cStaticVertexBufferObject& staticVertexBufferObject, size_t nTextureWidth, size_t nTextureHeight);
 
   void RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader);
   void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader);
+  void RenderDebugScreenRectangleVariableSize(float x, float y, opengl::cTexture& texture);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
@@ -220,6 +222,9 @@ private:
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderLambert;
   opengl::cShader* pShaderPassThrough;
+  opengl::cShader* pShaderScreen1D;
+  opengl::cShader* pShaderScreen2D;
+  opengl::cShader* pShaderScreenRectVariableTextureSize;
   opengl::cShader* pShaderScreenRect;
   opengl::cShader* pShaderScreenRectDepthShadow;
   opengl::cShader* pShaderScreenRectColourAndDepth;
@@ -232,6 +237,8 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectScreen;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectHalfScreen;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectTeapot;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectScreen2DTeapot;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectDebugVariableTextureSize;
 
 
   opengl::cShader* pShaderCrate;
