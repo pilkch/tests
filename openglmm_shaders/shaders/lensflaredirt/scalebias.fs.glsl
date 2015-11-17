@@ -7,18 +7,18 @@
 	See "license.txt" or "http://copyfree.org/licenses/mit/license.txt".
 *******************************************************************************/
 
-uniform sampler2D texUnit0;
+uniform sampler2DRect texUnit0;
 
 #define uInputTex texUnit0
 
-uniform vec4 uScale = vec4(1.0);
-uniform vec4 uBias = vec4(0.0);
+uniform vec4 uScale;
+uniform vec4 uBias;
 
-noperspective in vec2 vTexcoord;
+smooth in vec2 vertOutTexCoord;
 
-layout(location=0) out vec4 fResult;
+out vec4 outFragmentColour;
 
-/*----------------------------------------------------------------------------*/
-void main() {
-	fResult = max(vec4(0.0), texture(uInputTex, vTexcoord) + uBias) * uScale;
+void main()
+{
+  outFragmentColour = max(vec4(0.0), texture(uInputTex, vertOutTexCoord) + uBias) * uScale;
 }

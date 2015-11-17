@@ -1821,9 +1821,9 @@ void cApplication::Run()
   hdr.Init(*pContext);
   hdr.Resize(*this, *pContext);
 
-  lensFlareDirt.Init(*pContext);
+  lensFlareDirt.Init(*this, *pContext);
   lensFlareDirt.Resize(*pContext);
-  
+
   shadowMapping.Init(*pContext);
 
   // Print the input instructions

@@ -58,12 +58,20 @@ class cLensFlareDirt
 public:
   cLensFlareDirt();
 
-  void Init(opengl::cContext& context);
+  void Init(cApplication& application, opengl::cContext& context);
   void Destroy(opengl::cContext& context);
 
   void Resize(opengl::cContext& context);
 
   void Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut);
+
+  opengl::cTexture& GetTextureLensColor() { return *texLensColor_; }
+  opengl::cTexture& GetTextureLensDirt() { return *texLensDirt_; }
+  opengl::cTexture& GetTextureLensStar() { return *texLensStar_; }
+
+  opengl::cTextureFrameBufferObject& GetTempA() { return *fboTempA_; }
+  opengl::cTextureFrameBufferObject& GetTempB() { return *fboTempB_; }
+  opengl::cTextureFrameBufferObject& GetTempC() { return *fboTempC_; }
 
 private:
   /*	Apply a Gaussian blur to the 0th color attachment of input fbo. The result
@@ -77,27 +85,29 @@ private:
     int radius // blur kernel radius in texels
     );
 
-  void CreateTempBuffers(opengl::cContext& context);
+  void CreateTempBuffers(cApplication& application, opengl::cContext& context);
   void DestroyTempBuffers(opengl::cContext& context);
 
   opengl::cShader* shaderPostProcess_;
   opengl::cShader* shaderGaussBlur_;
   opengl::cShader* shaderScaleBias_;
+  opengl::cStaticVertexBufferObject vboScaleBias;
 
-  //	lens flare:
+  // Lens flare
   opengl::cTexture* texLensColor_; // radial feature colour
   opengl::cTexture* texLensDirt_;
   opengl::cTexture* texLensStar_; // dirt/diffraction starburst
   opengl::cShader* shaderLensflare_; // feature generation
+  float flareScale_;
+  float flareBias_;
   float flareSamples_;
   float flareDispersal_;
   float flareHaloWidth_;
   float flareDistortion_;
-  float flareScale_;
-  float flareBias_;
   float flareBlurRadius_;
+  opengl::cStaticVertexBufferObject vboLensFlare;
 
-  //	render textures/framebuffers:
+  // Render textures/framebuffers
   int tempBufferSize_; // divides render size
   float setTempBufferSize_; // slider controlled; sets tempBufferSize_
   opengl::cTextureFrameBufferObject* fboTempA_;
