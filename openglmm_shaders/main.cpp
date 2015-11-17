@@ -1356,9 +1356,10 @@ void cApplication::RenderScreenRectangleDepthTexture(float x, float y, opengl::c
   spitfire::math::cMat4 matModelView2D;
   matModelView2D.SetTranslation(x, y, 0.0f);
 
-  pContext->BindTextureDepthBuffer(0, texture);
 
   pContext->BindShader(shader);
+
+  pContext->BindTextureDepthBuffer(0, texture);
 
   pContext->BindStaticVertexBufferObject2D(vbo);
 
@@ -1370,9 +1371,9 @@ void cApplication::RenderScreenRectangleDepthTexture(float x, float y, opengl::c
 
   pContext->UnBindStaticVertexBufferObject2D(vbo);
 
-  pContext->UnBindShader(shader);
-
   pContext->UnBindTextureDepthBuffer(0, texture);
+
+  pContext->UnBindShader(shader);
 }
 
 void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader)
@@ -1380,9 +1381,9 @@ void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertex
   spitfire::math::cMat4 matModelView2D;
   matModelView2D.SetTranslation(x, y, 0.0f);
 
-  pContext->BindTexture(0, texture);
-
   pContext->BindShader(shader);
+
+  pContext->BindTexture(0, texture);
 
   pContext->BindStaticVertexBufferObject2D(vbo);
 
@@ -1394,9 +1395,9 @@ void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertex
 
   pContext->UnBindStaticVertexBufferObject2D(vbo);
 
-  pContext->UnBindShader(shader);
-
   pContext->UnBindTexture(0, texture);
+
+  pContext->UnBindShader(shader);
 }
 
 void cApplication::RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader)
@@ -1898,7 +1899,7 @@ void cApplication::Run()
   const spitfire::math::cVec3 positionFire(-12.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationFire;
   matTranslationFire.SetTranslation(positionFire);
-  
+
   // Parallax normal mapping
   const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationParallaxNormalMap;
@@ -2232,9 +2233,9 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
-      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
-
       pContext->BindShader(*pShaderCubeMap);
+
+      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
@@ -2246,9 +2247,9 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-      pContext->UnBindShader(*pShaderCubeMap);
-
       pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+
+      pContext->UnBindShader(*pShaderCubeMap);
 
       if (bIsWireframe) pContext->DisableWireframe();
 
@@ -2301,10 +2302,10 @@ void cApplication::Run()
       if (bIsWireframe) pContext->EnableWireframe();
 
 
+      pContext->BindShader(*pShaderCubeMap);
+
       // Render the cube mapped teapot
       pContext->BindTextureCubeMap(0, *pTextureCubeMap);
-
-      pContext->BindShader(*pShaderCubeMap);
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
@@ -2316,17 +2317,17 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-      pContext->UnBindShader(*pShaderCubeMap);
-
       pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+
+      pContext->UnBindShader(*pShaderCubeMap);
 
 
       {
+        pContext->BindShader(*pShaderCarPaint);
+
         // Render the car paint teapot
         pContext->BindTexture(0, *pTextureDiffuse);
         pContext->BindTextureCubeMap(1, *pTextureCubeMap);
-
-        pContext->BindShader(*pShaderCarPaint);
 
         // Set our constants
         const spitfire::math::cMat4 matModelView = matView * matTranslationCarPaintTeapot;
@@ -2351,19 +2352,19 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-        pContext->UnBindShader(*pShaderCarPaint);
-
         pContext->UnBindTextureCubeMap(1, *pTextureCubeMap);
         pContext->UnBindTexture(0, *pTextureDiffuse);
+
+        pContext->UnBindShader(*pShaderCarPaint);
       }
 
       {
+        pContext->BindShader(*pShaderGlass);
+
         // Render the glass teapot
         pContext->BindTexture(0, *pTextureMetalDiffuse);
         pContext->BindTexture(1, *pTextureMetalSpecular);
         pContext->BindTextureCubeMap(2, *pTextureCubeMap);
-
-        pContext->BindShader(*pShaderGlass);
 
         // Set our constants
         pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
@@ -2388,11 +2389,11 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-        pContext->UnBindShader(*pShaderGlass);
-
         pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
         pContext->UnBindTexture(1, *pTextureMetalSpecular);
         pContext->UnBindTexture(0, *pTextureMetalDiffuse);
+
+        pContext->UnBindShader(*pShaderGlass);
       }
 
       {
@@ -2460,9 +2461,9 @@ void cApplication::Run()
 #ifdef BUILD_LARGE_STATUE_MODEL
       // Render the statues
       {
-        pContext->BindTexture(0, *pTextureMarble);
-
         pContext->BindShader(*pShaderLights);
+
+        pContext->BindTexture(0, *pTextureMarble);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectStatue);
 
@@ -2474,21 +2475,21 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectStatue);
 
-        pContext->UnBindShader(*pShaderLights);
-
         pContext->UnBindTexture(0, *pTextureMarble);
+
+        pContext->UnBindShader(*pShaderLights);
       }
 #endif
 
 
       // Render the parallax normal map cube
       {
+        pContext->BindShader(*parallaxNormalMap.pShader);
+
         pContext->BindTexture(0, *pTextureNormalMapDiffuse);
         pContext->BindTexture(1, *pTextureNormalMapSpecular);
         pContext->BindTexture(2, *pTextureNormalMapNormal);
         pContext->BindTexture(3, *pTextureNormalMapHeight);
-
-        pContext->BindShader(*parallaxNormalMap.pShader);
 
         // Set up the shader uniforms
         pContext->SetShaderConstant("directionalLight.direction", (parallaxNormalMapPosition - lightDirectionalPosition).GetNormalised());
@@ -2501,12 +2502,12 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(parallaxNormalMap.vbo);
 
-        pContext->UnBindShader(*parallaxNormalMap.pShader);
-
         pContext->UnBindTexture(3, *pTextureNormalMapHeight);
         pContext->UnBindTexture(2, *pTextureNormalMapNormal);
         pContext->UnBindTexture(1, *pTextureNormalMapSpecular);
         pContext->UnBindTexture(0, *pTextureNormalMapDiffuse);
+
+        pContext->UnBindShader(*parallaxNormalMap.pShader);
       }
 
 
@@ -2554,11 +2555,11 @@ void cApplication::Run()
       // Render the metal objects
 
       {
+        pContext->BindShader(*pShaderMetal);
+
         pContext->BindTexture(0, *pTextureMetalDiffuse);
         pContext->BindTexture(1, *pTextureMetalSpecular);
         pContext->BindTextureCubeMap(2, *pTextureCubeMap);
-
-        pContext->BindShader(*pShaderMetal);
 
         // Set our constants
         pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
@@ -2598,11 +2599,11 @@ void cApplication::Run()
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
         }
 
-        pContext->UnBindShader(*pShaderMetal);
-
         pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
         pContext->UnBindTexture(1, *pTextureMetalSpecular);
         pContext->UnBindTexture(0, *pTextureMetalDiffuse);
+
+        pContext->UnBindShader(*pShaderMetal);
       }
 
 
@@ -2610,10 +2611,10 @@ void cApplication::Run()
 
       // Render shadow mapped objects
       {
+        pContext->BindShader(shadowMapping.GetShadowMapShader());
+
         pContext->BindTexture(0, *pTextureFelt);
         pContext->BindTextureDepthBuffer(1, shadowMapping.GetShadowMapTexture());
-
-        pContext->BindShader(shadowMapping.GetShadowMapShader());
 
         //pContext->SetShaderConstant("LightPosition_worldspace", lightPointPosition);
 
@@ -2652,19 +2653,19 @@ void cApplication::Run()
           }
         }
 
-        pContext->UnBindShader(shadowMapping.GetShadowMapShader());
-
         pContext->UnBindTextureDepthBuffer(1, shadowMapping.GetShadowMapTexture());
         pContext->UnBindTexture(0, *pTextureFelt);
+
+        pContext->UnBindShader(shadowMapping.GetShadowMapShader());
       }
 
 
       // Render the textured objects
+      pContext->BindShader(*pShaderCrate);
+
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureLightMap);
       pContext->BindTexture(2, *pTextureDetail);
-
-      pContext->BindShader(*pShaderCrate);
 
       {
         {
@@ -2703,18 +2704,18 @@ void cApplication::Run()
         }
       }
 
-      pContext->UnBindShader(*pShaderCrate);
-
       pContext->UnBindTexture(2, *pTextureDetail);
       pContext->UnBindTexture(1, *pTextureLightMap);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
+      pContext->UnBindShader(*pShaderCrate);
+
 
       // Render the foggy objects
+      pContext->BindShader(*pShaderFog);
+
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureDetail);
-
-      pContext->BindShader(*pShaderFog);
 
       {
         {
@@ -2753,16 +2754,16 @@ void cApplication::Run()
         }
       }
 
-      pContext->UnBindShader(*pShaderFog);
-
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
+      pContext->UnBindShader(*pShaderFog);
+
 
       // Render the cube mapped objects
-      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
-
       pContext->BindShader(*pShaderCubeMap);
+
+      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
 
       {
         {
@@ -2805,9 +2806,9 @@ void cApplication::Run()
         }
       }
 
-      pContext->UnBindShader(*pShaderCubeMap);
-
       pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+
+      pContext->UnBindShader(*pShaderCubeMap);
 
 
 
@@ -2872,11 +2873,11 @@ void cApplication::Run()
 
       // Render an extra textured teapot under the smoke
       {
+        pContext->BindShader(*pShaderCrate);
+
         pContext->BindTexture(0, *pTextureDiffuse);
         pContext->BindTexture(1, *pTextureLightMap);
         pContext->BindTexture(2, *pTextureDetail);
-
-        pContext->BindShader(*pShaderCrate);
 
         {
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot3);
@@ -2885,22 +2886,22 @@ void cApplication::Run()
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot3);
         }
 
-        pContext->UnBindShader(*pShaderCrate);
-
         pContext->UnBindTexture(2, *pTextureDetail);
         pContext->UnBindTexture(1, *pTextureLightMap);
         pContext->UnBindTexture(0, *pTextureDiffuse);
+
+        pContext->UnBindShader(*pShaderCrate);
       }
 
       // Render the test images
       {
         const size_t n = testImages.size();
         for (size_t i = 0; i < n; i++) {
+          pContext->BindShader(*pShaderPassThrough);
+
           cTextureVBOPair* pPair = testImages[i];
 
           pContext->BindTexture(0, *(pPair->pTexture));
-
-          pContext->BindShader(*pShaderPassThrough);
 
           pContext->BindStaticVertexBufferObject(pPair->vbo);
 
@@ -2910,9 +2911,9 @@ void cApplication::Run()
 
           pContext->UnBindStaticVertexBufferObject(pPair->vbo);
 
-          pContext->UnBindShader(*pShaderPassThrough);
-
           pContext->UnBindTexture(0, *(pPair->pTexture));
+
+          pContext->UnBindShader(*pShaderPassThrough);
         }
       }
 
@@ -2923,11 +2924,11 @@ void cApplication::Run()
 
         const size_t n = testImages.size();
         for (size_t i = 0; i < n; i++) {
+          pContext->BindShader(*pShaderPassThrough);
+
           cTextureVBOPair* pPair = testImages[i];
 
           pContext->BindTexture(0, *(pPair->pTexture));
-
-          pContext->BindShader(*pShaderPassThrough);
 
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectGuiRectangle);
 
@@ -2941,10 +2942,9 @@ void cApplication::Run()
 
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectGuiRectangle);
 
+          pContext->UnBindTexture(0, *(pPair->pTexture));
 
           pContext->UnBindShader(*pShaderPassThrough);
-
-          pContext->UnBindTexture(0, *(pPair->pTexture));
         }
 
         pContext->EnableDepthTesting();
@@ -3092,10 +3092,10 @@ void cApplication::Run()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+        pContext->BindShader(*pShaderSmoke);
+
         pContext->BindTexture(0, *smoke.pTexture);
         pContext->BindTextureDepthBuffer(1, *pFrameBufferLastRendered);
-
-        pContext->BindShader(*pShaderSmoke);
 
         // We split up the object rotation from the normal model matrix so that we can apply it to each particle in the VBO, otherwise we would accidentally rotate each particle into an unknown rotation and billboarding wouldn't work
         pContext->SetShaderConstant("matObjectRotation", matObjectRotation);
@@ -3119,10 +3119,10 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(smoke.vbo);
 
-        pContext->UnBindShader(*pShaderSmoke);
-
         pContext->UnBindTextureDepthBuffer(1, *pFrameBufferLastRendered);
         pContext->UnBindTexture(0, *smoke.pTexture);
+
+        pContext->UnBindShader(*pShaderSmoke);
 
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
@@ -3134,10 +3134,10 @@ void cApplication::Run()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
+        pContext->BindShader(*pShaderFire);
+
         pContext->BindTexture(0, *fire.pTexture);
         pContext->BindTextureDepthBuffer(1, *pFrameBufferLastRendered);
-
-        pContext->BindShader(*pShaderFire);
 
         // We split up the object rotation from the normal model matrix so that we can apply it to each particle in the VBO, otherwise we would accidentally rotate each particle into an unknown rotation and billboarding wouldn't work
         pContext->SetShaderConstant("matObjectRotation", matObjectRotation);
@@ -3152,10 +3152,10 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(fire.vbo);
 
-        pContext->UnBindShader(*pShaderFire);
-
         pContext->UnBindTextureDepthBuffer(1, *pFrameBufferLastRendered);
         pContext->UnBindTexture(0, *fire.pTexture);
+
+        pContext->UnBindShader(*pShaderFire);
 
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);

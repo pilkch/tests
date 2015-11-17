@@ -392,11 +392,11 @@ void cHDR::RenderToneMapping(cApplication& application, spitfire::durationms_t c
   // Render HDR texture (After the application has applied further processing) to LDR texture with tone mapping shader applied
 
   context.BeginRenderToTexture(output);
-  context.BindTexture(0, input);
   context.BindShader(*ToneMapping);
+  context.BindTexture(0, input);
   context.SetShaderConstant("fMaxRGBValue", fMaxRGBValue);
   application.RenderScreenRectangleShaderAndTextureAlreadySet();
-  context.UnBindShader(*ToneMapping);
   context.UnBindTexture(0, input);
+  context.UnBindShader(*ToneMapping);
   context.EndRenderToTexture(output);
 }
