@@ -11,8 +11,8 @@ uniform sampler2DRect texUnit0;
 
 #define uInputTex texUnit0
 
-uniform vec4 uScale;
-uniform vec4 uBias;
+uniform vec3 uScale;
+uniform vec3 uBias;
 
 smooth in vec2 vertOutTexCoord;
 
@@ -20,5 +20,5 @@ out vec4 outFragmentColour;
 
 void main()
 {
-  outFragmentColour = max(vec4(0.0), texture(uInputTex, vertOutTexCoord) + uBias) * uScale;
+  outFragmentColour = max(vec4(0.0), texture(uInputTex, vertOutTexCoord) + vec4(uBias, 1.0)) * vec4(uScale, 1.0);
 }

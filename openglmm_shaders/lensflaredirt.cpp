@@ -50,15 +50,15 @@
 // ** cLensFlareDirt
 
 cLensFlareDirt::cLensFlareDirt() :
-  flareScale_(0.05f),
-  flareBias_(-3.5f),
-  flareSamples_(8.0f),
+  flareScale_(1.0f),
+  flareBias_(-0.04f),
+  flareSamples_(14.0f),
   flareDispersal_(0.3f),
   flareHaloWidth_(0.6f),
-  flareDistortion_(1.5f),
+  flareDistortion_(10.5f),
   flareBlurRadius_(24.0f),
-  tempBufferSize_(4),
-  setTempBufferSize_(4.0f)
+  tempBufferSize_(12),
+  setTempBufferSize_(12.0f)
 {
 }
 
@@ -224,7 +224,7 @@ void cLensFlareDirt::gaussBlur(
   context.UnBindShader(*shaderGaussBlur_);
 }
 
-void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut)
+void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut, bool bDebugShowFlareOnly)
 {
   if ((int)setTempBufferSize_ != tempBufferSize_) {
     tempBufferSize_ = (int)setTempBufferSize_;
@@ -240,10 +240,8 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
   //	downsample/threshold:
   context.BeginRenderToTexture(*fboTempA_);
   context.BindShader(*shaderScaleBias_);
-  //context.SetShaderConstant("uScale", spitfire::math::cVec4(flareScale_));
-  //context.SetShaderConstant("uBias", spitfire::math::cVec4(flareBias_));
-  context.SetShaderConstant("uScale", spitfire::math::cVec4(1.0f));
-  context.SetShaderConstant("uBias", spitfire::math::cVec4(0.0f));
+  context.SetShaderConstant("uScale", spitfire::math::cVec3(flareScale_));
+  context.SetShaderConstant("uBias", spitfire::math::cVec3(flareBias_));
   context.BindTexture(0, fboIn);
   application.RenderScreenRectangleShaderAndTextureAlreadySet(vboScaleBias);
   context.UnBindTexture(0, fboIn);
@@ -278,32 +276,30 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
 
   //	transformation matrix for lens flare starburst:
   const spitfire::math::cMat4 matView = application.camera.CalculateViewMatrix();
-  const spitfire::math::cVec3 camx = matView.GetColumn(0).GetVec3();
-  const spitfire::math::cVec3 camz = matView.GetColumn(2).GetVec3();
-  float camrot = 4.0f * (spitfire::math::v3Back.DotProduct(camx) + spitfire::math::v3Up.DotProduct(camz));
+  const spitfire::math::cVec3 camx = matView.GetColumn(0).GetXYZ();
+  const spitfire::math::cVec3 camz = matView.GetColumn(1).GetXYZ();
+  float camrot = 2.0f * (camx.DotProduct(spitfire::math::cVec3(0, 0, 1)) + camz.DotProduct(spitfire::math::cVec3(0, 1, 0)));
 
-  const spitfire::math::cMat3 starRotationMatOriginal(
-    cosf(camrot) * 0.5f, -sinf(camrot), 0.0f,
-    sinf(camrot), cosf(camrot) * 0.5f, 0.0f,
-    0.0f, 0.0f, 1.0f
-  );
-  const spitfire::math::cMat3 sb1(
-    2.0f, 0.0f, -1.0f,
-    0.0f, 2.0f, -1.0f,
-    0.0f, 0.0f, 1.0f
-  );
-  const spitfire::math::cMat3 sb2(
-    0.5f, 0.0f, 0.5f,
-    0.0f, 0.5f, 0.5f,
-    0.0f, 0.0f, 1.0f
-  );
-  const spitfire::math::cMat3 starRotationMat = sb2 * starRotationMatOriginal * sb1;
+  spitfire::math::cMat4 matStarTranslation;
+  matStarTranslation.SetTranslation(0.5f, 0.5f, 0.0f);
+
+  spitfire::math::cMat4 matStarRotation;
+  matStarRotation.SetRotationZ(camrot);
+
+  const spitfire::math::cMat4 matStarTranslationRotation = matStarTranslation * matStarRotation;
+
+  spitfire::math::cMat4 matStarUndoTranslation;
+  matStarUndoTranslation.SetTranslation(-0.5f, -0.5f, 0.0f);
+
+  const spitfire::math::cMat4 matStar = matStarTranslationRotation * matStarUndoTranslation;
 
   context.BeginRenderToTexture(fboOut);
 
   context.BindShader(*shaderPostProcess_);
 
-  context.SetShaderConstant("matCameraLensStarBurst", starRotationMat);
+  context.SetShaderConstant("matCameraLensStarBurst", matStar);
+  context.SetShaderConstant("fSceneMix0To1", bDebugShowFlareOnly ? 0.0f : 1.0f);
+  context.SetShaderConstant("fFlareMix0To1", 2.0f);
 
   context.BindTexture(0, fboIn);
   context.BindTexture(1, *fboTempC_);

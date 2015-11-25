@@ -89,6 +89,7 @@ cApplication::cApplication() :
 
   bIsHDR(false),
   bIsLensFlareDirt(true),
+  bDebugShowFlareOnly(false),
   bIsSplitScreenSimplePostEffectShaders(true),
 
   bIsDone(false),
@@ -187,6 +188,7 @@ void cApplication::CreateText()
   lines.push_back(TEXT(""));
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Lens Flare and Dirt: ")) + (bIsLensFlareDirt ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Debug show lens flare and dirt only: ")) + (bDebugShowFlareOnly ? TEXT("On") : TEXT("Off")));
 
   // Post render shaders
   if (GetActiveSimplePostRenderShadersCount() == 0) {
@@ -1690,6 +1692,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_8: {
+        bDebugShowFlareOnly = !bDebugShowFlareOnly;
+        break;
+      }
+      case SDLK_9: {
         bIsSplitScreenSimplePostEffectShaders = !bIsSplitScreenSimplePostEffectShaders;
         break;
       }
@@ -3272,7 +3278,7 @@ void cApplication::Run()
 
     // Apply lens flare with dirt specks
     if (bIsLensFlareDirt) {
-      lensFlareDirt.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]));
+      lensFlareDirt.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]), bDebugShowFlareOnly);
       std::swap(outputFBO, inputFBO);
     }
 

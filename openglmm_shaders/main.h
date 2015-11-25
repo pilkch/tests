@@ -173,6 +173,7 @@ private:
 
   bool bIsHDR;
   bool bIsLensFlareDirt;
+  bool bDebugShowFlareOnly;
   bool bIsSplitScreenSimplePostEffectShaders; // Tells us whether to split the screen down the middle when a simple post effect shader is active
 
   bool bIsDone;
