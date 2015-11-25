@@ -57,7 +57,6 @@
 
 cHDR::cHDR() :
   LuminanceBuffer(nullptr),
-  LDRColorBuffer(nullptr),
   BrightPixelsBuffer(nullptr),
 
   pShaderPassThrough(nullptr),
@@ -68,7 +67,9 @@ cHDR::cHDR() :
   BlurH(nullptr),
   BlurV(nullptr),
 
-  data(nullptr)
+  data(nullptr),
+
+  fMaxRGBValue(1.0f)
 {
 }
 
@@ -104,7 +105,6 @@ void cHDR::Destroy(opengl::cContext& context)
     if (MinificationBuffer[i].pTexture != nullptr) context.DestroyTextureFrameBufferObject(MinificationBuffer[i].pTexture);
     if (MinificationBuffer[i].vbo.IsCompiled()) context.DestroyStaticVertexBufferObject(MinificationBuffer[i].vbo);
   }
-  context.DestroyTextureFrameBufferObject(LDRColorBuffer);
   context.DestroyTextureFrameBufferObject(BrightPixelsBuffer);
   for (size_t i = 0; i < 12; i++) {
     if (BloomBuffer[i].pTexture != nullptr) context.DestroyTextureFrameBufferObject(BloomBuffer[i].pTexture);
@@ -138,7 +138,6 @@ void cHDR::Resize(cApplication& application, opengl::cContext& context)
     i++;
   } while (x > 32 || y > 32);
 
-  LDRColorBuffer = context.CreateTextureFrameBufferObject(Width, Height, opengl::PIXELFORMAT::R8G8B8A8); // RGBA8
   BrightPixelsBuffer = context.CreateTextureFrameBufferObject(Width, Height, opengl::PIXELFORMAT::R8G8B8A8); // RGBA8
 
   for (int i = 0; i < 4; i++) {
@@ -200,7 +199,7 @@ void cHDR::Resize(cApplication& application, opengl::cContext& context)
   }
 }
 
-void cHDR::Render(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output)
+void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output)
 {
   const size_t Width = context.GetWidth();
   const size_t Height = context.GetHeight();
@@ -211,7 +210,7 @@ void cHDR::Render(cApplication& application, spitfire::durationms_t currentTime,
 
   // get the maximal value of the RGB components of the HDR image -----------------------------------------------------------
 
-  static float MaxRGBValue = 1.0f, maxrgbvalue = 1.0f, mrgbvi, oldmaxrgbvalue = maxrgbvalue;
+  static float maxrgbvalue = 1.0f, mrgbvi, oldmaxrgbvalue = maxrgbvalue;
   static DWORD LastTime = 0;
   static DWORD LastAdjustmentTime = 0;
 
@@ -270,7 +269,7 @@ void cHDR::Render(cApplication& application, spitfire::durationms_t currentTime,
     // read downscaled LuminanceBuffer texture data -----------------------------------------------------------------------
     {
       const opengl::cTextureFrameBufferObject& downScaledLumincanceBuffer = *MinificationBuffer[i - 1].pTexture;
-      const GLenum textureType = downScaledLumincanceBuffer.IsRectangle() ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D;
+      const GLenum textureType = downScaledLumincanceBuffer.GetTextureType();
       glBindTexture(textureType, downScaledLumincanceBuffer.GetTexture());
       glGetTexImage(textureType, 0, GL_RGBA, GL_FLOAT, data);
       glBindTexture(textureType, 0);
@@ -284,46 +283,35 @@ void cHDR::Render(cApplication& application, spitfire::durationms_t currentTime,
 
     if (maxrgbvalue < 1.0) maxrgbvalue = 1.0;
 
-    if (maxrgbvalue != oldmaxrgbvalue) mrgbvi = abs(maxrgbvalue - MaxRGBValue);
+    if (maxrgbvalue != oldmaxrgbvalue) mrgbvi = abs(maxrgbvalue - fMaxRGBValue);
 
     oldmaxrgbvalue = maxrgbvalue;
   }
 
-  const float fLastMaxRGBValue = MaxRGBValue;
+  const float fLastMaxRGBValue = fMaxRGBValue;
 
-  if (MaxRGBValue < maxrgbvalue) {
-    MaxRGBValue += mrgbvi * FrameTime;
-    if (MaxRGBValue > maxrgbvalue) MaxRGBValue = maxrgbvalue;
+  if (fMaxRGBValue < maxrgbvalue) {
+    fMaxRGBValue += mrgbvi * FrameTime;
+    if (fMaxRGBValue > maxrgbvalue) fMaxRGBValue = maxrgbvalue;
   }
-  if (MaxRGBValue > maxrgbvalue) {
-    MaxRGBValue -= mrgbvi * FrameTime;
-    if (MaxRGBValue < maxrgbvalue) MaxRGBValue = maxrgbvalue;
+  if (fMaxRGBValue > maxrgbvalue) {
+    fMaxRGBValue -= mrgbvi * FrameTime;
+    if (fMaxRGBValue < maxrgbvalue) fMaxRGBValue = maxrgbvalue;
   }
 
   if (Time - LastAdjustmentTime > 100) { // 10 times per second only ----------------------------------------------------------------------
     LastAdjustmentTime = Time;
 
     // Gently adjust the max RGB value until it matches our desired max RGB value
-    MaxRGBValue = fLastMaxRGBValue + (0.1f * (maxrgbvalue - fLastMaxRGBValue));
+    fMaxRGBValue = fLastMaxRGBValue + (0.1f * (maxrgbvalue - fLastMaxRGBValue));
   }
 
-  //LOG("MaxRGBValue = ", MaxRGBValue);
-
-  // render HDRColorBuffer texture to LDRColorBuffer texture with tone mapping shader applied -------------------------------
-
-  context.BeginRenderToTexture(*LDRColorBuffer);
-  context.BindTexture(0, HDRColorBuffer);
-  context.BindShader(*ToneMapping);
-  context.SetShaderConstant("MaxRGBValue", MaxRGBValue);
-  application.RenderScreenRectangleShaderAndTextureAlreadySet();
-  context.UnBindShader(*ToneMapping);
-  context.UnBindTexture(0, HDRColorBuffer);
-  context.EndRenderToTexture(*LDRColorBuffer);
+  //LOG("fMaxRGBValue = ", fMaxRGBValue);
 
   // render BrightPixelsBuffer texture --------------------------------------------------------------------------------------
 
   context.BeginRenderToTexture(*BrightPixelsBuffer);
-  application.RenderScreenRectangle(*LDRColorBuffer, *BrightPixels);
+  application.RenderScreenRectangle(HDRColorBuffer, *BrightPixels);
   context.EndRenderToTexture(*BrightPixelsBuffer);
 
   // downscale and blur BrightPixelsBuffer texture 4x -----------------------------------------------------------------------
@@ -369,9 +357,9 @@ void cHDR::Render(cApplication& application, spitfire::durationms_t currentTime,
     context.EndRenderToTexture(*BloomBuffer[index + 2].pTexture);
   }
 
-  // Render the LDRColorBuffer texture to a texture ----------------------------------------------------------------------------------------
+  // Combine the HDRColorBuffer texture and bright pixels buffers into a single texture
   {
-    // Render the LDRColorBuffer to our framebuffer
+    // Render the HDRColorBuffer to our framebuffer
     const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
     context.SetClearColour(clearColour);
 
@@ -381,9 +369,9 @@ void cHDR::Render(cApplication& application, spitfire::durationms_t currentTime,
     // Now draw an overlay of our rendered textures
     context.BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
-    application.RenderScreenRectangle(*LDRColorBuffer, *pShaderPassThrough);
+    application.RenderScreenRectangle(HDRColorBuffer, *pShaderPassThrough);
 
-    // blend 4 downscaled and blurred BrightPixelsBuffer textures over the screen ---------------------------------------------
+    // blend 4 downscaled and blurred BloomBuffer textures over the screen ---------------------------------------------
 
     for (int i = 0; i < 4; i++) {
       glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
@@ -397,4 +385,18 @@ void cHDR::Render(cApplication& application, spitfire::durationms_t currentTime,
 
     context.EndRenderToTexture(frameBuffer);
   }
+}
+
+void cHDR::RenderToneMapping(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output)
+{
+  // Render HDR texture (After the application has applied further processing) to LDR texture with tone mapping shader applied
+
+  context.BeginRenderToTexture(output);
+  context.BindShader(*ToneMapping);
+  context.BindTexture(0, input);
+  context.SetShaderConstant("fMaxRGBValue", fMaxRGBValue);
+  application.RenderScreenRectangleShaderAndTextureAlreadySet();
+  context.UnBindTexture(0, input);
+  context.UnBindShader(*ToneMapping);
+  context.EndRenderToTexture(output);
 }

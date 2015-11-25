@@ -53,8 +53,6 @@
 
 // Application headers
 #include "main.h"
-#include "hdr.h"
-#include "shadowmapping.h"
 
 // ** cApplication
 
@@ -90,6 +88,8 @@ cApplication::cApplication() :
   bIsDOFBokeh(true),
 
   bIsHDR(false),
+  bIsLensFlareDirt(true),
+  bDebugShowFlareOnly(false),
   bIsSplitScreenSimplePostEffectShaders(true),
 
   bIsDone(false),
@@ -129,6 +129,9 @@ cApplication::cApplication() :
   pShaderLambert(nullptr),
   pShaderLights(nullptr),
   pShaderPassThrough(nullptr),
+  pShaderScreen1D(nullptr),
+  pShaderScreen2D(nullptr),
+  pShaderScreenRectVariableTextureSize(nullptr),
   pShaderScreenRect(nullptr),
   pShaderScreenRectDepthShadow(nullptr),
   pShaderScreenRectColourAndDepth(nullptr),
@@ -182,8 +185,10 @@ void cApplication::CreateText()
   lines.push_back(spitfire::string_t(TEXT("Focal length:") + spitfire::string::ToString(dofBokeh.GetFocalLengthmm()) + TEXT("mm")));
   lines.push_back(spitfire::string_t(TEXT("f stops:") + spitfire::string::ToString(dofBokeh.GetFStop())));
 
-  lines.push_back(TEXT("")); 
+  lines.push_back(TEXT(""));
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Lens Flare and Dirt: ")) + (bIsLensFlareDirt ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Debug show lens flare and dirt only: ")) + (bDebugShowFlareOnly ? TEXT("On") : TEXT("Off")));
 
   // Post render shaders
   if (GetActiveSimplePostRenderShadersCount() == 0) {
@@ -616,6 +621,14 @@ void cApplication::CreateStatueVBO()
 }
 #endif
 
+void cApplication::CreateScreenRectVariableTextureSizeVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight)
+{
+  const float fTextureWidth = 1.0f;
+  const float fTextureHeight = 1.0f;
+
+  CreateScreenRectVBO(staticVertexBufferObject, fWidth, fHeight, fTextureWidth, fTextureHeight);
+}
+
 void cApplication::CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight)
 {
   const float fTextureWidth = float(resolution.width);
@@ -927,6 +940,12 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectTeapot);
   CreateScreenRectVBO(staticVertexBufferObjectScreenRectTeapot, 0.25f, 0.25f);
 
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreen2DTeapot);
+  CreateScreenRectVBO(staticVertexBufferObjectScreen2DTeapot, 0.25f, 0.25f, 1.0f, 1.0f);
+
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+  CreateScreenRectVariableTextureSizeVBO(staticVertexBufferObjectScreenRectDebugVariableTextureSize, 0.25f, 0.25f);
+
   pContext->CreateStaticVertexBufferObject(light.vbo);
   CreateLightBillboard();
   light.pTexture = pContext->CreateTexture(TEXT("textures/light.png"));
@@ -1050,6 +1069,8 @@ void cApplication::Destroy()
 
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPlaneFloor);
 
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreen2DTeapot);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectTeapot);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectHalfScreen);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
@@ -1181,22 +1202,9 @@ void cApplication::Destroy()
 
   DestroyShaders();
 
-  if (pShaderScreenRectColourAndDepth != nullptr) {
-    pContext->DestroyShader(pShaderScreenRectColourAndDepth);
-    pShaderScreenRectColourAndDepth = nullptr;
-  }
-  if (pShaderScreenRectDepthShadow != nullptr) {
-    pContext->DestroyShader(pShaderScreenRectDepthShadow);
-    pShaderScreenRectDepthShadow = nullptr;
-  }
-
-  if (pShaderScreenRectSimplePostRender != nullptr) {
-    pContext->DestroyShader(pShaderScreenRectSimplePostRender);
-    pShaderScreenRectSimplePostRender = nullptr;
-  }
-
   shadowMapping.Destroy(*pContext);
   hdr.Destroy(*pContext);
+  lensFlareDirt.Destroy(*pContext);
   dofBokeh.Destroy(*pContext);
 
   pContext = nullptr;
@@ -1247,6 +1255,16 @@ void cApplication::CreateShaders()
   pShaderPassThrough = pContext->CreateShader(TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(pShaderPassThrough != nullptr);
 
+  pShaderScreen1D = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough1d.frag"));
+  assert(pShaderScreen1D != nullptr);
+
+  // TODO: Rename passthrough2d.frag and then rename passthrough2dnonrect.frag
+  pShaderScreen2D = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2dnonrect.frag"));
+  assert(pShaderScreen2D != nullptr);
+
+  pShaderScreenRectVariableTextureSize = pContext->CreateShader(TEXT("shaders/debugpassthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
+  assert(pShaderScreenRectVariableTextureSize != nullptr);
+
   pShaderScreenRect = pContext->CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(pShaderScreenRect != nullptr);
 
@@ -1268,6 +1286,10 @@ void cApplication::CreateShaders()
 
 void cApplication::DestroyShaders()
 {
+  if (pShaderScreenRectSimplePostRender != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectSimplePostRender);
+    pShaderScreenRectSimplePostRender = nullptr;
+  }
   if (pShaderScreenRectDepthShadow != nullptr) {
     pContext->DestroyShader(pShaderScreenRectDepthShadow);
     pShaderScreenRectDepthShadow = nullptr;
@@ -1279,6 +1301,18 @@ void cApplication::DestroyShaders()
   if (pShaderScreenRect != nullptr) {
     pContext->DestroyShader(pShaderScreenRect);
     pShaderScreenRect = nullptr;
+  }
+  if (pShaderScreenRectVariableTextureSize != nullptr) {
+    pContext->DestroyShader(pShaderScreenRectVariableTextureSize);
+    pShaderScreenRectVariableTextureSize = nullptr;
+  }
+  if (pShaderScreen2D != nullptr) {
+    pContext->DestroyShader(pShaderScreen2D);
+    pShaderScreen2D = nullptr;
+  }
+  if (pShaderScreen1D != nullptr) {
+    pContext->DestroyShader(pShaderScreen1D);
+    pShaderScreen1D = nullptr;
   }
   if (pShaderPassThrough != nullptr) {
     pContext->DestroyShader(pShaderPassThrough);
@@ -1350,14 +1384,40 @@ void cApplication::DestroyShaders()
   }
 }
 
+void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, opengl::cTexture& texture)
+{
+  spitfire::math::cMat4 matModelView2D;
+  matModelView2D.SetTranslation(x, y, 0.0f);
+
+  pContext->BindShader(*pShaderScreenRectVariableTextureSize);
+
+  pContext->SetShaderConstant("textureSize", spitfire::math::cVec2(texture.GetWidth(), texture.GetHeight()));
+
+  pContext->BindTexture(0, texture);
+
+  pContext->BindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+
+  {
+    pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
+
+    pContext->DrawStaticVertexBufferObjectTriangles2D(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+  }
+
+  pContext->UnBindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+
+  pContext->UnBindTexture(0, texture);
+
+  pContext->UnBindShader(*pShaderScreenRectVariableTextureSize);
+}
+
 void cApplication::RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader)
 {
   spitfire::math::cMat4 matModelView2D;
   matModelView2D.SetTranslation(x, y, 0.0f);
 
-  pContext->BindTextureDepthBuffer(0, texture);
-
   pContext->BindShader(shader);
+
+  pContext->BindTextureDepthBuffer(0, texture);
 
   pContext->BindStaticVertexBufferObject2D(vbo);
 
@@ -1369,9 +1429,9 @@ void cApplication::RenderScreenRectangleDepthTexture(float x, float y, opengl::c
 
   pContext->UnBindStaticVertexBufferObject2D(vbo);
 
-  pContext->UnBindShader(shader);
-
   pContext->UnBindTextureDepthBuffer(0, texture);
+
+  pContext->UnBindShader(shader);
 }
 
 void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader)
@@ -1379,9 +1439,9 @@ void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertex
   spitfire::math::cMat4 matModelView2D;
   matModelView2D.SetTranslation(x, y, 0.0f);
 
-  pContext->BindTexture(0, texture);
-
   pContext->BindShader(shader);
+
+  pContext->BindTexture(0, texture);
 
   pContext->BindStaticVertexBufferObject2D(vbo);
 
@@ -1393,9 +1453,9 @@ void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertex
 
   pContext->UnBindStaticVertexBufferObject2D(vbo);
 
-  pContext->UnBindShader(shader);
-
   pContext->UnBindTexture(0, texture);
+
+  pContext->UnBindShader(shader);
 }
 
 void cApplication::RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader)
@@ -1628,6 +1688,14 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_7: {
+        bIsLensFlareDirt = !bIsLensFlareDirt;
+        break;
+      }
+      case SDLK_8: {
+        bDebugShowFlareOnly = !bDebugShowFlareOnly;
+        break;
+      }
+      case SDLK_9: {
         bIsSplitScreenSimplePostEffectShaders = !bIsSplitScreenSimplePostEffectShaders;
         break;
       }
@@ -1684,6 +1752,34 @@ size_t cApplication::GetColourBlindModeDefineValue() const
   else if (colourBlindMode == COLOUR_BLIND_MODE::DEUTERANOPIA) return 1;
 
   return 2;
+}
+
+void SaveFBO(const opengl::cTextureFrameBufferObject& fbo, const spitfire::string_t& sFilePath)
+{
+  const size_t nCount = fbo.GetWidth() * fbo.GetHeight() * 4;
+  float* data = new float[nCount];
+  const GLenum textureType = fbo.GetTextureType();
+  glBindTexture(textureType, fbo.GetTexture());
+  glGetTexImage(textureType, 0, GL_RGBA, GL_FLOAT, data);
+  glBindTexture(textureType, 0);
+
+  uint8_t* dataBytes = new uint8_t[nCount];
+  for (size_t i = 0; i < nCount; i += 4) {
+    dataBytes[i] = uint8_t(255.0f * data[i]);
+    dataBytes[i + 1] = uint8_t(255.0f * data[i + 1]);
+    dataBytes[i + 2] = uint8_t(255.0f * data[i + 2]);
+    dataBytes[i + 3] = 255;
+  }
+
+  delete[] data;
+  data = nullptr;
+
+  voodoo::cImage image;
+  image.CreateFromBuffer(dataBytes, fbo.GetWidth(), fbo.GetHeight(), voodoo::PIXELFORMAT::R8G8B8A8);
+  delete[] dataBytes;
+  dataBytes = nullptr;
+
+  image.SaveToBMP(sFilePath);
 }
 
 void cApplication::Run()
@@ -1748,6 +1844,12 @@ void cApplication::Run()
   assert(parallaxNormalMap.pShader->IsCompiledProgram());
   assert(pShaderPassThrough != nullptr);
   assert(pShaderPassThrough->IsCompiledProgram());
+  assert(pShaderScreen1D != nullptr);
+  assert(pShaderScreen1D->IsCompiledProgram());
+  assert(pShaderScreen2D != nullptr);
+  assert(pShaderScreen2D->IsCompiledProgram());
+  assert(pShaderScreenRectVariableTextureSize != nullptr);
+  assert(pShaderScreenRectVariableTextureSize->IsCompiledProgram());
   assert(pShaderScreenRect != nullptr);
   assert(pShaderScreenRect->IsCompiledProgram());
   assert(pShaderScreenRectDepthShadow != nullptr);
@@ -1761,7 +1863,9 @@ void cApplication::Run()
   #endif
   assert(staticVertexBufferObjectScreenRectScreen.IsCompiled());
   assert(staticVertexBufferObjectScreenRectHalfScreen.IsCompiled());
+  assert(staticVertexBufferObjectScreenRectDebugVariableTextureSize.IsCompiled());
   assert(staticVertexBufferObjectScreenRectTeapot.IsCompiled());
+  assert(staticVertexBufferObjectScreen2DTeapot.IsCompiled());
 
 
   assert(pShaderCrate != nullptr);
@@ -1814,6 +1918,9 @@ void cApplication::Run()
 
   hdr.Init(*pContext);
   hdr.Resize(*this, *pContext);
+
+  lensFlareDirt.Init(*this, *pContext);
+  lensFlareDirt.Resize(*pContext);
 
   shadowMapping.Init(*pContext);
 
@@ -1890,7 +1997,7 @@ void cApplication::Run()
   const spitfire::math::cVec3 positionFire(-12.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationFire;
   matTranslationFire.SetTranslation(positionFire);
-  
+
   // Parallax normal mapping
   const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationParallaxNormalMap;
@@ -2224,9 +2331,9 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->EnableWireframe();
 
-      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
-
       pContext->BindShader(*pShaderCubeMap);
+
+      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
@@ -2238,9 +2345,9 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-      pContext->UnBindShader(*pShaderCubeMap);
-
       pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+
+      pContext->UnBindShader(*pShaderCubeMap);
 
       if (bIsWireframe) pContext->DisableWireframe();
 
@@ -2276,11 +2383,11 @@ void cApplication::Run()
       shadowMapping.EndRenderToShadowMap(*pContext);
     }
 
-    size_t currentFBO = 0;
-    size_t otherFBO = 1;
+    size_t outputFBO = 0;
+    size_t inputFBO = 1;
 
     {
-      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[currentFBO];
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[outputFBO];
 
       // Render the scene into a texture for later
       // Use Cornflower blue as the background colour
@@ -2293,10 +2400,10 @@ void cApplication::Run()
       if (bIsWireframe) pContext->EnableWireframe();
 
 
+      pContext->BindShader(*pShaderCubeMap);
+
       // Render the cube mapped teapot
       pContext->BindTextureCubeMap(0, *pTextureCubeMap);
-
-      pContext->BindShader(*pShaderCubeMap);
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
@@ -2308,17 +2415,17 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-      pContext->UnBindShader(*pShaderCubeMap);
-
       pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+
+      pContext->UnBindShader(*pShaderCubeMap);
 
 
       {
+        pContext->BindShader(*pShaderCarPaint);
+
         // Render the car paint teapot
         pContext->BindTexture(0, *pTextureDiffuse);
         pContext->BindTextureCubeMap(1, *pTextureCubeMap);
-
-        pContext->BindShader(*pShaderCarPaint);
 
         // Set our constants
         const spitfire::math::cMat4 matModelView = matView * matTranslationCarPaintTeapot;
@@ -2343,19 +2450,19 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-        pContext->UnBindShader(*pShaderCarPaint);
-
         pContext->UnBindTextureCubeMap(1, *pTextureCubeMap);
         pContext->UnBindTexture(0, *pTextureDiffuse);
+
+        pContext->UnBindShader(*pShaderCarPaint);
       }
 
       {
+        pContext->BindShader(*pShaderGlass);
+
         // Render the glass teapot
         pContext->BindTexture(0, *pTextureMetalDiffuse);
         pContext->BindTexture(1, *pTextureMetalSpecular);
         pContext->BindTextureCubeMap(2, *pTextureCubeMap);
-
-        pContext->BindShader(*pShaderGlass);
 
         // Set our constants
         pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
@@ -2380,11 +2487,11 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-        pContext->UnBindShader(*pShaderGlass);
-
         pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
         pContext->UnBindTexture(1, *pTextureMetalSpecular);
         pContext->UnBindTexture(0, *pTextureMetalDiffuse);
+
+        pContext->UnBindShader(*pShaderGlass);
       }
 
       {
@@ -2452,9 +2559,9 @@ void cApplication::Run()
 #ifdef BUILD_LARGE_STATUE_MODEL
       // Render the statues
       {
-        pContext->BindTexture(0, *pTextureMarble);
-
         pContext->BindShader(*pShaderLights);
+
+        pContext->BindTexture(0, *pTextureMarble);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectStatue);
 
@@ -2466,21 +2573,21 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectStatue);
 
-        pContext->UnBindShader(*pShaderLights);
-
         pContext->UnBindTexture(0, *pTextureMarble);
+
+        pContext->UnBindShader(*pShaderLights);
       }
 #endif
 
 
       // Render the parallax normal map cube
       {
+        pContext->BindShader(*parallaxNormalMap.pShader);
+
         pContext->BindTexture(0, *pTextureNormalMapDiffuse);
         pContext->BindTexture(1, *pTextureNormalMapSpecular);
         pContext->BindTexture(2, *pTextureNormalMapNormal);
         pContext->BindTexture(3, *pTextureNormalMapHeight);
-
-        pContext->BindShader(*parallaxNormalMap.pShader);
 
         // Set up the shader uniforms
         pContext->SetShaderConstant("directionalLight.direction", (parallaxNormalMapPosition - lightDirectionalPosition).GetNormalised());
@@ -2493,12 +2600,12 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(parallaxNormalMap.vbo);
 
-        pContext->UnBindShader(*parallaxNormalMap.pShader);
-
         pContext->UnBindTexture(3, *pTextureNormalMapHeight);
         pContext->UnBindTexture(2, *pTextureNormalMapNormal);
         pContext->UnBindTexture(1, *pTextureNormalMapSpecular);
         pContext->UnBindTexture(0, *pTextureNormalMapDiffuse);
+
+        pContext->UnBindShader(*parallaxNormalMap.pShader);
       }
 
 
@@ -2546,11 +2653,11 @@ void cApplication::Run()
       // Render the metal objects
 
       {
+        pContext->BindShader(*pShaderMetal);
+
         pContext->BindTexture(0, *pTextureMetalDiffuse);
         pContext->BindTexture(1, *pTextureMetalSpecular);
         pContext->BindTextureCubeMap(2, *pTextureCubeMap);
-
-        pContext->BindShader(*pShaderMetal);
 
         // Set our constants
         pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
@@ -2590,11 +2697,11 @@ void cApplication::Run()
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
         }
 
-        pContext->UnBindShader(*pShaderMetal);
-
         pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
         pContext->UnBindTexture(1, *pTextureMetalSpecular);
         pContext->UnBindTexture(0, *pTextureMetalDiffuse);
+
+        pContext->UnBindShader(*pShaderMetal);
       }
 
 
@@ -2602,10 +2709,10 @@ void cApplication::Run()
 
       // Render shadow mapped objects
       {
+        pContext->BindShader(shadowMapping.GetShadowMapShader());
+
         pContext->BindTexture(0, *pTextureFelt);
         pContext->BindTextureDepthBuffer(1, shadowMapping.GetShadowMapTexture());
-
-        pContext->BindShader(shadowMapping.GetShadowMapShader());
 
         //pContext->SetShaderConstant("LightPosition_worldspace", lightPointPosition);
 
@@ -2644,19 +2751,19 @@ void cApplication::Run()
           }
         }
 
-        pContext->UnBindShader(shadowMapping.GetShadowMapShader());
-
         pContext->UnBindTextureDepthBuffer(1, shadowMapping.GetShadowMapTexture());
         pContext->UnBindTexture(0, *pTextureFelt);
+
+        pContext->UnBindShader(shadowMapping.GetShadowMapShader());
       }
 
 
       // Render the textured objects
+      pContext->BindShader(*pShaderCrate);
+
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureLightMap);
       pContext->BindTexture(2, *pTextureDetail);
-
-      pContext->BindShader(*pShaderCrate);
 
       {
         {
@@ -2695,18 +2802,18 @@ void cApplication::Run()
         }
       }
 
-      pContext->UnBindShader(*pShaderCrate);
-
       pContext->UnBindTexture(2, *pTextureDetail);
       pContext->UnBindTexture(1, *pTextureLightMap);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
+      pContext->UnBindShader(*pShaderCrate);
+
 
       // Render the foggy objects
+      pContext->BindShader(*pShaderFog);
+
       pContext->BindTexture(0, *pTextureDiffuse);
       pContext->BindTexture(1, *pTextureDetail);
-
-      pContext->BindShader(*pShaderFog);
 
       {
         {
@@ -2745,16 +2852,16 @@ void cApplication::Run()
         }
       }
 
-      pContext->UnBindShader(*pShaderFog);
-
       pContext->UnBindTexture(1, *pTextureDetail);
       pContext->UnBindTexture(0, *pTextureDiffuse);
 
+      pContext->UnBindShader(*pShaderFog);
+
 
       // Render the cube mapped objects
-      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
-
       pContext->BindShader(*pShaderCubeMap);
+
+      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
 
       {
         {
@@ -2797,9 +2904,9 @@ void cApplication::Run()
         }
       }
 
-      pContext->UnBindShader(*pShaderCubeMap);
-
       pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+
+      pContext->UnBindShader(*pShaderCubeMap);
 
 
 
@@ -2864,11 +2971,11 @@ void cApplication::Run()
 
       // Render an extra textured teapot under the smoke
       {
+        pContext->BindShader(*pShaderCrate);
+
         pContext->BindTexture(0, *pTextureDiffuse);
         pContext->BindTexture(1, *pTextureLightMap);
         pContext->BindTexture(2, *pTextureDetail);
-
-        pContext->BindShader(*pShaderCrate);
 
         {
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot3);
@@ -2877,22 +2984,22 @@ void cApplication::Run()
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot3);
         }
 
-        pContext->UnBindShader(*pShaderCrate);
-
         pContext->UnBindTexture(2, *pTextureDetail);
         pContext->UnBindTexture(1, *pTextureLightMap);
         pContext->UnBindTexture(0, *pTextureDiffuse);
+
+        pContext->UnBindShader(*pShaderCrate);
       }
 
       // Render the test images
       {
         const size_t n = testImages.size();
         for (size_t i = 0; i < n; i++) {
+          pContext->BindShader(*pShaderPassThrough);
+
           cTextureVBOPair* pPair = testImages[i];
 
           pContext->BindTexture(0, *(pPair->pTexture));
-
-          pContext->BindShader(*pShaderPassThrough);
 
           pContext->BindStaticVertexBufferObject(pPair->vbo);
 
@@ -2902,9 +3009,9 @@ void cApplication::Run()
 
           pContext->UnBindStaticVertexBufferObject(pPair->vbo);
 
-          pContext->UnBindShader(*pShaderPassThrough);
-
           pContext->UnBindTexture(0, *(pPair->pTexture));
+
+          pContext->UnBindShader(*pShaderPassThrough);
         }
       }
 
@@ -2915,11 +3022,11 @@ void cApplication::Run()
 
         const size_t n = testImages.size();
         for (size_t i = 0; i < n; i++) {
+          pContext->BindShader(*pShaderPassThrough);
+
           cTextureVBOPair* pPair = testImages[i];
 
           pContext->BindTexture(0, *(pPair->pTexture));
-
-          pContext->BindShader(*pShaderPassThrough);
 
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectGuiRectangle);
 
@@ -2933,10 +3040,9 @@ void cApplication::Run()
 
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectGuiRectangle);
 
+          pContext->UnBindTexture(0, *(pPair->pTexture));
 
           pContext->UnBindShader(*pShaderPassThrough);
-
-          pContext->UnBindTexture(0, *(pPair->pTexture));
         }
 
         pContext->EnableDepthTesting();
@@ -2944,7 +3050,7 @@ void cApplication::Run()
 
       pContext->EndRenderToTexture(*pFrameBuffer);
 
-      std::swap(currentFBO, otherFBO);
+      std::swap(outputFBO, inputFBO);
     }
 
 
@@ -2956,17 +3062,17 @@ void cApplication::Run()
 
       pContext->BeginRenderToTexture(*pTextureFrameBufferObjectScreenDepth);
 
-      pContext->BindTexture(0, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
-      pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
-
       pContext->BindShader(*pShaderScreenRectColourAndDepth);
+
+      pContext->BindTexture(0, *pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]);
+      pContext->BindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]);
 
       RenderScreenRectangleShaderAndTextureAlreadySet();
 
-      pContext->UnBindShader(*pShaderScreenRectColourAndDepth);
+      pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]);
+      pContext->UnBindTexture(0, *pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]);
 
-      pContext->UnBindTextureDepthBuffer(1, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
-      pContext->UnBindTexture(0, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]);
+      pContext->UnBindShader(*pShaderScreenRectColourAndDepth);
 
       pContext->EndRenderToTexture(*pTextureFrameBufferObjectScreenDepth);
     }
@@ -2974,8 +3080,8 @@ void cApplication::Run()
 
     // Ping pong to the other texture so that we can render our particle systems now that we have a depth buffer
     {
-      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[currentFBO];
-      opengl::cTextureFrameBufferObject* pFrameBufferLastRendered = pTextureFrameBufferObjectScreenColourAndDepth[otherFBO];
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[outputFBO];
+      opengl::cTextureFrameBufferObject* pFrameBufferLastRendered = pTextureFrameBufferObjectScreenColourAndDepth[inputFBO];
 
       // Render the scene into a texture for later
       // Use Cornflower blue as the background colour
@@ -3084,10 +3190,10 @@ void cApplication::Run()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+        pContext->BindShader(*pShaderSmoke);
+
         pContext->BindTexture(0, *smoke.pTexture);
         pContext->BindTextureDepthBuffer(1, *pFrameBufferLastRendered);
-
-        pContext->BindShader(*pShaderSmoke);
 
         // We split up the object rotation from the normal model matrix so that we can apply it to each particle in the VBO, otherwise we would accidentally rotate each particle into an unknown rotation and billboarding wouldn't work
         pContext->SetShaderConstant("matObjectRotation", matObjectRotation);
@@ -3111,10 +3217,10 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(smoke.vbo);
 
-        pContext->UnBindShader(*pShaderSmoke);
-
         pContext->UnBindTextureDepthBuffer(1, *pFrameBufferLastRendered);
         pContext->UnBindTexture(0, *smoke.pTexture);
+
+        pContext->UnBindShader(*pShaderSmoke);
 
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
@@ -3126,10 +3232,10 @@ void cApplication::Run()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
+        pContext->BindShader(*pShaderFire);
+
         pContext->BindTexture(0, *fire.pTexture);
         pContext->BindTextureDepthBuffer(1, *pFrameBufferLastRendered);
-
-        pContext->BindShader(*pShaderFire);
 
         // We split up the object rotation from the normal model matrix so that we can apply it to each particle in the VBO, otherwise we would accidentally rotate each particle into an unknown rotation and billboarding wouldn't work
         pContext->SetShaderConstant("matObjectRotation", matObjectRotation);
@@ -3144,10 +3250,10 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(fire.vbo);
 
-        pContext->UnBindShader(*pShaderFire);
-
         pContext->UnBindTextureDepthBuffer(1, *pFrameBufferLastRendered);
         pContext->UnBindTexture(0, *fire.pTexture);
+
+        pContext->UnBindShader(*pShaderFire);
 
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
@@ -3155,21 +3261,31 @@ void cApplication::Run()
 
       pContext->EndRenderToTexture(*pFrameBuffer);
 
-      std::swap(currentFBO, otherFBO);
+      std::swap(outputFBO, inputFBO);
     }
 
     // Apply depth of field and bokeh
     if (bIsDOFBokeh) {
-      dofBokeh.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *pTextureFrameBufferObjectScreenDepth, *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
-
-      std::swap(currentFBO, otherFBO);
+      dofBokeh.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), *pTextureFrameBufferObjectScreenDepth, *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]));
+      std::swap(outputFBO, inputFBO);
     }
 
-    // Process our HDR image
+    // Process HDR bloom
     if (bIsHDR) {
-      hdr.Render(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]));
+      hdr.RenderBloom(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]));
+      std::swap(outputFBO, inputFBO);
+    }
 
-      std::swap(currentFBO, otherFBO);
+    // Apply lens flare with dirt specks
+    if (bIsLensFlareDirt) {
+      lensFlareDirt.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]), bDebugShowFlareOnly);
+      std::swap(outputFBO, inputFBO);
+    }
+
+    // Process HDR tone mapping
+    if (bIsHDR) {
+      hdr.RenderToneMapping(*this, currentTime, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]));
+      std::swap(outputFBO, inputFBO);
     }
 
     {
@@ -3183,7 +3299,7 @@ void cApplication::Run()
       pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
 
-      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[otherFBO];
+      opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[inputFBO];
 
       if (GetActiveSimplePostRenderShadersCount() != 0) {
         if (bIsSplitScreenSimplePostEffectShaders) {
@@ -3201,6 +3317,21 @@ void cApplication::Run()
         RenderScreenRectangle(0.5f, 0.5f, staticVertexBufferObjectScreenRectScreen, *pFrameBuffer, *pShaderScreenRect);
       }
 
+
+      spitfire::math::cVec2 position(0.0f + (0.5f * 0.25f), 0.0f + (0.5f * 0.25f));
+
+      // Draw the lens flare and dirt textures for debugging purposes
+      // Down the side
+      RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensColor(), *pShaderScreen1D); position.y += 0.25f;
+      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTextureLensDirt()); position.y += 0.25f;
+      RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensStar(), *pShaderScreen2D); position.y += 0.25f;
+
+      // Along the bottom
+      position.Set(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f));
+      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempA()); position.x += 0.25f;
+      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempB()); position.x += 0.25f;
+      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempC()); position.x += 0.25f;
+
       // Draw the scene colour and depth buffer textures for debugging purposes
       //float x = 0.125f;
       //float y = 0.125f;
@@ -3208,8 +3339,8 @@ void cApplication::Run()
       RenderScreenRectangleDepthTexture(x, y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenDepth, *pShaderScreenRect); x += 0.25f;
 
       // Render the HDR textures for debugging purposes
-      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(pTextureFrameBufferObjectScreenColourAndDepth[currentFBO]), *pShaderScreenRect); x += 0.25f;
-      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(pTextureFrameBufferObjectScreenColourAndDepth[otherFBO]), *pShaderScreenRect); x += 0.25f;
+      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]), *pShaderScreenRect); x += 0.25f;
+      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), *pShaderScreenRect); x += 0.25f;
       x = 0.125f;
       y += 0.25f;
       RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *hdr.LuminanceBuffer, *pShaderScreenRect); x += 0.25f;
@@ -3226,23 +3357,21 @@ void cApplication::Run()
         RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(hdr.BloomBuffer[i].pTexture), *pShaderScreenRect); x += 0.25f;
       }*/
 
-      spitfire::math::cVec2 position(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f));
-
-      // Draw the shadow map depth texture
+      /*// Draw the shadow map depth texture
       RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, shadowMapping.GetShadowMapTexture(), *pShaderScreenRectDepthShadow);
       position += spitfire::math::cVec2(0.25f, 0.0f);
 
       // Draw the scene depth texture
-      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[currentFBO], *pShaderScreenRect);
+      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[outputFBO], *pShaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);
 
       // Draw the particles depth texture
-      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[otherFBO], *pShaderScreenRect);
+      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[inputFBO], *pShaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);
 
       // Draw the teapot texture
       RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectTeapot, *pShaderScreenRect);
-      position += spitfire::math::cVec2(0.25f, 0.0f);
+      position += spitfire::math::cVec2(0.25f, 0.0f);*/
 
 
       // Draw the text overlay

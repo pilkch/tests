@@ -119,6 +119,7 @@
     <ClCompile Include="..\..\..\library\src\spitfire\util\timer.cpp" />
     <ClCompile Include="..\dofbokeh.cpp" />
     <ClCompile Include="..\hdr.cpp" />
+    <ClCompile Include="..\lensflaredirt.cpp" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\shadowmapping.cpp" />
     <ClCompile Include="..\util.cpp" />
@@ -159,6 +160,10 @@
     <None Include="..\shaders\hdr\tone_mapping.frag" />
     <None Include="..\shaders\lambert.frag" />
     <None Include="..\shaders\lambert.vert" />
+    <None Include="..\shaders\lensflaredirt\gauss1d.fs.glsl" />
+    <None Include="..\shaders\lensflaredirt\lensflare.fs.glsl" />
+    <None Include="..\shaders\lensflaredirt\postprocess.fs.glsl" />
+    <None Include="..\shaders\lensflaredirt\scalebias.fs.glsl" />
     <None Include="..\shaders\lighting.header" />
     <None Include="..\shaders\lights.frag" />
     <None Include="..\shaders\lights.vert" />
@@ -171,8 +176,10 @@
     <None Include="..\shaders\parallaxnormalmap.vert" />
     <None Include="..\shaders\passthrough.frag" />
     <None Include="..\shaders\passthrough.vert" />
+    <None Include="..\shaders\passthrough1d.frag" />
     <None Include="..\shaders\passthrough2d.frag" />
     <None Include="..\shaders\passthrough2d.vert" />
+    <None Include="..\shaders\passthrough2dnonrect.frag" />
     <None Include="..\shaders\sepia.frag" />
     <None Include="..\shaders\shadowmapping.frag" />
     <None Include="..\shaders\shadowmapping.vert" />
@@ -185,6 +192,7 @@
   <ItemGroup>
     <ClInclude Include="..\dofbokeh.h" />
     <ClInclude Include="..\hdr.h" />
+    <ClInclude Include="..\lensflaredirt.h" />
     <ClInclude Include="..\main.h" />
     <ClInclude Include="..\shadowmapping.h" />
     <ClInclude Include="..\util.h" />

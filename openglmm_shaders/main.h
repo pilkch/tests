@@ -55,6 +55,7 @@
 // Application headers
 #include "dofbokeh.h"
 #include "hdr.h"
+#include "lensflaredirt.h"
 #include "shadowmapping.h"
 #include "util.h"
 
@@ -79,6 +80,7 @@ public:
 
   friend class cDOFBokeh;
   friend class cHDR;
+  friend class cLensFlareDirt;
   friend class cShadowMapping;
 
   bool Create();
@@ -89,7 +91,7 @@ public:
   opengl::cResolution GetResolution() const;
 
 protected:
-  // Called from cHDR
+  // Called from cHDR and cLensFlareDirt
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fVBOWidth, float_t fVBOHeight, float_t fTextureWidth, float_t fTextureHeight);
   void RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader);
   void RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader, opengl::cStaticVertexBufferObject& staticVertexBufferObject);
@@ -119,12 +121,14 @@ private:
 #ifdef BUILD_LARGE_STATUE_MODEL
   void CreateStatueVBO();
 #endif
+  void CreateScreenRectVariableTextureSizeVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateGuiRectangle(opengl::cStaticVertexBufferObject& staticVertexBufferObject, size_t nTextureWidth, size_t nTextureHeight);
 
   void RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader);
   void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader);
+  void RenderDebugScreenRectangleVariableSize(float x, float y, opengl::cTexture& texture);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
@@ -168,6 +172,8 @@ private:
   bool bIsDOFBokeh;
 
   bool bIsHDR;
+  bool bIsLensFlareDirt;
+  bool bDebugShowFlareOnly;
   bool bIsSplitScreenSimplePostEffectShaders; // Tells us whether to split the screen down the middle when a simple post effect shader is active
 
   bool bIsDone;
@@ -217,6 +223,9 @@ private:
   opengl::cShader* pShaderLights;
   opengl::cShader* pShaderLambert;
   opengl::cShader* pShaderPassThrough;
+  opengl::cShader* pShaderScreen1D;
+  opengl::cShader* pShaderScreen2D;
+  opengl::cShader* pShaderScreenRectVariableTextureSize;
   opengl::cShader* pShaderScreenRect;
   opengl::cShader* pShaderScreenRectDepthShadow;
   opengl::cShader* pShaderScreenRectColourAndDepth;
@@ -229,6 +238,8 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectScreen;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectHalfScreen;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectTeapot;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectScreen2DTeapot;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectDebugVariableTextureSize;
 
 
   opengl::cShader* pShaderCrate;
@@ -267,6 +278,7 @@ private:
 
   cDOFBokeh dofBokeh;
   cHDR hdr;
+  cLensFlareDirt lensFlareDirt;
   cShadowMapping shadowMapping;
 
   std::vector<cSimplePostRenderShader> simplePostRenderShaders;

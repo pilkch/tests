@@ -67,12 +67,12 @@ public:
 
   void Resize(cApplication& application, opengl::cContext& context);
 
-  void Render(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output);
+  void RenderBloom(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output);
+  void RenderToneMapping(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output);
 
 private:
   opengl::cTextureFrameBufferObject* LuminanceBuffer;
   cTextureFrameBufferObjectVBOPair MinificationBuffer[8];
-  opengl::cTextureFrameBufferObject* LDRColorBuffer;
   opengl::cTextureFrameBufferObject* BrightPixelsBuffer;
   cTextureFrameBufferObjectVBOPair BloomBuffer[12];
 
@@ -87,6 +87,8 @@ private:
   opengl::cStaticVertexBufferObject bloomToScreenVBO[4];
 
   float *data;
+
+  float fMaxRGBValue;
 };
 
 #endif // HDR_H
