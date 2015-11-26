@@ -88,13 +88,13 @@ void cLensFlareDirt::Init(cApplication& application, opengl::cContext& context)
   //------------------------------------------------------------------------------
   // SHADERS
   //------------------------------------------------------------------------------
-  shaderScaleBias_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/scalebias.fs.glsl"));
+  shaderScaleBias_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/scalebias.frag"));
   ASSERT(shaderScaleBias_ != nullptr);
-  shaderGaussBlur_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/gauss1d.fs.glsl"));
+  shaderGaussBlur_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/gauss1d.frag"));
   ASSERT(shaderGaussBlur_ != nullptr);
-  shaderLensflare_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/lensflare.fs.glsl"));
+  shaderLensflare_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/lensflare.frag"));
   ASSERT(shaderLensflare_ != nullptr);
-  shaderPostProcess_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/postprocess.fs.glsl"));
+  shaderPostProcess_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/postprocess.frag"));
   ASSERT(shaderPostProcess_ != nullptr);
 
 

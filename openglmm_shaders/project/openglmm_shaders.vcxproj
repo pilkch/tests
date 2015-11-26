@@ -160,10 +160,10 @@
     <None Include="..\shaders\hdr\tone_mapping.frag" />
     <None Include="..\shaders\lambert.frag" />
     <None Include="..\shaders\lambert.vert" />
-    <None Include="..\shaders\lensflaredirt\gauss1d.fs.glsl" />
-    <None Include="..\shaders\lensflaredirt\lensflare.fs.glsl" />
-    <None Include="..\shaders\lensflaredirt\postprocess.fs.glsl" />
-    <None Include="..\shaders\lensflaredirt\scalebias.fs.glsl" />
+    <None Include="..\shaders\lensflaredirt\gauss1d.frag" />
+    <None Include="..\shaders\lensflaredirt\lensflare.frag" />
+    <None Include="..\shaders\lensflaredirt\postprocess.frag" />
+    <None Include="..\shaders\lensflaredirt\scalebias.frag" />
     <None Include="..\shaders\lighting.header" />
     <None Include="..\shaders\lights.frag" />
     <None Include="..\shaders\lights.vert" />
