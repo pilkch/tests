@@ -57,6 +57,8 @@
 // ** cApplication
 
 cApplication::cApplication() :
+  fFPS(0.0f),
+
   bReloadShaders(false),
   bUpdateShaderConstants(true),
 
@@ -173,6 +175,9 @@ void cApplication::CreateText()
   opengl::cGeometryBuilder_v2_c4_t2 builder(*pGeometryDataPtr);
 
   std::list<spitfire::string_t> lines;
+  lines.push_back(spitfire::string_t(TEXT("FPS: ")) + spitfire::string::ToString(int(fFPS)));
+  lines.push_back(TEXT(""));
+
   lines.push_back(spitfire::string_t(TEXT("Rotating: ")) + (bIsRotating ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Wireframe: ")) + (bIsWireframe ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Direction light: ")) + (bIsDirectionalLightOn ? TEXT("On") : TEXT("Off")));
@@ -3405,11 +3410,11 @@ void cApplication::Run()
     Frames++;
     {
       spitfire::durationms_t t = spitfire::util::GetTimeMS();
-      if (t - T0 >= 5000) {
+      if (t - T0 >= 1000) {
         #ifdef BUILD_DEBUG
         float seconds = (t - T0) / 1000.0f;
-        float fps = Frames / seconds;
-        LOG(Frames, " frames in ", seconds, " seconds = ", fps, " FPS");
+        fFPS = Frames / seconds;
+        //LOG(Frames, " frames in ", seconds, " seconds = ", fFPS, " FPS");
         #endif
         T0 = t;
         Frames = 0;

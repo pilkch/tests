@@ -141,6 +141,8 @@ private:
   bool IsColourBlindSimplePostRenderShaderEnabled() const;
   size_t GetColourBlindModeDefineValue() const;
 
+  float fFPS;
+
   bool bReloadShaders;
   bool bUpdateShaderConstants;
 
