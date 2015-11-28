@@ -1945,7 +1945,7 @@ void cApplication::Run()
 
   // Set up the translations for our objects
   const size_t columns = 5; // 5 types of objects
-  const size_t rows = 5; // 5 types of materials
+  const size_t rows = 7; // 7 types of materials
 
   const float fSpacingX = 0.007f * pContext->GetWidth() / float(rows);
   const float fSpacingZ = 0.03f * pContext->GetHeight() / float(columns);
@@ -2972,6 +2972,49 @@ void cApplication::Run()
       pContext->UnBindShader(*pShaderLambert);
 
 
+      // Render spheres with a variety of colours
+      {
+        pContext->BindShader(*pShaderColour);
+
+        const spitfire::math::cColour3 colours[columns] = {
+          spitfire::math::cColour3(7.0f / 255.0f, 16.0f / 255.0f, 141.0f / 255.0f), // Dark blue
+          spitfire::math::cColour3(122.0f / 255.0f, 143.0f / 255.0f, 248.0f / 255.0f), // Light blue
+          spitfire::math::cColour3(5.0f * 122.0f / 255.0f, 5.0f * 143.0f / 255.0f, 5.0f * 248.0f / 255.0f), // Super bright blue
+          spitfire::math::cColour3(0.8f, 0.498039f, 0.196078f), // Gold
+          spitfire::math::cColour3(5 * 0.8f, 5 * 0.498039f, 5 * 0.196078f), // Bright gold
+        };
+        const spitfire::math::cColour3 colours2[columns] = {
+          spitfire::math::cColour3(0.0f, 0.0f, 0.0f), // Black
+          spitfire::math::cColour3(0.5f, 0.5f, 0.5f), // Grey
+          spitfire::math::cColour3(1.0f, 1.0f, 1.0f), // White
+          spitfire::math::cColour3(2.0f, 2.0f, 2.0f), // Bright white
+          spitfire::math::cColour3(5.0f, 5.0f, 5.0f), // Super bright white
+        };
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+
+        // First column
+        for (size_t index = 0; index < 5; index++) {
+          pContext->SetShaderConstant("colour", spitfire::math::cColour(colours[index].r, colours[index].g, colours[index].b, 1.0f));
+
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[(5 * columns) + index]);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+        }
+
+        // Second column
+        for (size_t index = 0; index < 5; index++) {
+          pContext->SetShaderConstant("colour", spitfire::math::cColour(colours2[index].r, colours2[index].g, colours2[index].b, 1.0f));
+
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[(6 * columns) + index]);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+        }
+
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+
+        pContext->UnBindShader(*pShaderColour);
+      }
+
+
 
       // Render an extra textured teapot under the smoke
       {
@@ -3411,11 +3454,9 @@ void cApplication::Run()
     {
       spitfire::durationms_t t = spitfire::util::GetTimeMS();
       if (t - T0 >= 1000) {
-        #ifdef BUILD_DEBUG
         float seconds = (t - T0) / 1000.0f;
         fFPS = Frames / seconds;
         //LOG(Frames, " frames in ", seconds, " seconds = ", fFPS, " FPS");
-        #endif
         T0 = t;
         Frames = 0;
       }
