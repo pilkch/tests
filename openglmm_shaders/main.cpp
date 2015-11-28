@@ -86,9 +86,8 @@ cApplication::cApplication() :
   bIsWireframe(false),
 
   bIsDOFBokeh(true),
-
-  bIsHDR(false),
   bIsLensFlareDirt(true),
+  bIsHDR(true),
   bDebugShowFlareOnly(false),
   bIsSplitScreenSimplePostEffectShaders(true),
 
@@ -2039,7 +2038,7 @@ void cApplication::Run()
   // Green directional light
   const spitfire::math::cVec3 lightDirectionalPosition(5.0f, 5.0f, 5.0f);
   const spitfire::math::cColour lightDirectionalAmbientColour(0.2f, 0.25f, 0.2f);
-  const spitfire::math::cColour lightDirectionalDiffuseColour(0.6f, 0.8f, 0.6f);
+  const spitfire::math::cColour lightDirectionalDiffuseColour(1.5f, 1.35f, 1.2f);
   const spitfire::math::cColour lightDirectionalSpecularColour(0.0f, 1.0f, 0.0f);
 
   // Red point light
@@ -2065,10 +2064,13 @@ void cApplication::Run()
   const spitfire::math::cColour materialDiffuseColour(1.0f, 1.0f, 1.0f);
   const spitfire::math::cColour materialSpecularColour(1.0f, 1.0f, 1.0f);
   const float fMaterialShininess = 25.0f;
-  
-  // Use Cornflower blue as the fog colour
+
+  // Use Cornflower blue as the sky colour
   // http://en.wikipedia.org/wiki/Cornflower_blue
-  const spitfire::math::cColour fogColour(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
+  const spitfire::math::cColour cornFlowerBlue(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
+
+  spitfire::math::cColour skyColour = cornFlowerBlue;
+
   const float fFogStart = 5.0f;
   const float fFogEnd = 15.0f;
   //const float fFogDensity = 0.5f;
@@ -2124,7 +2126,7 @@ void cApplication::Run()
       if (bIsFocalLengthDecrease) dofBokeh.DecreaseFocalLength();
 
       if (bIsFStopIncrease) dofBokeh.IncreaseFStop();
-      if (bIsFStopDecrease) dofBokeh.IncreaseFStop();
+      if (bIsFStopDecrease) dofBokeh.DecreaseFStop();
 
       previousUpdateTime = currentTime;
     }
@@ -2142,7 +2144,7 @@ void cApplication::Run()
     if (bUpdateShaderConstants) {
       // Set our shader constants
       pContext->BindShader(*pShaderFog);
-        pContext->SetShaderConstant("fog.colour", fogColour);
+        pContext->SetShaderConstant("fog.colour", skyColour);
         pContext->SetShaderConstant("fog.fStart", fFogStart);
         pContext->SetShaderConstant("fog.fEnd", fFogEnd);
         //pContext->SetShaderConstant("fog.fDensity", fFogDensity);
@@ -2390,10 +2392,7 @@ void cApplication::Run()
       opengl::cTextureFrameBufferObject* pFrameBuffer = pTextureFrameBufferObjectScreenColourAndDepth[outputFBO];
 
       // Render the scene into a texture for later
-      // Use Cornflower blue as the background colour
-      // http://en.wikipedia.org/wiki/Cornflower_blue
-      const spitfire::math::cColour clearColour(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
-      pContext->SetClearColour(clearColour);
+      pContext->SetClearColour(skyColour);
 
       pContext->BeginRenderToTexture(*pFrameBuffer);
 
@@ -2614,7 +2613,7 @@ void cApplication::Run()
         pContext->BindShader(*pShaderColour);
 
         {
-          pContext->SetShaderConstant("colour", util::ChangeLuminance(lightDirectionalDiffuseColour, fLightLuminanceIncrease0To1));
+          pContext->SetShaderConstant("colour", lightDirectionalDiffuseColour);
 
           spitfire::math::cMat4 matTransform;
           matTransform.SetTranslation(lightDirectionalPosition);
@@ -3084,10 +3083,7 @@ void cApplication::Run()
       opengl::cTextureFrameBufferObject* pFrameBufferLastRendered = pTextureFrameBufferObjectScreenColourAndDepth[inputFBO];
 
       // Render the scene into a texture for later
-      // Use Cornflower blue as the background colour
-      // http://en.wikipedia.org/wiki/Cornflower_blue
-      const spitfire::math::cColour clearColour(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
-      pContext->SetClearColour(clearColour);
+      pContext->SetClearColour(skyColour);
 
       pContext->BeginRenderToTexture(*pFrameBuffer);
 
@@ -3320,6 +3316,7 @@ void cApplication::Run()
 
       spitfire::math::cVec2 position(0.0f + (0.5f * 0.25f), 0.0f + (0.5f * 0.25f));
 
+      #if 0
       // Draw the lens flare and dirt textures for debugging purposes
       // Down the side
       RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensColor(), *pShaderScreen1D); position.y += 0.25f;
@@ -3331,11 +3328,13 @@ void cApplication::Run()
       RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempA()); position.x += 0.25f;
       RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempB()); position.x += 0.25f;
       RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempC()); position.x += 0.25f;
+      #endif
 
+      #if 0
       // Draw the scene colour and depth buffer textures for debugging purposes
-      //float x = 0.125f;
-      //float y = 0.125f;
-      /*RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenDepth, *pShaderScreenRect); x += 0.25f;
+      float x = 0.125f;
+      float y = 0.125f;
+      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenDepth, *pShaderScreenRect); x += 0.25f;
       RenderScreenRectangleDepthTexture(x, y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenDepth, *pShaderScreenRect); x += 0.25f;
 
       // Render the HDR textures for debugging purposes
@@ -3347,17 +3346,18 @@ void cApplication::Run()
       for (size_t i = 0; i < 5; i++) {
         RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(hdr.MinificationBuffer[i].pTexture), *pShaderScreenRect); x += 0.25f;
       }
-      //x = 0.125f;
-      //y += 0.25f;
-      //RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *hdr.LDRColorBuffer, *pShaderScreenRect); x += 0.25f;
-      //RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *hdr.BrightPixelsBuffer, *pShaderScreenRect); x += 0.25f;
-      /*x = 0.125f;
+      x = 0.125f;
+      y += 0.25f;
+      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *hdr.BrightPixelsBuffer, *pShaderScreenRect); x += 0.25f;
+      x = 0.125f;
       y += 0.25f;
       for (size_t i = 0; i < 12; i++) {
         RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(hdr.BloomBuffer[i].pTexture), *pShaderScreenRect); x += 0.25f;
-      }*/
+      }
+      #endif
 
-      /*// Draw the shadow map depth texture
+      #if 0
+      // Draw the shadow map depth texture
       RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, shadowMapping.GetShadowMapTexture(), *pShaderScreenRectDepthShadow);
       position += spitfire::math::cVec2(0.25f, 0.0f);
 
@@ -3371,7 +3371,8 @@ void cApplication::Run()
 
       // Draw the teapot texture
       RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectTeapot, *pShaderScreenRect);
-      position += spitfire::math::cVec2(0.25f, 0.0f);*/
+      position += spitfire::math::cVec2(0.25f, 0.0f);
+      #endif
 
 
       // Draw the text overlay
