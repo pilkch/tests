@@ -374,12 +374,30 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
     // blend 4 downscaled and blurred BloomBuffer textures over the screen ---------------------------------------------
 
     glEnable(GL_BLEND);
+
+    #if 0
+    // Original from John Chapman (Sky is too bright)
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+
+    for (int i = 0; i < 4; i++) {
+      const size_t index = ((3 - i) * 3) + 2;
+      application.RenderScreenRectangle(*BloomBuffer[index].pTexture, *pShaderPassThrough, bloomToScreenVBO[i]);
+    }
+    #elif 0
+    // Tweaked version (Sky is darker but still bright)
     glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
 
     for (int i = 0; i < 4; i++) {
       const size_t index = ((3 - i) * 3) + 2;
       application.RenderScreenRectangle(*BloomBuffer[index].pTexture, *pShaderPassThrough, bloomToScreenVBO[i]);
     }
+    #else
+    // Tweaked verison (Sky is blue and bloom is not as pronounced)
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+    const size_t i = 0;
+    const size_t index = ((3 - i) * 3) + 2;
+    application.RenderScreenRectangle(*BloomBuffer[index].pTexture, *pShaderPassThrough, bloomToScreenVBO[i]);
+    #endif
 
     glDisable(GL_BLEND);
 
