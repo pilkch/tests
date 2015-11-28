@@ -373,13 +373,15 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
     // blend 4 downscaled and blurred BloomBuffer textures over the screen ---------------------------------------------
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+
     for (int i = 0; i < 4; i++) {
-      glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
-      glEnable(GL_BLEND);
       const size_t index = ((3 - i) * 3) + 2;
       application.RenderScreenRectangle(*BloomBuffer[index].pTexture, *pShaderPassThrough, bloomToScreenVBO[i]);
-      glDisable(GL_BLEND);
     }
+
+    glDisable(GL_BLEND);
 
     context.EndRenderMode2D();
 
