@@ -383,7 +383,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
       const size_t index = ((3 - i) * 3) + 2;
       application.RenderScreenRectangle(*BloomBuffer[index].pTexture, *pShaderPassThrough, bloomToScreenVBO[i]);
     }
-    #elif 0
+    #elif 1
     // Tweaked version (Sky is darker but still bright)
     glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
 
@@ -391,7 +391,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
       const size_t index = ((3 - i) * 3) + 2;
       application.RenderScreenRectangle(*BloomBuffer[index].pTexture, *pShaderPassThrough, bloomToScreenVBO[i]);
     }
-    #else
+    #elif 0
     // Tweaked verison (Sky is blue and bloom is not as pronounced)
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
     const size_t i = 0;
