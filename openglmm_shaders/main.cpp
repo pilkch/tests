@@ -2979,16 +2979,16 @@ void cApplication::Run()
         const spitfire::math::cColour3 colours[columns] = {
           spitfire::math::cColour3(7.0f / 255.0f, 16.0f / 255.0f, 141.0f / 255.0f), // Dark blue
           spitfire::math::cColour3(122.0f / 255.0f, 143.0f / 255.0f, 248.0f / 255.0f), // Light blue
-          spitfire::math::cColour3(5.0f * 122.0f / 255.0f, 5.0f * 143.0f / 255.0f, 5.0f * 248.0f / 255.0f), // Super bright blue
+          spitfire::math::cColour3(3.0f * 122.0f / 255.0f, 3.0f * 143.0f / 255.0f, 3.0f * 248.0f / 255.0f), // Super bright blue
           spitfire::math::cColour3(0.8f, 0.498039f, 0.196078f), // Gold
-          spitfire::math::cColour3(5 * 0.8f, 5 * 0.498039f, 5 * 0.196078f), // Bright gold
+          spitfire::math::cColour3(3 * 0.8f, 3 * 0.498039f, 3 * 0.196078f), // Bright gold
         };
         const spitfire::math::cColour3 colours2[columns] = {
           spitfire::math::cColour3(0.0f, 0.0f, 0.0f), // Black
           spitfire::math::cColour3(0.5f, 0.5f, 0.5f), // Grey
           spitfire::math::cColour3(1.0f, 1.0f, 1.0f), // White
           spitfire::math::cColour3(2.0f, 2.0f, 2.0f), // Bright white
-          spitfire::math::cColour3(5.0f, 5.0f, 5.0f), // Super bright white
+          spitfire::math::cColour3(3.0f, 3.0f, 3.0f), // Super bright white
         };
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
