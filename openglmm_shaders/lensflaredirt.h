@@ -100,7 +100,7 @@ private:
   opengl::cShader* shaderLensflare_; // feature generation
   float flareScale_;
   float flareBias_;
-  float flareSamples_;
+  int flareSamples_;
   float flareDispersal_;
   float flareHaloWidth_;
   float flareDistortion_;

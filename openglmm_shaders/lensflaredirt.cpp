@@ -52,7 +52,7 @@
 cLensFlareDirt::cLensFlareDirt() :
   flareScale_(1.0f),
   flareBias_(-0.04f),
-  flareSamples_(14.0f),
+  flareSamples_(14),
   flareDispersal_(0.3f),
   flareHaloWidth_(0.6f),
   flareDistortion_(10.5f),
@@ -251,7 +251,7 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
   // feature generation:
   context.BeginRenderToTexture(*fboTempB_);
   context.BindShader(*shaderLensflare_);
-  context.SetShaderConstant("uSamples", (int)flareSamples_);
+  context.SetShaderConstant("uSamples", flareSamples_);
   context.SetShaderConstant("uDispersal", flareDispersal_);
   context.SetShaderConstant("uHaloWidth", flareHaloWidth_);
   context.SetShaderConstant("uDistortion", flareDistortion_);
