@@ -31,7 +31,7 @@ vec4 textureDistorted(
 	in vec2 direction,
 	in vec3 distortion 
 )
-{  
+{
   vec2 texCoordRect = textureSize(texSceneRTT, 0);
 
 	return vec4(
@@ -48,13 +48,12 @@ void main()
   // NOTE: We use rectangular textures but this shader was designed for square textures, so we need to adjust the coordinates and then change them back inside textureDistorted()
   vec2 texCoord0To1 = vertOutTexCoord / textureSize(texSceneRTT, 0);
   
-	//vec2 texcoord = -vertOutTexCoord texCoord0To1 + vec2(1.0); // flip texcoordoords
-	vec2 texcoord = -texCoord0To1 + vec2(1.0); // flip texcoordoords
-	vec2 texelSize = 1.0 / vec2(textureSize(texSceneRTT, 0));
+	vec2 texcoord = -texCoord0To1 + vec2(1.0); // flip texture coordinates
 	
 	vec2 ghostVec = (vec2(0.5) - texcoord) * uDispersal;
 	vec2 haloVec = normalize(ghostVec) * uHaloWidth;
 	
+	vec2 texelSize = vec2(1.0, 1.0);
 	vec3 distortion = vec3(-texelSize.x * uDistortion, 0.0, texelSize.x * uDistortion);
 
   // Sample ghosts
