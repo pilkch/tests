@@ -2076,7 +2076,7 @@ void cApplication::Run()
   // http://en.wikipedia.org/wiki/Cornflower_blue
   const spitfire::math::cColour cornFlowerBlue(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f);
 
-  spitfire::math::cColour skyColour = cornFlowerBlue;
+  const spitfire::math::cColour skyColour = cornFlowerBlue;
 
   const float fFogStart = 5.0f;
   const float fFogEnd = 15.0f;
