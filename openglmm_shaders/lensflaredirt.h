@@ -88,16 +88,16 @@ private:
   void CreateTempBuffers(cApplication& application, opengl::cContext& context);
   void DestroyTempBuffers(opengl::cContext& context);
 
-  opengl::cShader* shaderPostProcess_;
-  opengl::cShader* shaderGaussBlur_;
-  opengl::cShader* shaderScaleBias_;
+  opengl::cShader shaderPostProcess_;
+  opengl::cShader shaderGaussBlur_;
+  opengl::cShader shaderScaleBias_;
   opengl::cStaticVertexBufferObject vboScaleBias;
 
   // Lens flare
   opengl::cTexture* texLensColor_; // radial feature colour
   opengl::cTexture* texLensDirt_;
   opengl::cTexture* texLensStar_; // dirt/diffraction starburst
-  opengl::cShader* shaderLensflare_; // feature generation
+  opengl::cShader shaderLensflare_; // feature generation
   float flareScale_;
   float flareBias_;
   int flareSamples_;

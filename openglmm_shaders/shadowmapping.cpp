@@ -57,32 +57,25 @@
 
 cShadowMapping::cShadowMapping() :
   uShadowMapTextureSize(2048),
-  pTextureDepthTexture(nullptr),
-  pShaderShadowMap(nullptr),
-  pShaderRenderToDepthTexture(nullptr)
+  pTextureDepthTexture(nullptr)
 {
 }
 
 void cShadowMapping::Init(opengl::cContext& context)
 {
-  pShaderRenderToDepthTexture = context.CreateShader(TEXT("shaders/depthrendertotexture.vert"), TEXT("shaders/depthrendertotexture.frag"));
-  assert(pShaderRenderToDepthTexture != nullptr);
-  pShaderShadowMap = context.CreateShader(TEXT("shaders/shadowmapping.vert"), TEXT("shaders/shadowmapping.frag"));
-  assert(pShaderShadowMap != nullptr);
+  context.CreateShader(shaderRenderToDepthTexture, TEXT("shaders/depthrendertotexture.vert"), TEXT("shaders/depthrendertotexture.frag"));
+  assert(shaderRenderToDepthTexture.IsCompiledProgram());
+  context.CreateShader(shaderShadowMap, TEXT("shaders/shadowmapping.vert"), TEXT("shaders/shadowmapping.frag"));
+  assert(shaderShadowMap.IsCompiledProgram());
   pTextureDepthTexture = context.CreateTextureFrameBufferObjectDepthShadowOnly(uShadowMapTextureSize, uShadowMapTextureSize);
   assert(pTextureDepthTexture != nullptr);
 }
 
 void cShadowMapping::Destroy(opengl::cContext& context)
 {
-  if (pShaderRenderToDepthTexture != nullptr) {
-    context.DestroyShader(pShaderRenderToDepthTexture);
-    pShaderRenderToDepthTexture = nullptr;
-  }
-  if (pShaderShadowMap != nullptr) {
-    context.DestroyShader(pShaderShadowMap);
-    pShaderShadowMap = nullptr;
-  }
+  if (shaderRenderToDepthTexture.IsCompiledProgram()) context.DestroyShader(shaderRenderToDepthTexture);
+  if (shaderShadowMap.IsCompiledProgram()) context.DestroyShader(shaderShadowMap);
+
   if (pTextureDepthTexture != nullptr) {
     context.DestroyTextureFrameBufferObject(pTextureDepthTexture);
     pTextureDepthTexture = nullptr;
@@ -124,14 +117,14 @@ void cShadowMapping::BeginRenderToShadowMap(opengl::cContext& context, const spi
 
   context.BeginRenderToTexture(*pTextureDepthTexture);
 
-  context.BindShader(*pShaderRenderToDepthTexture);
+  context.BindShader(shaderRenderToDepthTexture);
 
   CalculateMatrices(context, lightPosition, lightDirection);
 }
 
 void cShadowMapping::EndRenderToShadowMap(opengl::cContext& context)
 {
-  context.UnBindShader(*pShaderRenderToDepthTexture);
+  context.UnBindShader(shaderRenderToDepthTexture);
 
   context.EndRenderToTexture(*pTextureDepthTexture);
 }
@@ -149,14 +142,14 @@ opengl::cTextureFrameBufferObject& cShadowMapping::GetShadowMapTexture()
 
 opengl::cShader& cShadowMapping::GetRenderToShadowMapShader()
 {
-  ASSERT(pShaderRenderToDepthTexture != nullptr);
-  return *pShaderRenderToDepthTexture;
+  ASSERT(shaderRenderToDepthTexture.IsCompiledProgram());
+  return shaderRenderToDepthTexture;
 }
 
 opengl::cShader& cShadowMapping::GetShadowMapShader()
 {
-  ASSERT(pShaderShadowMap != nullptr);
-  return *pShaderShadowMap;
+  ASSERT(shaderShadowMap.IsCompiledProgram());
+  return shaderShadowMap;
 }
 
 spitfire::math::cMat4 cShadowMapping::GetDepthMVP(const spitfire::math::cMat4& matModel) const

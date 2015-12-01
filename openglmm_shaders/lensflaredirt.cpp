@@ -88,14 +88,14 @@ void cLensFlareDirt::Init(cApplication& application, opengl::cContext& context)
   //------------------------------------------------------------------------------
   // SHADERS
   //------------------------------------------------------------------------------
-  shaderScaleBias_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/scalebias.frag"));
-  ASSERT(shaderScaleBias_ != nullptr);
-  shaderGaussBlur_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/gauss1d.frag"));
-  ASSERT(shaderGaussBlur_ != nullptr);
-  shaderLensflare_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/lensflare.frag"));
-  ASSERT(shaderLensflare_ != nullptr);
-  shaderPostProcess_ = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/postprocess.frag"));
-  ASSERT(shaderPostProcess_ != nullptr);
+  context.CreateShader(shaderScaleBias_, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/scalebias.frag"));
+  ASSERT(shaderScaleBias_.IsCompiledProgram());
+  context.CreateShader(shaderGaussBlur_, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/gauss1d.frag"));
+  ASSERT(shaderGaussBlur_.IsCompiledProgram());
+  context.CreateShader(shaderLensflare_, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/lensflare.frag"));
+  ASSERT(shaderLensflare_.IsCompiledProgram());
+  context.CreateShader(shaderPostProcess_, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/postprocess.frag"));
+  ASSERT(shaderPostProcess_.IsCompiledProgram());
 
 
   CreateTempBuffers(application, context);
@@ -106,22 +106,10 @@ void cLensFlareDirt::Destroy(opengl::cContext& context)
   DestroyTempBuffers(context);
 
 
-  if (shaderPostProcess_ != nullptr) {
-    context.DestroyShader(shaderPostProcess_);
-    shaderPostProcess_ = nullptr;
-  }
-  if (shaderGaussBlur_ != nullptr) {
-    context.DestroyShader(shaderGaussBlur_);
-    shaderGaussBlur_ = nullptr;
-  }
-  if (shaderScaleBias_ != nullptr) {
-    context.DestroyShader(shaderScaleBias_);
-    shaderScaleBias_ = nullptr;
-  }
-  if (shaderLensflare_ != nullptr) {
-    context.DestroyShader(shaderLensflare_);
-    shaderLensflare_ = nullptr;
-  }
+  if (shaderPostProcess_.IsCompiledProgram()) context.DestroyShader(shaderPostProcess_);
+  if (shaderGaussBlur_.IsCompiledProgram()) context.DestroyShader(shaderGaussBlur_);
+  if (shaderScaleBias_.IsCompiledProgram()) context.DestroyShader(shaderScaleBias_);
+  if (shaderLensflare_.IsCompiledProgram()) context.DestroyShader(shaderLensflare_);
 
 
   if (texLensDirt_ != nullptr) {
@@ -202,7 +190,7 @@ void cLensFlareDirt::gaussBlur(
   int radius
   )
 {
-  context.BindShader(*shaderGaussBlur_);
+  context.BindShader(shaderGaussBlur_);
   context.SetShaderConstant("uBlurRadius", radius);
 
   // horizontal pass:
@@ -221,7 +209,7 @@ void cLensFlareDirt::gaussBlur(
   context.UnBindTexture(0, temp);
   context.EndRenderToTexture(out);
 
-  context.UnBindShader(*shaderGaussBlur_);
+  context.UnBindShader(shaderGaussBlur_);
 }
 
 void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut, float fExposure, bool bDebugShowFlareOnly)
@@ -239,18 +227,18 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
 
   //	downsample/threshold:
   context.BeginRenderToTexture(*fboTempA_);
-  context.BindShader(*shaderScaleBias_);
+  context.BindShader(shaderScaleBias_);
   context.SetShaderConstant("uScale", spitfire::math::cVec3(flareScale_));
   context.SetShaderConstant("uBias", spitfire::math::cVec3(flareBias_));
   context.BindTexture(0, fboIn);
   application.RenderScreenRectangleShaderAndTextureAlreadySet(vboScaleBias);
   context.UnBindTexture(0, fboIn);
-  context.UnBindShader(*shaderScaleBias_);
+  context.UnBindShader(shaderScaleBias_);
   context.EndRenderToTexture(*fboTempA_);
 
   // feature generation:
   context.BeginRenderToTexture(*fboTempB_);
-  context.BindShader(*shaderLensflare_);
+  context.BindShader(shaderLensflare_);
   context.SetShaderConstant("uSamples", flareSamples_);
   context.SetShaderConstant("uDispersal", flareDispersal_);
   context.SetShaderConstant("uHaloWidth", flareHaloWidth_);
@@ -265,7 +253,7 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
   application.RenderScreenRectangleShaderAndTextureAlreadySet(vboLensFlare);
   context.UnBindTexture(1, *texLensColor_);
   context.UnBindTexture(0, *fboTempA_);
-  context.UnBindShader(*shaderLensflare_);
+  context.UnBindShader(shaderLensflare_);
   context.EndRenderToTexture(*fboTempB_);
 
   //	gaussian blur:
@@ -300,7 +288,7 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
 
   context.BeginRenderToTexture(fboOut);
 
-  context.BindShader(*shaderPostProcess_);
+  context.BindShader(shaderPostProcess_);
 
   context.SetShaderConstant("matCameraLensStarBurst", matStar);
   context.SetShaderConstant("fSceneMix0To1", bDebugShowFlareOnly ? 0.0f : 1.0f);
@@ -318,7 +306,7 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
   context.UnBindTexture(1, *fboTempC_);
   context.UnBindTexture(0, fboIn);
 
-  context.UnBindShader(*shaderPostProcess_);
+  context.UnBindShader(shaderPostProcess_);
 
   context.EndRenderToTexture(fboOut);
 }

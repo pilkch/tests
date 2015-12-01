@@ -58,8 +58,7 @@
 cDOFBokeh::cDOFBokeh() :
   bDebugDOFShowFocus(false),
   fFocalLengthmm(18.0f),
-  fFStop(3.6f),
-  pShaderScreenRectDOFBokeh(nullptr)
+  fFStop(3.6f)
 {
 }
 
@@ -109,28 +108,25 @@ void cDOFBokeh::IncreaseFStop()
 
 void cDOFBokeh::Init(opengl::cContext& context)
 {
-  pShaderScreenRectDOFBokeh = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/dofbokeh.frag"));
-  assert(pShaderScreenRectDOFBokeh != nullptr);
+  context.CreateShader(shaderScreenRectDOFBokeh , TEXT("shaders/passthrough2d.vert"), TEXT("shaders/dofbokeh.frag"));
+  assert(shaderScreenRectDOFBokeh.IsCompiledProgram());
 }
 
 void cDOFBokeh::Destroy(opengl::cContext& context)
 {
-  if (pShaderScreenRectDOFBokeh != nullptr) {
-    context.DestroyShader(pShaderScreenRectDOFBokeh);
-    pShaderScreenRectDOFBokeh = nullptr;
-  }
+  if (shaderScreenRectDOFBokeh.IsCompiledProgram()) context.DestroyShader(shaderScreenRectDOFBokeh);
 }
 
 void cDOFBokeh::Resize(cApplication& application, opengl::cContext& context)
 {
   const opengl::cResolution resolution = application.GetResolution();
 
-  context.BindShader(*pShaderScreenRectDOFBokeh);
+  context.BindShader(shaderScreenRectDOFBokeh);
 
   // Set our shader constants
   context.SetShaderConstant("textureSize", spitfire::math::cVec2(float(resolution.width), float(resolution.height)));
 
-  context.UnBindShader(*pShaderScreenRectDOFBokeh);
+  context.UnBindShader(shaderScreenRectDOFBokeh);
 }
 
 void cDOFBokeh::Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& textureScreenDepth, opengl::cTextureFrameBufferObject& output)
@@ -146,7 +142,7 @@ void cDOFBokeh::Render(cApplication& application, opengl::cContext& context, ope
   context.BindTexture(0, frameBufferFrom);
   context.BindTextureDepthBuffer(1, textureScreenDepth);
 
-  context.BindShader(*pShaderScreenRectDOFBokeh);
+  context.BindShader(shaderScreenRectDOFBokeh);
 
   context.SetShaderConstant("focalLength", fFocalLengthmm); //focal length in mm
   context.SetShaderConstant("fstop", fFStop); //f-stop value
@@ -157,7 +153,7 @@ void cDOFBokeh::Render(cApplication& application, opengl::cContext& context, ope
 
   application.RenderScreenRectangleShaderAndTextureAlreadySet();
 
-  context.UnBindShader(*pShaderScreenRectDOFBokeh);
+  context.UnBindShader(shaderScreenRectDOFBokeh);
 
   context.UnBindTextureDepthBuffer(1, textureScreenDepth);
   context.UnBindTexture(0, frameBufferFrom);

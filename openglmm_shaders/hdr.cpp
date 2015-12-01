@@ -59,14 +59,6 @@ cHDR::cHDR() :
   LuminanceBuffer(nullptr),
   BrightPixelsBuffer(nullptr),
 
-  pShaderPassThrough(nullptr),
-  Luminance(nullptr),
-  Minification(nullptr),
-  ToneMapping(nullptr),
-  BrightPixels(nullptr),
-  BlurH(nullptr),
-  BlurV(nullptr),
-
   data(nullptr),
 
   fMaxRGBValue(1.0f)
@@ -75,21 +67,21 @@ cHDR::cHDR() :
 
 void cHDR::Init(opengl::cContext& context)
 {
-  pShaderPassThrough = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
-  Luminance = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/luminance.frag"));
-  Minification = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/minification.frag"));
-  ToneMapping = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/tone_mapping.frag"));
-  BrightPixels = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/bright_pixels.frag"));
-  BlurH = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/blurh.frag"));
-  BlurV = context.CreateShader(TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/blurv.frag"));
+  context.CreateShader(shaderPassThrough, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
+  context.CreateShader(shaderLuminance, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/luminance.frag"));
+  context.CreateShader(shaderMinification, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/minification.frag"));
+  context.CreateShader(shaderToneMapping, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/tone_mapping.frag"));
+  context.CreateShader(shaderBrightPixels, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/bright_pixels.frag"));
+  context.CreateShader(shaderBlurH, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/blurh.frag"));
+  context.CreateShader(shaderBlurV, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/blurv.frag"));
 
 
-  context.BindShader(*BlurH);
+  context.BindShader(shaderBlurH);
   context.SetShaderConstant("Width", 5);
-  context.UnBindShader(*BlurH);
-  context.BindShader(*BlurV);
+  context.UnBindShader(shaderBlurH);
+  context.BindShader(shaderBlurV);
   context.SetShaderConstant("Width", 5);
-  context.UnBindShader(*BlurV);
+  context.UnBindShader(shaderBlurV);
 
   data = new float[4096];
 }
@@ -111,13 +103,13 @@ void cHDR::Destroy(opengl::cContext& context)
     if (BloomBuffer[i].vbo.IsCompiled()) context.DestroyStaticVertexBufferObject(BloomBuffer[i].vbo);
   }
 
-  context.DestroyShader(pShaderPassThrough);
-  context.DestroyShader(Luminance);
-  context.DestroyShader(Minification);
-  context.DestroyShader(ToneMapping);
-  context.DestroyShader(BrightPixels);
-  context.DestroyShader(BlurH);
-  context.DestroyShader(BlurV);
+  context.DestroyShader(shaderPassThrough);
+  context.DestroyShader(shaderLuminance);
+  context.DestroyShader(shaderMinification);
+  context.DestroyShader(shaderToneMapping);
+  context.DestroyShader(shaderBrightPixels);
+  context.DestroyShader(shaderBlurH);
+  context.DestroyShader(shaderBlurV);
 }
 
 float cHDR::GetMaximumRGBValue() const
@@ -236,7 +228,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
       context.BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
-      application.RenderScreenRectangle(HDRColorBuffer, *Luminance);
+      application.RenderScreenRectangle(HDRColorBuffer, shaderLuminance);
 
       context.EndRenderMode2D();
 
@@ -258,11 +250,11 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
       context.BeginRenderToTexture(*MinificationBuffer[i].pTexture);
       const opengl::cTexture& texture = (i == 0) ? *LuminanceBuffer : *MinificationBuffer[i - 1].pTexture;
       context.BindTexture(0, texture);
-      context.BindShader(*Minification);
+      context.BindShader(shaderMinification);
       context.SetShaderConstant("odx", odx);
       context.SetShaderConstant("ody", ody);
       application.RenderScreenRectangleShaderAndTextureAlreadySet(MinificationBuffer[i].vbo);
-      context.UnBindShader(*Minification);
+      context.UnBindShader(shaderMinification);
       context.UnBindTexture(0, texture);
       context.EndRenderToTexture(*MinificationBuffer[i].pTexture);
 
@@ -316,7 +308,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
   // render BrightPixelsBuffer texture --------------------------------------------------------------------------------------
 
   context.BeginRenderToTexture(*BrightPixelsBuffer);
-  application.RenderScreenRectangle(HDRColorBuffer, *BrightPixels);
+  application.RenderScreenRectangle(HDRColorBuffer, shaderBrightPixels);
   context.EndRenderToTexture(*BrightPixelsBuffer);
 
   // downscale and blur BrightPixelsBuffer texture 4x -----------------------------------------------------------------------
@@ -333,7 +325,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
     // downscale ----------------------------------------------------------------------------------------------------------
 
     context.BeginRenderToTexture(*BloomBuffer[index].pTexture);
-    application.RenderScreenRectangle(*BrightPixelsBuffer, *pShaderPassThrough);
+    application.RenderScreenRectangle(*BrightPixelsBuffer, shaderPassThrough);
     context.EndRenderToTexture(*BloomBuffer[index].pTexture);
 
     const float odw = 1.0f;
@@ -343,10 +335,10 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
     context.BeginRenderToTexture(*BloomBuffer[index + 1].pTexture);
     context.BindTexture(0, *BloomBuffer[index].pTexture);
-    context.BindShader(*BlurH);
+    context.BindShader(shaderBlurH);
     context.SetShaderConstant("odw", odw);
     application.RenderScreenRectangleShaderAndTextureAlreadySet(BloomBuffer[index + 1].vbo);
-    context.UnBindShader(*BlurH);
+    context.UnBindShader(shaderBlurH);
     context.BindTexture(0, *BloomBuffer[index].pTexture);
     context.EndRenderToTexture(*BloomBuffer[index + 1].pTexture);
 
@@ -354,10 +346,10 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
     context.BeginRenderToTexture(*BloomBuffer[index + 2].pTexture);
     context.BindTexture(0, *BloomBuffer[index + 1].pTexture);
-    context.BindShader(*BlurV);
+    context.BindShader(shaderBlurV);
     context.SetShaderConstant("odh", odh);
     application.RenderScreenRectangleShaderAndTextureAlreadySet(BloomBuffer[index + 2].vbo);
-    context.UnBindShader(*BlurV);
+    context.UnBindShader(shaderBlurV);
     context.UnBindTexture(0, *BloomBuffer[index + 1].pTexture);
     context.EndRenderToTexture(*BloomBuffer[index + 2].pTexture);
   }
@@ -374,7 +366,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
     // Now draw an overlay of our rendered textures
     context.BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
-    application.RenderScreenRectangle(HDRColorBuffer, *pShaderPassThrough);
+    application.RenderScreenRectangle(HDRColorBuffer, shaderPassThrough);
 
     // blend 4 downscaled and blurred BloomBuffer textures over the screen ---------------------------------------------
 
@@ -394,7 +386,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
     for (int i = 0; i < 4; i++) {
       const size_t index = ((3 - i) * 3) + 2;
-      application.RenderScreenRectangle(*BloomBuffer[index].pTexture, *pShaderPassThrough, bloomToScreenVBO[i]);
+      application.RenderScreenRectangle(*BloomBuffer[index].pTexture, shaderPassThrough, bloomToScreenVBO[i]);
     }
     #elif 0
     // Tweaked verison (Sky is blue and bloom is not as pronounced)
@@ -417,11 +409,11 @@ void cHDR::RenderToneMapping(cApplication& application, spitfire::durationms_t c
   // Render HDR texture (After the application has applied further processing) to LDR texture with tone mapping shader applied
 
   context.BeginRenderToTexture(output);
-  context.BindShader(*ToneMapping);
+  context.BindShader(shaderToneMapping);
   context.BindTexture(0, input);
   context.SetShaderConstant("fMaxRGBValue", fMaxRGBValue);
   application.RenderScreenRectangleShaderAndTextureAlreadySet();
   context.UnBindTexture(0, input);
-  context.UnBindShader(*ToneMapping);
+  context.UnBindShader(shaderToneMapping);
   context.EndRenderToTexture(output);
 }

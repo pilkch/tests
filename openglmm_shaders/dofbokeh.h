@@ -81,7 +81,7 @@ public:
   void IncreaseFStop();
 
 private:
-  opengl::cShader* pShaderScreenRectDOFBokeh;
+  opengl::cShader shaderScreenRectDOFBokeh;
 
   bool bDebugDOFShowFocus;
   float fFocalLengthmm; // Focal length in mm

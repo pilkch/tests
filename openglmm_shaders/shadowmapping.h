@@ -82,8 +82,8 @@ private:
 
   size_t uShadowMapTextureSize;
   opengl::cTextureFrameBufferObject* pTextureDepthTexture;
-  opengl::cShader* pShaderRenderToDepthTexture;
-  opengl::cShader* pShaderShadowMap;
+  opengl::cShader shaderRenderToDepthTexture;
+  opengl::cShader shaderShadowMap;
 
   spitfire::math::cVec3 lightInvDir;
   spitfire::math::cMat4 matProjection;

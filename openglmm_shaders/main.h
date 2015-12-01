@@ -214,23 +214,23 @@ private:
 
   opengl::cTexture* pTextureFlare;
 
-  opengl::cShader* pShaderColour;
-  opengl::cShader* pShaderCubeMap;
-  opengl::cShader* pShaderCarPaint;
-  opengl::cShader* pShaderGlass;
-  opengl::cShader* pShaderSilhouette;
-  opengl::cShader* pShaderCelShaded;
-  opengl::cShader* pShaderSmoke;
-  opengl::cShader* pShaderFire;
-  opengl::cShader* pShaderLights;
-  opengl::cShader* pShaderLambert;
-  opengl::cShader* pShaderPassThrough;
-  opengl::cShader* pShaderScreen1D;
-  opengl::cShader* pShaderScreen2D;
-  opengl::cShader* pShaderScreenRectVariableTextureSize;
-  opengl::cShader* pShaderScreenRect;
-  opengl::cShader* pShaderScreenRectDepthShadow;
-  opengl::cShader* pShaderScreenRectColourAndDepth;
+  opengl::cShader shaderColour;
+  opengl::cShader shaderCubeMap;
+  opengl::cShader shaderCarPaint;
+  opengl::cShader shaderGlass;
+  opengl::cShader shaderSilhouette;
+  opengl::cShader shaderCelShaded;
+  opengl::cShader shaderSmoke;
+  opengl::cShader shaderFire;
+  opengl::cShader shaderLights;
+  opengl::cShader shaderLambert;
+  opengl::cShader shaderPassThrough;
+  opengl::cShader shaderScreen1D;
+  opengl::cShader shaderScreen2D;
+  opengl::cShader shaderScreenRectVariableTextureSize;
+  opengl::cShader shaderScreenRect;
+  opengl::cShader shaderScreenRectDepthShadow;
+  opengl::cShader shaderScreenRectColourAndDepth;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPlaneFloor;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectLargeTeapot;
@@ -244,9 +244,9 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectScreenRectDebugVariableTextureSize;
 
 
-  opengl::cShader* pShaderCrate;
-  opengl::cShader* pShaderFog;
-  opengl::cShader* pShaderMetal;
+  opengl::cShader shaderCrate;
+  opengl::cShader shaderFog;
+  opengl::cShader shaderMetal;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPlane0;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectCube0;
@@ -285,7 +285,7 @@ private:
 
   std::vector<cSimplePostRenderShader> simplePostRenderShaders;
   bool bSimplePostRenderDirty;
-  opengl::cShader* pShaderScreenRectSimplePostRender;
+  opengl::cShader shaderScreenRectSimplePostRender;
 
   enum class COLOUR_BLIND_MODE {
     PROTANOPIA,

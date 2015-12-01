@@ -78,13 +78,13 @@ private:
   opengl::cTextureFrameBufferObject* BrightPixelsBuffer;
   cTextureFrameBufferObjectVBOPair BloomBuffer[12];
 
-  opengl::cShader* pShaderPassThrough;
-  opengl::cShader* Luminance;
-  opengl::cShader* Minification;
-  opengl::cShader* ToneMapping;
-  opengl::cShader* BrightPixels;
-  opengl::cShader* BlurH;
-  opengl::cShader* BlurV;
+  opengl::cShader shaderPassThrough;
+  opengl::cShader shaderLuminance;
+  opengl::cShader shaderMinification;
+  opengl::cShader shaderToneMapping;
+  opengl::cShader shaderBrightPixels;
+  opengl::cShader shaderBlurH;
+  opengl::cShader shaderBlurV;
 
   opengl::cStaticVertexBufferObject bloomToScreenVBO[4];
 

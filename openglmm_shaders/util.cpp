@@ -151,16 +151,7 @@ pTexture(nullptr)
 
 // ** cShaderVBOPair
 
-cShaderVBOPair::cShaderVBOPair() :
-pShader(nullptr)
-{
-}
-
-
-// ** cShaderVBOPair
-
 cVBOShaderTexturePair::cVBOShaderTexturePair() :
-  pShader(nullptr),
   pTexture(nullptr)
 {
 }

@@ -103,9 +103,7 @@ public:
 class cShaderVBOPair
 {
 public:
-  cShaderVBOPair();
-
-  opengl::cShader* pShader;
+  opengl::cShader shader;
   opengl::cStaticVertexBufferObject vbo;
 };
 
@@ -115,7 +113,7 @@ public:
   cVBOShaderTexturePair();
 
   opengl::cStaticVertexBufferObject vbo;
-  opengl::cShader* pShader;
+  opengl::cShader shader;
   opengl::cTexture* pTexture;
 };
 
