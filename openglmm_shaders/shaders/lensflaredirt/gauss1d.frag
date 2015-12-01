@@ -14,7 +14,6 @@ uniform sampler2DRect texUnit0;
 #define MAX_BLUR_RADIUS 4096
 
 uniform int uBlurRadius = 16;
-uniform float uBlurSigma = 2.0f;
 uniform vec2 uBlurDirection = vec2(1.0, 0.0); // (1,0)/(0,1) for x/y pass
 
 smooth in vec2 vertOutTexCoord;

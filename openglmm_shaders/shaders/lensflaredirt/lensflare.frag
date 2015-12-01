@@ -13,7 +13,7 @@ uniform sampler1D texUnit1;
 #define texSceneRTT texUnit0
 #define texLensColour texUnit1
 
-const int MAX_SAMPLES = 64;
+uniform float fExposure = 1.0;
 uniform int uSamples = 8;
 
 uniform float uDispersal = 0.25;
@@ -74,6 +74,9 @@ void main()
 	}
 
 	result *= texture(texLensColour, length(vec2(0.5) - texcoord) / length(vec2(0.5)));
+
+  // Scale the flare by the overall screen exposure
+  result *= fExposure;
 
   // sample halo
 	float weight = length(vec2(0.5) - fract(texcoord + haloVec)) / length(vec2(0.5));

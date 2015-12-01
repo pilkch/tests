@@ -63,7 +63,7 @@ public:
 
   void Resize(opengl::cContext& context);
 
-  void Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut, bool bDebugShowFlareOnly);
+  void Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut, float fExposure, bool bDebugShowFlareOnly);
 
   opengl::cTexture& GetTextureLensColor() { return *texLensColor_; }
   opengl::cTexture& GetTextureLensDirt() { return *texLensDirt_; }

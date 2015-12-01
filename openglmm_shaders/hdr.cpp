@@ -120,6 +120,11 @@ void cHDR::Destroy(opengl::cContext& context)
   context.DestroyShader(BlurV);
 }
 
+float cHDR::GetMaximumRGBValue() const
+{
+  return fMaxRGBValue;
+}
+
 void cHDR::Resize(cApplication& application, opengl::cContext& context)
 {
   const size_t Width = context.GetWidth();

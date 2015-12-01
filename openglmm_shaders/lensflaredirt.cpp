@@ -224,7 +224,7 @@ void cLensFlareDirt::gaussBlur(
   context.UnBindShader(*shaderGaussBlur_);
 }
 
-void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut, bool bDebugShowFlareOnly)
+void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut, float fExposure, bool bDebugShowFlareOnly)
 {
   if ((int)setTempBufferSize_ != tempBufferSize_) {
     tempBufferSize_ = (int)setTempBufferSize_;
@@ -255,6 +255,11 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
   context.SetShaderConstant("uDispersal", flareDispersal_);
   context.SetShaderConstant("uHaloWidth", flareHaloWidth_);
   context.SetShaderConstant("uDistortion", flareDistortion_);
+
+  // Adjust the exposure
+  const float fLensFlareExposure = fExposure + 2.0f;
+  context.SetShaderConstant("fExposure", 1.0f / fLensFlareExposure);
+
   context.BindTexture(0, *fboTempA_);
   context.BindTexture(1, *texLensColor_);
   application.RenderScreenRectangleShaderAndTextureAlreadySet(vboLensFlare);

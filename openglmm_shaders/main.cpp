@@ -191,6 +191,8 @@ void cApplication::CreateText()
 
   lines.push_back(TEXT(""));
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
+  const float fExposure = hdr.GetMaximumRGBValue();
+  lines.push_back(spitfire::string_t(TEXT("Exposure: ")) + spitfire::string::ToString(fExposure));
   lines.push_back(spitfire::string_t(TEXT("Lens Flare and Dirt: ")) + (bIsLensFlareDirt ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Debug show lens flare and dirt only: ")) + (bDebugShowFlareOnly ? TEXT("On") : TEXT("Off")));
 
@@ -3322,7 +3324,8 @@ void cApplication::Run()
 
     // Apply lens flare with dirt specks
     if (bIsLensFlareDirt) {
-      lensFlareDirt.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]), bDebugShowFlareOnly);
+      const float fExposure = hdr.GetMaximumRGBValue();
+      lensFlareDirt.Render(*this, *pContext, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]), fExposure, bDebugShowFlareOnly);
       std::swap(outputFBO, inputFBO);
     }
 

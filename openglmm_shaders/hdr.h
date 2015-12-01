@@ -71,6 +71,8 @@ public:
   void RenderToneMapping(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output);
 
 private:
+  float GetMaximumRGBValue() const;
+
   opengl::cTextureFrameBufferObject* LuminanceBuffer;
   cTextureFrameBufferObjectVBOPair MinificationBuffer[8];
   opengl::cTextureFrameBufferObject* BrightPixelsBuffer;
