@@ -85,9 +85,7 @@ private:
 class cTextureVBOPair
 {
 public:
-  cTextureVBOPair();
-
-  opengl::cTexture* pTexture;
+  opengl::cTexture texture;
   opengl::cStaticVertexBufferObject vbo;
 };
 
@@ -110,11 +108,9 @@ public:
 class cVBOShaderTexturePair
 {
 public:
-  cVBOShaderTexturePair();
-
   opengl::cStaticVertexBufferObject vbo;
   opengl::cShader shader;
-  opengl::cTexture* pTexture;
+  opengl::cTexture texture;
 };
 
 class cSimplePostRenderShader

@@ -197,22 +197,22 @@ private:
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreenColourAndDepth[2];
   opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreenDepth;
 
-  opengl::cTexture* pTextureDiffuse;
-  opengl::cTexture* pTextureFelt;
-  opengl::cTexture* pTextureLightMap;
-  opengl::cTexture* pTextureDetail;
+  opengl::cTexture textureDiffuse;
+  opengl::cTexture textureFelt;
+  opengl::cTexture textureLightMap;
+  opengl::cTexture textureDetail;
   opengl::cTextureCubeMap* pTextureCubeMap;
-  opengl::cTexture* pTextureMarble;
+  opengl::cTexture textureMarble;
 
-  opengl::cTexture* pTextureMetalDiffuse;
-  opengl::cTexture* pTextureMetalSpecular;
+  opengl::cTexture textureMetalDiffuse;
+  opengl::cTexture textureMetalSpecular;
 
-  opengl::cTexture* pTextureNormalMapDiffuse;
-  opengl::cTexture* pTextureNormalMapSpecular;
-  opengl::cTexture* pTextureNormalMapNormal;
-  opengl::cTexture* pTextureNormalMapHeight;
+  opengl::cTexture textureNormalMapDiffuse;
+  opengl::cTexture textureNormalMapSpecular;
+  opengl::cTexture textureNormalMapNormal;
+  opengl::cTexture textureNormalMapHeight;
 
-  opengl::cTexture* pTextureFlare;
+  opengl::cTexture textureFlare;
 
   opengl::cShader shaderColour;
   opengl::cShader shaderCubeMap;

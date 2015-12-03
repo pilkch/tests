@@ -68,20 +68,20 @@ void cLensFlareDirt::Init(cApplication& application, opengl::cContext& context)
   // TEXTURES
   //------------------------------------------------------------------------------
 
-  texLensDirt_ = context.CreateTexture(TEXT("textures/lensdirt.png"));
-  ASSERT(texLensDirt_ != nullptr);
-  texLensDirt_->SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
-  texLensDirt_->SetWrap(opengl::TEXTURE_WRAP::CLAMP_TO_EDGE);
+  context.CreateTexture(texLensDirt_, TEXT("textures/lensdirt.png"));
+  ASSERT(texLensDirt_.IsValid());
+  texLensDirt_.SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
+  texLensDirt_.SetWrap(opengl::TEXTURE_WRAP::CLAMP_TO_EDGE);
 
-  texLensStar_ = context.CreateTexture(TEXT("textures/lensstar.png"));
-  ASSERT(texLensStar_ != nullptr);
-  texLensStar_->SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
-  texLensStar_->SetWrap(opengl::TEXTURE_WRAP::CLAMP_TO_EDGE);
+  context.CreateTexture(texLensStar_, TEXT("textures/lensstar.png"));
+  ASSERT(texLensStar_.IsValid());
+  texLensStar_.SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
+  texLensStar_.SetWrap(opengl::TEXTURE_WRAP::CLAMP_TO_EDGE);
 
-  texLensColor_ = context.CreateTexture(TEXT("textures/lenscolor.png"));
-  ASSERT(texLensColor_ != nullptr);
-  texLensColor_->SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
-  texLensColor_->SetWrap(opengl::TEXTURE_WRAP::REPEAT);
+  context.CreateTexture(texLensColor_, TEXT("textures/lenscolor.png"));
+  ASSERT(texLensColor_.IsValid());
+  texLensColor_.SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
+  texLensColor_.SetWrap(opengl::TEXTURE_WRAP::REPEAT);
 
 
 
@@ -112,18 +112,9 @@ void cLensFlareDirt::Destroy(opengl::cContext& context)
   if (shaderLensflare_.IsCompiledProgram()) context.DestroyShader(shaderLensflare_);
 
 
-  if (texLensDirt_ != nullptr) {
-    context.DestroyTexture(texLensDirt_);
-    texLensDirt_ = nullptr;
-  }
-  if (texLensStar_ != nullptr) {
-    context.DestroyTexture(texLensStar_);
-    texLensStar_ = nullptr;
-  }
-  if (texLensColor_ != nullptr) {
-    context.DestroyTexture(texLensColor_);
-    texLensColor_ = nullptr;
-  }
+  if (texLensDirt_.IsValid()) context.DestroyTexture(texLensDirt_);
+  if (texLensStar_.IsValid()) context.DestroyTexture(texLensStar_);
+  if (texLensColor_.IsValid()) context.DestroyTexture(texLensColor_);
 }
 
 void cLensFlareDirt::CreateTempBuffers(cApplication& application, opengl::cContext& context)
@@ -249,9 +240,9 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
   context.SetShaderConstant("fExposure", 1.0f / fLensFlareExposure);
 
   context.BindTexture(0, *fboTempA_);
-  context.BindTexture(1, *texLensColor_);
+  context.BindTexture(1, texLensColor_);
   application.RenderScreenRectangleShaderAndTextureAlreadySet(vboLensFlare);
-  context.UnBindTexture(1, *texLensColor_);
+  context.UnBindTexture(1, texLensColor_);
   context.UnBindTexture(0, *fboTempA_);
   context.UnBindShader(shaderLensflare_);
   context.EndRenderToTexture(*fboTempB_);
@@ -296,13 +287,13 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
 
   context.BindTexture(0, fboIn);
   context.BindTexture(1, *fboTempC_);
-  context.BindTexture(2, *texLensDirt_);
-  context.BindTexture(3, *texLensStar_);
+  context.BindTexture(2, texLensDirt_);
+  context.BindTexture(3, texLensStar_);
 
   application.RenderScreenRectangleShaderAndTextureAlreadySet(vboScaleBias);
 
-  context.UnBindTexture(3, *texLensStar_);
-  context.UnBindTexture(2, *texLensDirt_);
+  context.UnBindTexture(3, texLensStar_);
+  context.UnBindTexture(2, texLensDirt_);
   context.UnBindTexture(1, *fboTempC_);
   context.UnBindTexture(0, fboIn);
 

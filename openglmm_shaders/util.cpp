@@ -133,26 +133,10 @@ spitfire::math::cMat4 cFreeLookCamera::CalculateViewMatrix() const
 }
 
 
-// ** cTextureVBOPair
-
-cTextureVBOPair::cTextureVBOPair() :
-pTexture(nullptr)
-{
-}
-
-
 // ** cTextureFrameBufferObjectVBOPair
 
 cTextureFrameBufferObjectVBOPair::cTextureFrameBufferObjectVBOPair() :
 pTexture(nullptr)
-{
-}
-
-
-// ** cShaderVBOPair
-
-cVBOShaderTexturePair::cVBOShaderTexturePair() :
-  pTexture(nullptr)
 {
 }
 

@@ -65,9 +65,9 @@ public:
 
   void Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut, float fExposure, bool bDebugShowFlareOnly);
 
-  opengl::cTexture& GetTextureLensColor() { return *texLensColor_; }
-  opengl::cTexture& GetTextureLensDirt() { return *texLensDirt_; }
-  opengl::cTexture& GetTextureLensStar() { return *texLensStar_; }
+  opengl::cTexture& GetTextureLensColor() { return texLensColor_; }
+  opengl::cTexture& GetTextureLensDirt() { return texLensDirt_; }
+  opengl::cTexture& GetTextureLensStar() { return texLensStar_; }
 
   opengl::cTextureFrameBufferObject& GetTempA() { return *fboTempA_; }
   opengl::cTextureFrameBufferObject& GetTempB() { return *fboTempB_; }
@@ -94,9 +94,9 @@ private:
   opengl::cStaticVertexBufferObject vboScaleBias;
 
   // Lens flare
-  opengl::cTexture* texLensColor_; // radial feature colour
-  opengl::cTexture* texLensDirt_;
-  opengl::cTexture* texLensStar_; // dirt/diffraction starburst
+  opengl::cTexture texLensColor_; // radial feature colour
+  opengl::cTexture texLensDirt_;
+  opengl::cTexture texLensStar_; // dirt/diffraction starburst
   opengl::cShader shaderLensflare_; // feature generation
   float flareScale_;
   float flareBias_;

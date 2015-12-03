@@ -102,22 +102,9 @@ cApplication::cApplication() :
 
   pTextureFrameBufferObjectTeapot(nullptr),
 
-  pTextureDiffuse(nullptr),
-  pTextureFelt(nullptr),
-  pTextureLightMap(nullptr),
-  pTextureDetail(nullptr),
   pTextureCubeMap(nullptr),
-  pTextureMarble(nullptr),
 
-  pTextureMetalDiffuse(nullptr),
-  pTextureMetalSpecular(nullptr),
-
-  pTextureNormalMapDiffuse(nullptr),
-  pTextureNormalMapSpecular(nullptr),
-  pTextureNormalMapNormal(nullptr),
-  pTextureNormalMapHeight(nullptr),
-
-  pTextureFlare(nullptr),
+  pTextureFrameBufferObjectScreenDepth(nullptr),
 
   bSimplePostRenderDirty(false),
 
@@ -125,8 +112,6 @@ cApplication::cApplication() :
 {
   pTextureFrameBufferObjectScreenColourAndDepth[0] = nullptr;
   pTextureFrameBufferObjectScreenColourAndDepth[1] = nullptr;
-
-  pTextureFrameBufferObjectScreenDepth = nullptr;
 
   // Set our main thread
   spitfire::util::SetMainThread();
@@ -864,19 +849,19 @@ bool cApplication::Create()
 
   pTextureFrameBufferObjectScreenDepth = pContext->CreateTextureFrameBufferObjectWithDepth(resolution.width, resolution.height);
 
-  pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
-  assert(pTextureDiffuse != nullptr);
-  pTextureFelt = pContext->CreateTexture(TEXT("textures/felt.png"));
-  assert(pTextureFelt != nullptr);
-  pTextureLightMap = pContext->CreateTexture(TEXT("textures/lightmap.png"));
-  assert(pTextureLightMap != nullptr);
-  pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
-  assert(pTextureDetail != nullptr);
+  pContext->CreateTexture(textureDiffuse, TEXT("textures/diffuse.png"));
+  assert(textureDiffuse.IsValid());
+  pContext->CreateTexture(textureFelt, TEXT("textures/felt.png"));
+  assert(textureFelt.IsValid());
+  pContext->CreateTexture(textureLightMap, TEXT("textures/lightmap.png"));
+  assert(textureLightMap.IsValid());
+  pContext->CreateTexture(textureDetail, TEXT("textures/detail.png"));
+  assert(textureDetail.IsValid());
 
-  pTextureMetalDiffuse = pContext->CreateTexture(TEXT("textures/metal.png"));
-  assert(pTextureMetalDiffuse != nullptr);
-  pTextureMetalSpecular = pContext->CreateTexture(TEXT("textures/metal_specular.jpg"));
-  assert(pTextureMetalSpecular != nullptr);
+  pContext->CreateTexture(textureMetalDiffuse, TEXT("textures/metal.png"));
+  assert(textureMetalDiffuse.IsValid());
+  pContext->CreateTexture(textureMetalSpecular, TEXT("textures/metal_specular.jpg"));
+  assert(textureMetalSpecular.IsValid());
 
   pTextureCubeMap = pContext->CreateTextureCubeMap(
     TEXT("textures/skybox_positive_x.jpg"),
@@ -888,20 +873,20 @@ bool cApplication::Create()
   );
   assert(pTextureCubeMap != nullptr);
 
-  pTextureMarble = pContext->CreateTexture(TEXT("textures/marble.png"));
-  assert(pTextureMarble != nullptr);
+  pContext->CreateTexture(textureMarble, TEXT("textures/marble.png"));
+  assert(textureMarble.IsValid());
 
-  pTextureNormalMapDiffuse = pContext->CreateTexture(TEXT("textures/floor_tile_color_map.png"));
-  assert(pTextureNormalMapDiffuse != nullptr);
+  pContext->CreateTexture(textureNormalMapDiffuse, TEXT("textures/floor_tile_color_map.png"));
+  assert(textureNormalMapDiffuse.IsValid());
 
-  pTextureNormalMapSpecular = pContext->CreateTexture(TEXT("textures/floor_tile_gloss_map.png"));
-  assert(pTextureNormalMapSpecular != nullptr);
+  pContext->CreateTexture(textureNormalMapSpecular, TEXT("textures/floor_tile_gloss_map.png"));
+  assert(textureNormalMapSpecular.IsValid());
 
-  pTextureNormalMapNormal = pContext->CreateTexture(TEXT("textures/floor_tile_normal_map.png"));
-  assert(pTextureNormalMapNormal != nullptr);
+  pContext->CreateTexture(textureNormalMapNormal, TEXT("textures/floor_tile_normal_map.png"));
+  assert(textureNormalMapNormal.IsValid());
 
-  pTextureNormalMapHeight = pContext->CreateTexture(TEXT("textures/floor_tile_height_map.png"));
-  assert(pTextureNormalMapHeight != nullptr);
+  pContext->CreateTexture(textureNormalMapHeight, TEXT("textures/floor_tile_height_map.png"));
+  assert(textureNormalMapHeight.IsValid());
 
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
   CreateTeapotVBO();
@@ -931,18 +916,18 @@ bool cApplication::Create()
 
   pContext->CreateStaticVertexBufferObject(light.vbo);
   CreateLightBillboard();
-  light.pTexture = pContext->CreateTexture(TEXT("textures/light.png"));
-  assert(light.pTexture != nullptr);
-  pTextureFlare = pContext->CreateTexture(TEXT("textures/flare.png"));
-  assert(pTextureFlare != nullptr);
+  pContext->CreateTexture(light.texture, TEXT("textures/light.png"));
+  assert(light.texture.IsValid());
+  pContext->CreateTexture(textureFlare, TEXT("textures/flare.png"));
+  assert(textureFlare.IsValid());
 
-  smoke.pTexture = pContext->CreateTexture(TEXT("textures/particle_smoke.png"));
-  assert(smoke.pTexture != nullptr);
+  pContext->CreateTexture(smoke.texture, TEXT("textures/particle_smoke.png"));
+  assert(smoke.texture.IsValid());
   pContext->CreateStaticVertexBufferObject(smoke.vbo);
   CreateParticleSystem(smoke.vbo);
 
-  fire.pTexture = pContext->CreateTexture(TEXT("textures/particle_fire.png"));
-  assert(fire.pTexture != nullptr);
+  pContext->CreateTexture(fire.texture, TEXT("textures/particle_fire.png"));
+  assert(fire.texture.IsValid());
   pContext->CreateStaticVertexBufferObject(fire.vbo);
   CreateParticleSystem(fire.vbo);
 
@@ -950,10 +935,10 @@ bool cApplication::Create()
   for (spitfire::filesystem::cFolderIterator iter(sTestImagesPath); iter.IsValid(); iter.Next()) {
     if (iter.IsFile()) {
       cTextureVBOPair* pPair = new cTextureVBOPair;
-      pPair->pTexture = pContext->CreateTexture(iter.GetFullPath());
-      assert(pPair->pTexture != nullptr);
+      pContext->CreateTexture(pPair->texture, iter.GetFullPath());
+      assert(pPair->texture.IsValid());
       pContext->CreateStaticVertexBufferObject(pPair->vbo);
-      CreateTestImage(pPair->vbo, pPair->pTexture->GetWidth(), pPair->pTexture->GetHeight());
+      CreateTestImage(pPair->vbo, pPair->texture.GetWidth(), pPair->texture.GetHeight());
       testImages.push_back(pPair);
     }
   }
@@ -1066,56 +1051,25 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
 
-  if (pTextureNormalMapHeight != nullptr) {
-    pContext->DestroyTexture(pTextureNormalMapHeight);
-    pTextureNormalMapHeight = nullptr;
-  }
-  if (pTextureNormalMapNormal != nullptr) {
-    pContext->DestroyTexture(pTextureNormalMapNormal);
-    pTextureNormalMapNormal = nullptr;
-  }
-  if (pTextureNormalMapSpecular != nullptr) {
-    pContext->DestroyTexture(pTextureNormalMapSpecular);
-    pTextureNormalMapSpecular = nullptr;
-  }
-  if (pTextureNormalMapDiffuse != nullptr) {
-    pContext->DestroyTexture(pTextureNormalMapDiffuse);
-    pTextureNormalMapDiffuse = nullptr;
-  }
+  if (textureNormalMapHeight.IsValid()) pContext->DestroyTexture(textureNormalMapHeight);
+  if (textureNormalMapNormal.IsValid()) pContext->DestroyTexture(textureNormalMapNormal);
+  if (textureNormalMapSpecular.IsValid()) pContext->DestroyTexture(textureNormalMapSpecular);
+  if (textureNormalMapDiffuse.IsValid()) pContext->DestroyTexture(textureNormalMapDiffuse);
 
-  if (pTextureMetalSpecular != nullptr) {
-    pContext->DestroyTexture(pTextureMetalSpecular);
-    pTextureMetalSpecular = nullptr;
-  }
-  if (pTextureMetalDiffuse != nullptr) {
-    pContext->DestroyTexture(pTextureMetalDiffuse);
-    pTextureMetalDiffuse = nullptr;
-  }
+  if (textureMetalSpecular.IsValid()) pContext->DestroyTexture(textureMetalSpecular);
+  if (textureMetalDiffuse.IsValid()) pContext->DestroyTexture(textureMetalDiffuse);
 
-  if (pTextureMarble != nullptr) {
-    pContext->DestroyTexture(pTextureMarble);
-    pTextureMarble = nullptr;
-  }
+  if (textureMarble.IsValid()) pContext->DestroyTexture(textureMarble);
+
   if (pTextureCubeMap != nullptr) {
     pContext->DestroyTextureCubeMap(pTextureCubeMap);
     pTextureCubeMap = nullptr;
   }
-  if (pTextureDetail != nullptr) {
-    pContext->DestroyTexture(pTextureDetail);
-    pTextureDetail = nullptr;
-  }
-  if (pTextureLightMap != nullptr) {
-    pContext->DestroyTexture(pTextureLightMap);
-    pTextureLightMap = nullptr;
-  }
-  if (pTextureFelt != nullptr) {
-    pContext->DestroyTexture(pTextureFelt);
-    pTextureFelt = nullptr;
-  }
-  if (pTextureDiffuse != nullptr) {
-    pContext->DestroyTexture(pTextureDiffuse);
-    pTextureDiffuse = nullptr;
-  }
+
+  if (textureDetail.IsValid()) pContext->DestroyTexture(textureDetail);
+  if (textureLightMap.IsValid()) pContext->DestroyTexture(textureLightMap);
+  if (textureFelt.IsValid()) pContext->DestroyTexture(textureFelt);
+  if (textureDiffuse.IsValid()) pContext->DestroyTexture(textureDiffuse);
 
   if (pTextureFrameBufferObjectTeapot != nullptr) {
     pContext->DestroyTextureFrameBufferObject(pTextureFrameBufferObjectTeapot);
@@ -1137,10 +1091,7 @@ void cApplication::Destroy()
 
   const size_t n = testImages.size();
   for (size_t i = 0; i < n; i++) {
-    if (testImages[i]->pTexture != nullptr) {
-      pContext->DestroyTexture(testImages[i]->pTexture);
-      testImages[i]->pTexture = nullptr;
-    }
+    if (testImages[i]->texture.IsValid()) pContext->DestroyTexture(testImages[i]->texture);
 
     pContext->DestroyStaticVertexBufferObject(testImages[i]->vbo);
 
@@ -1150,28 +1101,16 @@ void cApplication::Destroy()
   testImages.clear();
 
   // Destroy our smoke
-  if (smoke.pTexture != nullptr) {
-    pContext->DestroyTexture(smoke.pTexture);
-    smoke.pTexture = nullptr;
-  }
+  if (smoke.texture.IsValid()) pContext->DestroyTexture(smoke.texture);
   pContext->DestroyStaticVertexBufferObject(smoke.vbo);
 
   // Destroy our fire
-  if (fire.pTexture != nullptr) {
-    pContext->DestroyTexture(fire.pTexture);
-    fire.pTexture = nullptr;
-  }
+  if (fire.texture.IsValid()) pContext->DestroyTexture(fire.texture);
   pContext->DestroyStaticVertexBufferObject(fire.vbo);
 
   // Destroy our light
-  if (pTextureFlare != nullptr) {
-    pContext->DestroyTexture(pTextureFlare);
-    pTextureFlare = nullptr;
-  }
-  if (light.pTexture != nullptr) {
-    pContext->DestroyTexture(light.pTexture);
-    light.pTexture = nullptr;
-  }
+  if (textureFlare.IsValid()) pContext->DestroyTexture(textureFlare);
+  if (light.texture.IsValid()) pContext->DestroyTexture(light.texture);
   pContext->DestroyStaticVertexBufferObject(light.vbo);
 
   // Destroy our text VBO
@@ -1704,39 +1643,28 @@ void cApplication::Run()
   assert(pContext->IsValid());
   assert(pFont != nullptr);
   assert(pFont->IsValid());
-  assert(pTextureDiffuse != nullptr);
-  assert(pTextureDiffuse->IsValid());
-  assert(pTextureFelt != nullptr);
-  assert(pTextureFelt->IsValid());
-  assert(pTextureLightMap != nullptr);
-  assert(pTextureLightMap->IsValid());
-  assert(pTextureDetail != nullptr);
-  assert(pTextureDetail->IsValid());
+  assert(textureDiffuse.IsValid());
+  assert(textureFelt.IsValid());
+  assert(textureLightMap.IsValid());
+  assert(textureDetail.IsValid());
   assert(pTextureCubeMap != nullptr);
   assert(pTextureCubeMap->IsValid());
-  assert(pTextureMarble != nullptr);
-  assert(pTextureMarble->IsValid());
-  assert(pTextureMetalDiffuse != nullptr);
-  assert(pTextureMetalDiffuse->IsValid());
-  assert(pTextureMetalSpecular != nullptr);
-  assert(pTextureMetalSpecular->IsValid());
-  assert(pTextureNormalMapDiffuse != nullptr);
-  assert(pTextureNormalMapDiffuse->IsValid());
-  assert(pTextureNormalMapSpecular != nullptr);
-  assert(pTextureNormalMapSpecular->IsValid());
-  assert(pTextureNormalMapHeight != nullptr);
-  assert(pTextureNormalMapHeight->IsValid());
-  assert(pTextureNormalMapNormal != nullptr);
-  assert(pTextureNormalMapNormal->IsValid());
+  assert(textureMarble.IsValid());
+  assert(textureMetalDiffuse.IsValid());
+  assert(textureMetalSpecular.IsValid());
+  assert(textureNormalMapDiffuse.IsValid());
+  assert(textureNormalMapSpecular.IsValid());
+  assert(textureNormalMapHeight.IsValid());
+  assert(textureNormalMapNormal.IsValid());
   assert(shaderColour.IsCompiledProgram());
   assert(shaderCubeMap.IsCompiledProgram());
   assert(shaderCarPaint.IsCompiledProgram());
   assert(shaderGlass.IsCompiledProgram());
   assert(shaderSilhouette.IsCompiledProgram());
   assert(shaderCelShaded.IsCompiledProgram());
-  assert(light.pTexture->IsValid());
+  assert(light.texture.IsValid());
   assert(light.shader.IsCompiledProgram());
-  assert(pTextureFlare->IsValid());
+  assert(textureFlare.IsValid());
   assert(shaderSmoke.IsCompiledProgram());
   assert(shaderFire.IsCompiledProgram());
   assert(shaderLambert.IsCompiledProgram());
@@ -1789,16 +1717,13 @@ void cApplication::Run()
   assert(staticVertexBufferObjectPointLight.IsCompiled());
   assert(staticVertexBufferObjectSpotLight.IsCompiled());
 
-  assert(light.pTexture != nullptr);
-  assert(light.pTexture->IsValid());
+  assert(light.texture.IsValid());
   assert(light.vbo.IsCompiled());
 
-  assert(smoke.pTexture != nullptr);
-  assert(smoke.pTexture->IsValid());
+  assert(smoke.texture.IsValid());
   assert(smoke.vbo.IsCompiled());
 
-  assert(fire.pTexture != nullptr);
-  assert(fire.pTexture->IsValid());
+  assert(fire.texture.IsValid());
   assert(fire.vbo.IsCompiled());
 
   assert(parallaxNormalMap.vbo.IsCompiled());
@@ -2311,7 +2236,7 @@ void cApplication::Run()
         pContext->BindShader(shaderCarPaint);
 
         // Render the car paint teapot
-        pContext->BindTexture(0, *pTextureDiffuse);
+        pContext->BindTexture(0, textureDiffuse);
         pContext->BindTextureCubeMap(1, *pTextureCubeMap);
 
         // Set our constants
@@ -2338,7 +2263,7 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
         pContext->UnBindTextureCubeMap(1, *pTextureCubeMap);
-        pContext->UnBindTexture(0, *pTextureDiffuse);
+        pContext->UnBindTexture(0, textureDiffuse);
 
         pContext->UnBindShader(shaderCarPaint);
       }
@@ -2347,8 +2272,8 @@ void cApplication::Run()
         pContext->BindShader(shaderGlass);
 
         // Render the glass teapot
-        pContext->BindTexture(0, *pTextureMetalDiffuse);
-        pContext->BindTexture(1, *pTextureMetalSpecular);
+        pContext->BindTexture(0, textureMetalDiffuse);
+        pContext->BindTexture(1, textureMetalSpecular);
         pContext->BindTextureCubeMap(2, *pTextureCubeMap);
 
         // Set our constants
@@ -2375,8 +2300,8 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
         pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
-        pContext->UnBindTexture(1, *pTextureMetalSpecular);
-        pContext->UnBindTexture(0, *pTextureMetalDiffuse);
+        pContext->UnBindTexture(1, textureMetalSpecular);
+        pContext->UnBindTexture(0, textureMetalDiffuse);
 
         pContext->UnBindShader(shaderGlass);
       }
@@ -2448,7 +2373,7 @@ void cApplication::Run()
       {
         pContext->BindShader(shaderLights);
 
-        pContext->BindTexture(0, *pTextureMarble);
+        pContext->BindTexture(0, textureMarble);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectStatue);
 
@@ -2460,7 +2385,7 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectStatue);
 
-        pContext->UnBindTexture(0, *pTextureMarble);
+        pContext->UnBindTexture(0, textureMarble);
 
         pContext->UnBindShader(shaderLights);
       }
@@ -2471,10 +2396,10 @@ void cApplication::Run()
       {
         pContext->BindShader(parallaxNormalMap.shader);
 
-        pContext->BindTexture(0, *pTextureNormalMapDiffuse);
-        pContext->BindTexture(1, *pTextureNormalMapSpecular);
-        pContext->BindTexture(2, *pTextureNormalMapNormal);
-        pContext->BindTexture(3, *pTextureNormalMapHeight);
+        pContext->BindTexture(0, textureNormalMapDiffuse);
+        pContext->BindTexture(1, textureNormalMapSpecular);
+        pContext->BindTexture(2, textureNormalMapNormal);
+        pContext->BindTexture(3, textureNormalMapHeight);
 
         // Set up the shader uniforms
         pContext->SetShaderConstant("directionalLight.direction", (parallaxNormalMapPosition - lightDirectionalPosition).GetNormalised());
@@ -2487,10 +2412,10 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(parallaxNormalMap.vbo);
 
-        pContext->UnBindTexture(3, *pTextureNormalMapHeight);
-        pContext->UnBindTexture(2, *pTextureNormalMapNormal);
-        pContext->UnBindTexture(1, *pTextureNormalMapSpecular);
-        pContext->UnBindTexture(0, *pTextureNormalMapDiffuse);
+        pContext->UnBindTexture(3, textureNormalMapHeight);
+        pContext->UnBindTexture(2, textureNormalMapNormal);
+        pContext->UnBindTexture(1, textureNormalMapSpecular);
+        pContext->UnBindTexture(0, textureNormalMapDiffuse);
 
         pContext->UnBindShader(parallaxNormalMap.shader);
       }
@@ -2542,8 +2467,8 @@ void cApplication::Run()
       {
         pContext->BindShader(shaderMetal);
 
-        pContext->BindTexture(0, *pTextureMetalDiffuse);
-        pContext->BindTexture(1, *pTextureMetalSpecular);
+        pContext->BindTexture(0, textureMetalDiffuse);
+        pContext->BindTexture(1, textureMetalSpecular);
         pContext->BindTextureCubeMap(2, *pTextureCubeMap);
 
         // Set our constants
@@ -2585,8 +2510,8 @@ void cApplication::Run()
         }
 
         pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
-        pContext->UnBindTexture(1, *pTextureMetalSpecular);
-        pContext->UnBindTexture(0, *pTextureMetalDiffuse);
+        pContext->UnBindTexture(1, textureMetalSpecular);
+        pContext->UnBindTexture(0, textureMetalDiffuse);
 
         pContext->UnBindShader(shaderMetal);
       }
@@ -2598,7 +2523,7 @@ void cApplication::Run()
       {
         pContext->BindShader(shadowMapping.GetShadowMapShader());
 
-        pContext->BindTexture(0, *pTextureFelt);
+        pContext->BindTexture(0, textureFelt);
         pContext->BindTextureDepthBuffer(1, shadowMapping.GetShadowMapTexture());
 
         //pContext->SetShaderConstant("LightPosition_worldspace", lightPointPosition);
@@ -2639,7 +2564,7 @@ void cApplication::Run()
         }
 
         pContext->UnBindTextureDepthBuffer(1, shadowMapping.GetShadowMapTexture());
-        pContext->UnBindTexture(0, *pTextureFelt);
+        pContext->UnBindTexture(0, textureFelt);
 
         pContext->UnBindShader(shadowMapping.GetShadowMapShader());
       }
@@ -2648,9 +2573,9 @@ void cApplication::Run()
       // Render the textured objects
       pContext->BindShader(shaderCrate);
 
-      pContext->BindTexture(0, *pTextureDiffuse);
-      pContext->BindTexture(1, *pTextureLightMap);
-      pContext->BindTexture(2, *pTextureDetail);
+      pContext->BindTexture(0, textureDiffuse);
+      pContext->BindTexture(1, textureLightMap);
+      pContext->BindTexture(2, textureDetail);
 
       {
         {
@@ -2689,9 +2614,9 @@ void cApplication::Run()
         }
       }
 
-      pContext->UnBindTexture(2, *pTextureDetail);
-      pContext->UnBindTexture(1, *pTextureLightMap);
-      pContext->UnBindTexture(0, *pTextureDiffuse);
+      pContext->UnBindTexture(2, textureDetail);
+      pContext->UnBindTexture(1, textureLightMap);
+      pContext->UnBindTexture(0, textureDiffuse);
 
       pContext->UnBindShader(shaderCrate);
 
@@ -2699,8 +2624,8 @@ void cApplication::Run()
       // Render the foggy objects
       pContext->BindShader(shaderFog);
 
-      pContext->BindTexture(0, *pTextureDiffuse);
-      pContext->BindTexture(1, *pTextureDetail);
+      pContext->BindTexture(0, textureDiffuse);
+      pContext->BindTexture(1, textureDetail);
 
       {
         {
@@ -2739,8 +2664,8 @@ void cApplication::Run()
         }
       }
 
-      pContext->UnBindTexture(1, *pTextureDetail);
-      pContext->UnBindTexture(0, *pTextureDiffuse);
+      pContext->UnBindTexture(1, textureDetail);
+      pContext->UnBindTexture(0, textureDiffuse);
 
       pContext->UnBindShader(shaderFog);
 
@@ -2903,9 +2828,9 @@ void cApplication::Run()
       {
         pContext->BindShader(shaderCrate);
 
-        pContext->BindTexture(0, *pTextureDiffuse);
-        pContext->BindTexture(1, *pTextureLightMap);
-        pContext->BindTexture(2, *pTextureDetail);
+        pContext->BindTexture(0, textureDiffuse);
+        pContext->BindTexture(1, textureLightMap);
+        pContext->BindTexture(2, textureDetail);
 
         {
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot3);
@@ -2914,9 +2839,9 @@ void cApplication::Run()
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot3);
         }
 
-        pContext->UnBindTexture(2, *pTextureDetail);
-        pContext->UnBindTexture(1, *pTextureLightMap);
-        pContext->UnBindTexture(0, *pTextureDiffuse);
+        pContext->UnBindTexture(2, textureDetail);
+        pContext->UnBindTexture(1, textureLightMap);
+        pContext->UnBindTexture(0, textureDiffuse);
 
         pContext->UnBindShader(shaderCrate);
       }
@@ -2929,7 +2854,7 @@ void cApplication::Run()
 
           cTextureVBOPair* pPair = testImages[i];
 
-          pContext->BindTexture(0, *(pPair->pTexture));
+          pContext->BindTexture(0, pPair->texture);
 
           pContext->BindStaticVertexBufferObject(pPair->vbo);
 
@@ -2939,7 +2864,7 @@ void cApplication::Run()
 
           pContext->UnBindStaticVertexBufferObject(pPair->vbo);
 
-          pContext->UnBindTexture(0, *(pPair->pTexture));
+          pContext->UnBindTexture(0, pPair->texture);
 
           pContext->UnBindShader(shaderPassThrough);
         }
@@ -3040,8 +2965,8 @@ void cApplication::Run()
           float fSize;
         };
         const TextureAndSizePair pairs[] = {
-          //{ light.pTexture, 1.0f },
-          { pTextureFlare, 16.0f },
+          //{ &light.texture, 1.0f },
+          { &textureFlare, 16.0f },
         };
 
         pContext->BindShader(light.shader);
@@ -3119,7 +3044,7 @@ void cApplication::Run()
 
         pContext->BindShader(shaderSmoke);
 
-        pContext->BindTexture(0, *smoke.pTexture);
+        pContext->BindTexture(0, smoke.texture);
         pContext->BindTextureDepthBuffer(1, *pFrameBufferLastRendered);
 
         // We split up the object rotation from the normal model matrix so that we can apply it to each particle in the VBO, otherwise we would accidentally rotate each particle into an unknown rotation and billboarding wouldn't work
@@ -3145,7 +3070,7 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(smoke.vbo);
 
         pContext->UnBindTextureDepthBuffer(1, *pFrameBufferLastRendered);
-        pContext->UnBindTexture(0, *smoke.pTexture);
+        pContext->UnBindTexture(0, smoke.texture);
 
         pContext->UnBindShader(shaderSmoke);
 
@@ -3161,7 +3086,7 @@ void cApplication::Run()
 
         pContext->BindShader(shaderFire);
 
-        pContext->BindTexture(0, *fire.pTexture);
+        pContext->BindTexture(0, fire.texture);
         pContext->BindTextureDepthBuffer(1, *pFrameBufferLastRendered);
 
         // We split up the object rotation from the normal model matrix so that we can apply it to each particle in the VBO, otherwise we would accidentally rotate each particle into an unknown rotation and billboarding wouldn't work
@@ -3178,7 +3103,7 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(fire.vbo);
 
         pContext->UnBindTextureDepthBuffer(1, *pFrameBufferLastRendered);
-        pContext->UnBindTexture(0, *fire.pTexture);
+        pContext->UnBindTexture(0, fire.texture);
 
         pContext->UnBindShader(shaderFire);
 
