@@ -56,8 +56,7 @@
 // ** cShadowMapping
 
 cShadowMapping::cShadowMapping() :
-  uShadowMapTextureSize(2048),
-  pTextureDepthTexture(nullptr)
+  uShadowMapTextureSize(2048)
 {
 }
 
@@ -67,8 +66,8 @@ void cShadowMapping::Init(opengl::cContext& context)
   assert(shaderRenderToDepthTexture.IsCompiledProgram());
   context.CreateShader(shaderShadowMap, TEXT("shaders/shadowmapping.vert"), TEXT("shaders/shadowmapping.frag"));
   assert(shaderShadowMap.IsCompiledProgram());
-  pTextureDepthTexture = context.CreateTextureFrameBufferObjectDepthShadowOnly(uShadowMapTextureSize, uShadowMapTextureSize);
-  assert(pTextureDepthTexture != nullptr);
+  context.CreateTextureFrameBufferObjectDepthShadowOnly(textureDepthTexture, uShadowMapTextureSize, uShadowMapTextureSize);
+  assert(textureDepthTexture.IsValid());
 }
 
 void cShadowMapping::Destroy(opengl::cContext& context)
@@ -76,10 +75,7 @@ void cShadowMapping::Destroy(opengl::cContext& context)
   if (shaderRenderToDepthTexture.IsCompiledProgram()) context.DestroyShader(shaderRenderToDepthTexture);
   if (shaderShadowMap.IsCompiledProgram()) context.DestroyShader(shaderShadowMap);
 
-  if (pTextureDepthTexture != nullptr) {
-    context.DestroyTextureFrameBufferObject(pTextureDepthTexture);
-    pTextureDepthTexture = nullptr;
-  }
+  if (textureDepthTexture.IsValid()) context.DestroyTextureFrameBufferObject(textureDepthTexture);
 }
 
 size_t cShadowMapping::GetShadowMapTextureSize() const
@@ -115,7 +111,7 @@ void cShadowMapping::BeginRenderToShadowMap(opengl::cContext& context, const spi
   const spitfire::math::cColour clearColour(0.0f, 0.0f, 0.0f);
   context.SetClearColour(clearColour);
 
-  context.BeginRenderToTexture(*pTextureDepthTexture);
+  context.BeginRenderToTexture(textureDepthTexture);
 
   context.BindShader(shaderRenderToDepthTexture);
 
@@ -126,7 +122,7 @@ void cShadowMapping::EndRenderToShadowMap(opengl::cContext& context)
 {
   context.UnBindShader(shaderRenderToDepthTexture);
 
-  context.EndRenderToTexture(*pTextureDepthTexture);
+  context.EndRenderToTexture(textureDepthTexture);
 }
 
 void cShadowMapping::RenderObjectToShadowMapSetMatrices(opengl::cContext& context, const spitfire::math::cMat4& matModel)
@@ -136,8 +132,8 @@ void cShadowMapping::RenderObjectToShadowMapSetMatrices(opengl::cContext& contex
 
 opengl::cTextureFrameBufferObject& cShadowMapping::GetShadowMapTexture()
 {
-  ASSERT(pTextureDepthTexture != nullptr);
-  return *pTextureDepthTexture;
+  ASSERT(textureDepthTexture.IsValid());
+  return textureDepthTexture;
 }
 
 opengl::cShader& cShadowMapping::GetRenderToShadowMapShader()

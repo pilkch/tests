@@ -73,9 +73,9 @@ public:
 private:
   float GetMaximumRGBValue() const;
 
-  opengl::cTextureFrameBufferObject* LuminanceBuffer;
+  opengl::cTextureFrameBufferObject fboLuminanceBuffer;
   cTextureFrameBufferObjectVBOPair MinificationBuffer[8];
-  opengl::cTextureFrameBufferObject* BrightPixelsBuffer;
+  opengl::cTextureFrameBufferObject fboBrightPixelsBuffer;
   cTextureFrameBufferObjectVBOPair BloomBuffer[12];
 
   opengl::cShader shaderPassThrough;

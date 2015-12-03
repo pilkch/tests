@@ -81,7 +81,7 @@ private:
   void CalculateMatrices(opengl::cContext& context, const spitfire::math::cVec3& lightPosition, const spitfire::math::cVec3& lightDirection);
 
   size_t uShadowMapTextureSize;
-  opengl::cTextureFrameBufferObject* pTextureDepthTexture;
+  opengl::cTextureFrameBufferObject textureDepthTexture;
   opengl::cShader shaderRenderToDepthTexture;
   opengl::cShader shaderShadowMap;
 

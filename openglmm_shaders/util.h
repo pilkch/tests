@@ -92,9 +92,7 @@ public:
 class cTextureFrameBufferObjectVBOPair
 {
 public:
-  cTextureFrameBufferObjectVBOPair();
-
-  opengl::cTextureFrameBufferObject* pTexture;
+  opengl::cTextureFrameBufferObject fbo;
   opengl::cStaticVertexBufferObject vbo;
 };
 

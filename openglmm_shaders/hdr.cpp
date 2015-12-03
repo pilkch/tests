@@ -56,9 +56,6 @@
 // ** cHDR
 
 cHDR::cHDR() :
-  LuminanceBuffer(nullptr),
-  BrightPixelsBuffer(nullptr),
-
   data(nullptr),
 
   fMaxRGBValue(1.0f)
@@ -92,14 +89,14 @@ void cHDR::Destroy(opengl::cContext& context)
 
   for (size_t i = 0; i < 4; i++) context.DestroyStaticVertexBufferObject(bloomToScreenVBO[i]);
 
-  context.DestroyTextureFrameBufferObject(LuminanceBuffer);
+  context.DestroyTextureFrameBufferObject(fboLuminanceBuffer);
   for (size_t i = 0; i < 8; i++) {
-    if (MinificationBuffer[i].pTexture != nullptr) context.DestroyTextureFrameBufferObject(MinificationBuffer[i].pTexture);
+    if (MinificationBuffer[i].fbo.IsValid()) context.DestroyTextureFrameBufferObject(MinificationBuffer[i].fbo);
     if (MinificationBuffer[i].vbo.IsCompiled()) context.DestroyStaticVertexBufferObject(MinificationBuffer[i].vbo);
   }
-  context.DestroyTextureFrameBufferObject(BrightPixelsBuffer);
+  context.DestroyTextureFrameBufferObject(fboBrightPixelsBuffer);
   for (size_t i = 0; i < 12; i++) {
-    if (BloomBuffer[i].pTexture != nullptr) context.DestroyTextureFrameBufferObject(BloomBuffer[i].pTexture);
+    if (BloomBuffer[i].fbo.IsValid()) context.DestroyTextureFrameBufferObject(BloomBuffer[i].fbo);
     if (BloomBuffer[i].vbo.IsCompiled()) context.DestroyStaticVertexBufferObject(BloomBuffer[i].vbo);
   }
 
@@ -122,7 +119,7 @@ void cHDR::Resize(cApplication& application, opengl::cContext& context)
   const size_t Width = context.GetWidth();
   const size_t Height = context.GetHeight();
 
-  LuminanceBuffer = context.CreateTextureFrameBufferObject(Width, Height, opengl::PIXELFORMAT::R8G8B8A8); // Float 16 RGBA
+  context.CreateTextureFrameBufferObject(fboLuminanceBuffer, Width, Height, opengl::PIXELFORMAT::R8G8B8A8); // Float 16 RGBA
 
   int i = 0, x = int(Width), y = int(Height);
 
@@ -130,18 +127,18 @@ void cHDR::Resize(cApplication& application, opengl::cContext& context)
     x /= 2;
     y /= 2;
 
-    MinificationBuffer[i].pTexture = context.CreateTextureFrameBufferObject(x, y, opengl::PIXELFORMAT::R8G8B8A8); // Float 16 RGBA
+    context.CreateTextureFrameBufferObject(MinificationBuffer[i].fbo, x, y, opengl::PIXELFORMAT::R8G8B8A8); // Float 16 RGBA
 
     i++;
   } while (x > 32 || y > 32);
 
-  BrightPixelsBuffer = context.CreateTextureFrameBufferObject(Width, Height, opengl::PIXELFORMAT::R8G8B8A8); // RGBA8
+  context.CreateTextureFrameBufferObject(fboBrightPixelsBuffer, Width, Height, opengl::PIXELFORMAT::R8G8B8A8); // RGBA8
 
   for (int i = 0; i < 4; i++) {
     const int ds = 2 * (i + 1);
 
     for (int ii = 0; ii < 3; ii++) {
-      BloomBuffer[(3 * i) + ii].pTexture = context.CreateTextureFrameBufferObject(Width / ds, Height / ds, opengl::PIXELFORMAT::R8G8B8A8); // RGBA8
+      context.CreateTextureFrameBufferObject(BloomBuffer[(3 * i) + ii].fbo, Width / ds, Height / ds, opengl::PIXELFORMAT::R8G8B8A8); // RGBA8
     }
   }
 
@@ -223,7 +220,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
       const spitfire::math::cColour clearColour(1.0f, 0.0f, 0.0f);
       context.SetClearColour(clearColour);
 
-      opengl::cTextureFrameBufferObject& frameBufferTo = *LuminanceBuffer;
+      opengl::cTextureFrameBufferObject& frameBufferTo = fboLuminanceBuffer;
       context.BeginRenderToTexture(frameBufferTo);
 
       context.BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
@@ -247,8 +244,8 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
       glViewport(0, 0, x, y);
 
-      context.BeginRenderToTexture(*MinificationBuffer[i].pTexture);
-      const opengl::cTexture& texture = (i == 0) ? *LuminanceBuffer : *MinificationBuffer[i - 1].pTexture;
+      context.BeginRenderToTexture(MinificationBuffer[i].fbo);
+      const opengl::cTexture& texture = (i == 0) ? fboLuminanceBuffer : MinificationBuffer[i - 1].fbo;
       context.BindTexture(0, texture);
       context.BindShader(shaderMinification);
       context.SetShaderConstant("odx", odx);
@@ -256,7 +253,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
       application.RenderScreenRectangleShaderAndTextureAlreadySet(MinificationBuffer[i].vbo);
       context.UnBindShader(shaderMinification);
       context.UnBindTexture(0, texture);
-      context.EndRenderToTexture(*MinificationBuffer[i].pTexture);
+      context.EndRenderToTexture(MinificationBuffer[i].fbo);
 
       i++;
     } while (x > 32 || y > 32);
@@ -265,7 +262,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
     // read downscaled LuminanceBuffer texture data -----------------------------------------------------------------------
     {
-      const opengl::cTextureFrameBufferObject& downScaledLumincanceBuffer = *MinificationBuffer[i - 1].pTexture;
+      const opengl::cTextureFrameBufferObject& downScaledLumincanceBuffer = MinificationBuffer[i - 1].fbo;
       const GLenum textureType = downScaledLumincanceBuffer.GetTextureType();
       glBindTexture(textureType, downScaledLumincanceBuffer.GetTexture());
       glGetTexImage(textureType, 0, GL_RGBA, GL_FLOAT, data);
@@ -307,9 +304,9 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
   // render BrightPixelsBuffer texture --------------------------------------------------------------------------------------
 
-  context.BeginRenderToTexture(*BrightPixelsBuffer);
+  context.BeginRenderToTexture(fboBrightPixelsBuffer);
   application.RenderScreenRectangle(HDRColorBuffer, shaderBrightPixels);
-  context.EndRenderToTexture(*BrightPixelsBuffer);
+  context.EndRenderToTexture(fboBrightPixelsBuffer);
 
   // downscale and blur BrightPixelsBuffer texture 4x -----------------------------------------------------------------------
 
@@ -324,34 +321,34 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
     // downscale ----------------------------------------------------------------------------------------------------------
 
-    context.BeginRenderToTexture(*BloomBuffer[index].pTexture);
-    application.RenderScreenRectangle(*BrightPixelsBuffer, shaderPassThrough);
-    context.EndRenderToTexture(*BloomBuffer[index].pTexture);
+    context.BeginRenderToTexture(BloomBuffer[index].fbo);
+    application.RenderScreenRectangle(fboBrightPixelsBuffer, shaderPassThrough);
+    context.EndRenderToTexture(BloomBuffer[index].fbo);
 
     const float odw = 1.0f;
     const float odh = 1.0f;
 
     // horizontal blur ----------------------------------------------------------------------------------------------------
 
-    context.BeginRenderToTexture(*BloomBuffer[index + 1].pTexture);
-    context.BindTexture(0, *BloomBuffer[index].pTexture);
+    context.BeginRenderToTexture(BloomBuffer[index + 1].fbo);
+    context.BindTexture(0, BloomBuffer[index].fbo);
     context.BindShader(shaderBlurH);
     context.SetShaderConstant("odw", odw);
     application.RenderScreenRectangleShaderAndTextureAlreadySet(BloomBuffer[index + 1].vbo);
     context.UnBindShader(shaderBlurH);
-    context.BindTexture(0, *BloomBuffer[index].pTexture);
-    context.EndRenderToTexture(*BloomBuffer[index + 1].pTexture);
+    context.BindTexture(0, BloomBuffer[index].fbo);
+    context.EndRenderToTexture(BloomBuffer[index + 1].fbo);
 
     // vertical blur ------------------------------------------------------------------------------------------------------
 
-    context.BeginRenderToTexture(*BloomBuffer[index + 2].pTexture);
-    context.BindTexture(0, *BloomBuffer[index + 1].pTexture);
+    context.BeginRenderToTexture(BloomBuffer[index + 2].fbo);
+    context.BindTexture(0, BloomBuffer[index + 1].fbo);
     context.BindShader(shaderBlurV);
     context.SetShaderConstant("odh", odh);
     application.RenderScreenRectangleShaderAndTextureAlreadySet(BloomBuffer[index + 2].vbo);
     context.UnBindShader(shaderBlurV);
-    context.UnBindTexture(0, *BloomBuffer[index + 1].pTexture);
-    context.EndRenderToTexture(*BloomBuffer[index + 2].pTexture);
+    context.UnBindTexture(0, BloomBuffer[index + 1].fbo);
+    context.EndRenderToTexture(BloomBuffer[index + 2].fbo);
   }
 
   // Combine the HDRColorBuffer texture and bright pixels buffers into a single texture
@@ -378,7 +375,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
     for (int i = 0; i < 4; i++) {
       const size_t index = ((3 - i) * 3) + 2;
-      application.RenderScreenRectangle(*BloomBuffer[index].pTexture, *pShaderPassThrough, bloomToScreenVBO[i]);
+      application.RenderScreenRectangle(BloomBuffer[index].fbo, *pShaderPassThrough, bloomToScreenVBO[i]);
     }
     #elif 1
     // Tweaked version (Sky is darker but still bright)
@@ -386,14 +383,14 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 
     for (int i = 0; i < 4; i++) {
       const size_t index = ((3 - i) * 3) + 2;
-      application.RenderScreenRectangle(*BloomBuffer[index].pTexture, shaderPassThrough, bloomToScreenVBO[i]);
+      application.RenderScreenRectangle(BloomBuffer[index].fbo, shaderPassThrough, bloomToScreenVBO[i]);
     }
     #elif 0
     // Tweaked verison (Sky is blue and bloom is not as pronounced)
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
     const size_t i = 0;
     const size_t index = ((3 - i) * 3) + 2;
-    application.RenderScreenRectangle(*BloomBuffer[index].pTexture, *pShaderPassThrough, bloomToScreenVBO[i]);
+    application.RenderScreenRectangle(BloomBuffer[index].fbo, *pShaderPassThrough, bloomToScreenVBO[i]);
     #endif
 
     glDisable(GL_BLEND);

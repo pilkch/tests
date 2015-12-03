@@ -193,9 +193,9 @@ private:
   opengl::cFont* pFont;
   opengl::cStaticVertexBufferObject textVBO;
 
-  opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectTeapot;
-  opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreenColourAndDepth[2];
-  opengl::cTextureFrameBufferObject* pTextureFrameBufferObjectScreenDepth;
+  opengl::cTextureFrameBufferObject textureFrameBufferObjectTeapot;
+  opengl::cTextureFrameBufferObject textureFrameBufferObjectScreenColourAndDepth[2];
+  opengl::cTextureFrameBufferObject textureFrameBufferObjectScreenDepth;
 
   opengl::cTexture textureDiffuse;
   opengl::cTexture textureFelt;

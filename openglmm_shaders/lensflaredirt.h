@@ -69,9 +69,9 @@ public:
   opengl::cTexture& GetTextureLensDirt() { return texLensDirt_; }
   opengl::cTexture& GetTextureLensStar() { return texLensStar_; }
 
-  opengl::cTextureFrameBufferObject& GetTempA() { return *fboTempA_; }
-  opengl::cTextureFrameBufferObject& GetTempB() { return *fboTempB_; }
-  opengl::cTextureFrameBufferObject& GetTempC() { return *fboTempC_; }
+  opengl::cTextureFrameBufferObject& GetTempA() { return fboTempA_; }
+  opengl::cTextureFrameBufferObject& GetTempB() { return fboTempB_; }
+  opengl::cTextureFrameBufferObject& GetTempC() { return fboTempC_; }
 
 private:
   /*	Apply a Gaussian blur to the 0th color attachment of input fbo. The result
@@ -110,9 +110,9 @@ private:
   // Render textures/framebuffers
   int tempBufferSize_; // divides render size
   float setTempBufferSize_; // slider controlled; sets tempBufferSize_
-  opengl::cTextureFrameBufferObject* fboTempA_;
-  opengl::cTextureFrameBufferObject* fboTempB_;
-  opengl::cTextureFrameBufferObject* fboTempC_;
+  opengl::cTextureFrameBufferObject fboTempA_;
+  opengl::cTextureFrameBufferObject fboTempB_;
+  opengl::cTextureFrameBufferObject fboTempC_;
 };
 
 #endif // LENSFLAREDIRT_H
