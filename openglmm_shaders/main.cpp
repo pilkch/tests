@@ -100,8 +100,6 @@ cApplication::cApplication() :
 
   pFont(nullptr),
 
-  pTextureCubeMap(nullptr),
-
   bSimplePostRenderDirty(false),
 
   colourBlindMode(COLOUR_BLIND_MODE::PROTANOPIA)
@@ -856,7 +854,8 @@ bool cApplication::Create()
   pContext->CreateTexture(textureMetalSpecular, TEXT("textures/metal_specular.jpg"));
   assert(textureMetalSpecular.IsValid());
 
-  pTextureCubeMap = pContext->CreateTextureCubeMap(
+  pContext->CreateTextureCubeMap(
+    textureCubeMap,
     TEXT("textures/skybox_positive_x.jpg"),
     TEXT("textures/skybox_negative_x.jpg"),
     TEXT("textures/skybox_positive_y.jpg"),
@@ -864,7 +863,7 @@ bool cApplication::Create()
     TEXT("textures/skybox_positive_z.jpg"),
     TEXT("textures/skybox_negative_z.jpg")
   );
-  assert(pTextureCubeMap != nullptr);
+  assert(textureCubeMap.IsValid());
 
   pContext->CreateTexture(textureMarble, TEXT("textures/marble.png"));
   assert(textureMarble.IsValid());
@@ -1054,10 +1053,7 @@ void cApplication::Destroy()
 
   if (textureMarble.IsValid()) pContext->DestroyTexture(textureMarble);
 
-  if (pTextureCubeMap != nullptr) {
-    pContext->DestroyTextureCubeMap(pTextureCubeMap);
-    pTextureCubeMap = nullptr;
-  }
+  if (textureCubeMap.IsValid()) pContext->DestroyTextureCubeMap(textureCubeMap);
 
   if (textureDetail.IsValid()) pContext->DestroyTexture(textureDetail);
   if (textureLightMap.IsValid()) pContext->DestroyTexture(textureLightMap);
@@ -1631,8 +1627,7 @@ void cApplication::Run()
   assert(textureFelt.IsValid());
   assert(textureLightMap.IsValid());
   assert(textureDetail.IsValid());
-  assert(pTextureCubeMap != nullptr);
-  assert(pTextureCubeMap->IsValid());
+  assert(textureCubeMap.IsValid());
   assert(textureMarble.IsValid());
   assert(textureMetalDiffuse.IsValid());
   assert(textureMetalSpecular.IsValid());
@@ -2132,7 +2127,7 @@ void cApplication::Run()
 
       pContext->BindShader(shaderCubeMap);
 
-      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
+      pContext->BindTextureCubeMap(0, textureCubeMap);
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
@@ -2144,7 +2139,7 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-      pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+      pContext->UnBindTextureCubeMap(0, textureCubeMap);
 
       pContext->UnBindShader(shaderCubeMap);
 
@@ -2199,7 +2194,7 @@ void cApplication::Run()
       pContext->BindShader(shaderCubeMap);
 
       // Render the cube mapped teapot
-      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
+      pContext->BindTextureCubeMap(0, textureCubeMap);
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
@@ -2211,7 +2206,7 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-      pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+      pContext->UnBindTextureCubeMap(0, textureCubeMap);
 
       pContext->UnBindShader(shaderCubeMap);
 
@@ -2221,7 +2216,7 @@ void cApplication::Run()
 
         // Render the car paint teapot
         pContext->BindTexture(0, textureDiffuse);
-        pContext->BindTextureCubeMap(1, *pTextureCubeMap);
+        pContext->BindTextureCubeMap(1, textureCubeMap);
 
         // Set our constants
         const spitfire::math::cMat4 matModelView = matView * matTranslationCarPaintTeapot;
@@ -2246,7 +2241,7 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-        pContext->UnBindTextureCubeMap(1, *pTextureCubeMap);
+        pContext->UnBindTextureCubeMap(1, textureCubeMap);
         pContext->UnBindTexture(0, textureDiffuse);
 
         pContext->UnBindShader(shaderCarPaint);
@@ -2258,7 +2253,7 @@ void cApplication::Run()
         // Render the glass teapot
         pContext->BindTexture(0, textureMetalDiffuse);
         pContext->BindTexture(1, textureMetalSpecular);
-        pContext->BindTextureCubeMap(2, *pTextureCubeMap);
+        pContext->BindTextureCubeMap(2, textureCubeMap);
 
         // Set our constants
         pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
@@ -2283,7 +2278,7 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-        pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
+        pContext->UnBindTextureCubeMap(2, textureCubeMap);
         pContext->UnBindTexture(1, textureMetalSpecular);
         pContext->UnBindTexture(0, textureMetalDiffuse);
 
@@ -2453,7 +2448,7 @@ void cApplication::Run()
 
         pContext->BindTexture(0, textureMetalDiffuse);
         pContext->BindTexture(1, textureMetalSpecular);
-        pContext->BindTextureCubeMap(2, *pTextureCubeMap);
+        pContext->BindTextureCubeMap(2, textureCubeMap);
 
         // Set our constants
         pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
@@ -2493,7 +2488,7 @@ void cApplication::Run()
           pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
         }
 
-        pContext->UnBindTextureCubeMap(2, *pTextureCubeMap);
+        pContext->UnBindTextureCubeMap(2, textureCubeMap);
         pContext->UnBindTexture(1, textureMetalSpecular);
         pContext->UnBindTexture(0, textureMetalDiffuse);
 
@@ -2657,7 +2652,7 @@ void cApplication::Run()
       // Render the cube mapped objects
       pContext->BindShader(shaderCubeMap);
 
-      pContext->BindTextureCubeMap(0, *pTextureCubeMap);
+      pContext->BindTextureCubeMap(0, textureCubeMap);
 
       {
         {
@@ -2700,7 +2695,7 @@ void cApplication::Run()
         }
       }
 
-      pContext->UnBindTextureCubeMap(0, *pTextureCubeMap);
+      pContext->UnBindTextureCubeMap(0, textureCubeMap);
 
       pContext->UnBindShader(shaderCubeMap);
 

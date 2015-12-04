@@ -201,7 +201,7 @@ private:
   opengl::cTexture textureFelt;
   opengl::cTexture textureLightMap;
   opengl::cTexture textureDetail;
-  opengl::cTextureCubeMap* pTextureCubeMap;
+  opengl::cTextureCubeMap textureCubeMap;
   opengl::cTexture textureMarble;
 
   opengl::cTexture textureMetalDiffuse;
