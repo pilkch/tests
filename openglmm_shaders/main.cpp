@@ -2292,8 +2292,7 @@ void cApplication::Run()
         {
           if (bIsWireframe) pContext->DisableWireframe();
 
-          glCullFace(GL_CW); // enable culling of front faces
-          glDepthMask(GL_FALSE); // enable writes to Z-buffer
+          glCullFace(GL_FRONT); // enable culling of front faces
 
           pContext->BindShader(shaderSilhouette);
 
@@ -2313,9 +2312,7 @@ void cApplication::Run()
 
           pContext->UnBindShader(shaderSilhouette);
 
-          glDepthMask(GL_FALSE); // disable writes to Z-buffer
-          glEnable(GL_DEPTH_TEST);
-          glDepthMask(GL_TRUE);
+          glCullFace(GL_BACK); // Reset culling to back faces
 
           if (bIsWireframe) pContext->EnableWireframe();
         }
