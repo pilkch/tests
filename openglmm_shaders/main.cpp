@@ -1125,6 +1125,9 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderCubeMap, TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
   assert(shaderCubeMap.IsCompiledProgram());
 
+  pContext->CreateShader(shaderBRDF, TEXT("shaders/brdf.vert"), TEXT("shaders/brdf.frag"));
+  assert(shaderBRDF.IsCompiledProgram());
+
   pContext->CreateShader(shaderCarPaint, TEXT("shaders/carpaint.vert"), TEXT("shaders/carpaint.frag"));
   assert(shaderCarPaint.IsCompiledProgram());
   pContext->CreateShader(shaderGlass, TEXT("shaders/glass.vert"), TEXT("shaders/glass.frag"));
@@ -1208,6 +1211,7 @@ void cApplication::DestroyShaders()
   if (shaderCelShaded.IsCompiledProgram()) pContext->DestroyShader(shaderCelShaded);
   if (shaderSilhouette.IsCompiledProgram()) pContext->DestroyShader(shaderSilhouette);
   if (shaderGlass.IsCompiledProgram()) pContext->DestroyShader(shaderGlass);
+  if (shaderBRDF.IsCompiledProgram()) pContext->DestroyShader(shaderBRDF);
   if (shaderCarPaint.IsCompiledProgram()) pContext->DestroyShader(shaderCarPaint);
   if (shaderCubeMap.IsCompiledProgram()) pContext->DestroyShader(shaderCubeMap);
   if (shaderColour.IsCompiledProgram()) pContext->DestroyShader(shaderColour);
@@ -1637,6 +1641,7 @@ void cApplication::Run()
   assert(textureNormalMapNormal.IsValid());
   assert(shaderColour.IsCompiledProgram());
   assert(shaderCubeMap.IsCompiledProgram());
+  assert(shaderBRDF.IsCompiledProgram());
   assert(shaderCarPaint.IsCompiledProgram());
   assert(shaderGlass.IsCompiledProgram());
   assert(shaderSilhouette.IsCompiledProgram());
@@ -1735,7 +1740,7 @@ void cApplication::Run()
 
   // Set up the translations for our objects
   const size_t columns = 5; // 5 types of objects
-  const size_t rows = 7; // 7 types of materials
+  const size_t rows = 8; // 8 types of materials
 
   const float fSpacingX = 0.007f * pContext->GetWidth() / float(rows);
   const float fSpacingZ = 0.03f * pContext->GetHeight() / float(columns);
@@ -2332,7 +2337,7 @@ void cApplication::Run()
           pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
           {
-            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCelShadedTeapot * matObjectRotation);
+            pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationCelShadedTeapot * matObjectRotation);
 
             pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
           }
@@ -2800,6 +2805,79 @@ void cApplication::Run()
 
 
 
+      opengl::cSystem::GetErrorString();
+
+      {
+        // Render BRDF objects
+        pContext->BindShader(shaderBRDF);
+
+        pContext->BindTexture(0, textureDiffuse);
+
+        // Set our constants
+
+        // Start with 2^6 = 64 samples
+        const GLuint g_m = 6;
+
+        // Roughness of the material
+        const GLfloat roughness[columns] = {
+          0.1f,
+          0.3f,
+          0.5f,
+          0.7f,
+          1.0f
+        };
+
+        // Reflection coefficient see http://en.wikipedia.org/wiki/Schlick%27s_approximation
+        const GLfloat R0[columns] = {
+          1.0f,
+          0.8f,
+          0.6f,
+          0.4f,
+          0.2f
+        };
+
+        const spitfire::math::cColour3 colours[columns] = {
+          spitfire::math::cColour3(0.2f, 0.3f, 1.0f), // Dark blue
+          spitfire::math::cColour3(0.3f, 0.4f, 0.6f), // Light blue
+          spitfire::math::cColour3(1.0f, 1.0f, 0.0f), // Yellow
+          spitfire::math::cColour3(1.0f, 0.0f, 0.0f), // Red
+          spitfire::math::cColour3(0.1f, 0.1f, 0.1f), // Dark grey
+        };
+        
+        pContext->SetShaderConstant("u_numberSamples", (unsigned int)(1 << g_m));
+        pContext->SetShaderConstant("u_m", g_m);
+
+        // Results are in range [0.0 1.0] and not [0.0, 1.0[.
+        pContext->SetShaderConstant("u_binaryFractionFactor", 1.0f / (powf(2.0f, (GLfloat)g_m) - 1.0f));
+
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
+        // First column
+        for (size_t index = 0; index < 5; index++) {
+          const spitfire::math::cMat4& matTranslation = matTranslationArray[(7 * columns) + index];
+          const spitfire::math::cMat4 matModelView = matView * matTranslation;
+          pContext->SetShaderConstant("cameraPos", spitfire::math::cVec3());// matModelView * camera.GetPosition());
+          //pContext->SetShaderConstant("cameraPos", camera.GetPosition());
+
+          pContext->SetShaderConstant("u_colorMaterial", colours[index]);
+
+          // Roughness of material
+          pContext->SetShaderConstant("u_roughnessMaterial", roughness[index]);
+          pContext->SetShaderConstant("u_R0Material", R0[index]);
+
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
+        }
+
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
+
+        pContext->UnBindTexture(0, textureDiffuse);
+
+        pContext->UnBindShader(shaderBRDF);
+      }
+
+      opengl::cSystem::GetErrorString();
+
       // Render an extra textured teapot under the smoke
       {
         pContext->BindShader(shaderCrate);
@@ -3189,7 +3267,7 @@ void cApplication::Run()
       }
       #endif
 
-      #if 0
+      #if 1
       // Draw the shadow map depth texture
       RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, shadowMapping.GetShadowMapTexture(), shaderScreenRectDepthShadow);
       position += spitfire::math::cVec2(0.25f, 0.0f);

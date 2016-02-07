@@ -127,6 +127,8 @@
   <ItemGroup>
     <None Include="..\shaders\billboard.frag" />
     <None Include="..\shaders\billboard.vert" />
+    <None Include="..\shaders\brdf.frag" />
+    <None Include="..\shaders\brdf.vert" />
     <None Include="..\shaders\carpaint.frag" />
     <None Include="..\shaders\carpaint.vert" />
     <None Include="..\shaders\celshader.frag" />

@@ -216,6 +216,7 @@ private:
 
   opengl::cShader shaderColour;
   opengl::cShader shaderCubeMap;
+  opengl::cShader shaderBRDF;
   opengl::cShader shaderCarPaint;
   opengl::cShader shaderGlass;
   opengl::cShader shaderSilhouette;
