@@ -3249,8 +3249,8 @@ void cApplication::Run()
       RenderScreenRectangleDepthTexture(x, y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenDepth, shaderScreenRect); x += 0.25f;
 
       // Render the HDR textures for debugging purposes
-      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(pTextureFrameBufferObjectScreenColourAndDepth[outputFBO]), shaderScreenRect); x += 0.25f;
-      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *(pTextureFrameBufferObjectScreenColourAndDepth[inputFBO]), shaderScreenRect); x += 0.25f;
+      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectScreenColourAndDepth[outputFBO], shaderScreenRect); x += 0.25f;
+      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectScreenColourAndDepth[inputFBO], shaderScreenRect); x += 0.25f;
       x = 0.125f;
       y += 0.25f;
       RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *hdr.LuminanceBuffer, shaderScreenRect); x += 0.25f;
@@ -3273,15 +3273,15 @@ void cApplication::Run()
       position += spitfire::math::cVec2(0.25f, 0.0f);
 
       // Draw the scene depth texture
-      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[outputFBO], shaderScreenRect);
+      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectScreenColourAndDepth[outputFBO], shaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);
 
       // Draw the particles depth texture
-      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectScreenColourAndDepth[inputFBO], shaderScreenRect);
+      RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectScreenColourAndDepth[inputFBO], shaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);
 
       // Draw the teapot texture
-      RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, *pTextureFrameBufferObjectTeapot, shaderScreenRect);
+      RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectTeapot, shaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);
       #endif
 
