@@ -190,7 +190,7 @@ private:
 
   cFreeLookCamera camera;
 
-  opengl::cFont* pFont;
+  opengl::cFont font;
   opengl::cStaticVertexBufferObject textVBO;
 
   opengl::cTextureFrameBufferObject textureFrameBufferObjectTeapot;

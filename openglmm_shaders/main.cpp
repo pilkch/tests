@@ -98,8 +98,6 @@ cApplication::cApplication() :
   pWindow(nullptr),
   pContext(nullptr),
 
-  pFont(nullptr),
-
   bSimplePostRenderDirty(false),
 
   colourBlindMode(COLOUR_BLIND_MODE::PROTANOPIA)
@@ -118,7 +116,7 @@ opengl::cResolution cApplication::GetResolution() const
 
 void cApplication::CreateText()
 {
-  assert(pFont != nullptr);
+  assert(font.IsValid());
 
   // Destroy any existing VBO
   pContext->DestroyStaticVertexBufferObject(textVBO);
@@ -176,7 +174,7 @@ void cApplication::CreateText()
   std::list<spitfire::string_t>::const_iterator iter(lines.begin());
   const std::list<spitfire::string_t>::const_iterator iterEnd(lines.end());
   while (iter != iterEnd) {
-    pFont->PushBack(builder, *iter, red, spitfire::math::cVec2(0.0f, y));
+    font.PushBack(builder, *iter, red, spitfire::math::cVec2(0.0f, y));
     y += 0.04f;
 
     iter++;
@@ -821,9 +819,8 @@ bool cApplication::Create()
   }
 
   // Create our font
-  pFont = pContext->CreateFont(TEXT("fonts/pricedown.ttf"), 32, TEXT("shaders/font.vert"), TEXT("shaders/font.frag"));
-  assert(pFont != nullptr);
-  assert(pFont->IsValid());
+  pContext->CreateFont(font, TEXT("fonts/pricedown.ttf"), 32, TEXT("shaders/font.vert"), TEXT("shaders/font.frag"));
+  assert(font.IsValid());
 
   CreateShaders();
 
@@ -1097,10 +1094,7 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(textVBO);
 
   // Destroy our font
-  if (pFont != nullptr) {
-    pContext->DestroyFont(pFont);
-    pFont = nullptr;
-  }
+  if (font.IsValid()) pContext->DestroyFont(font);
 
   DestroyShaders();
 
@@ -1625,8 +1619,7 @@ void cApplication::Run()
 
   assert(pContext != nullptr);
   assert(pContext->IsValid());
-  assert(pFont != nullptr);
-  assert(pFont->IsValid());
+  assert(font.IsValid());
   assert(textureDiffuse.IsValid());
   assert(textureFelt.IsValid());
   assert(textureLightMap.IsValid());
@@ -3288,7 +3281,7 @@ void cApplication::Run()
 
       // Draw the text overlay
       {
-        pContext->BindFont(*pFont);
+        pContext->BindFont(font);
 
         // Rendering the font in the middle of the screen
         spitfire::math::cMat4 matModelView;
@@ -3304,7 +3297,7 @@ void cApplication::Run()
 
         pContext->UnBindStaticVertexBufferObject2D(textVBO);
 
-        pContext->UnBindFont(*pFont);
+        pContext->UnBindFont(font);
       }
 
       pContext->EndRenderMode2D();
