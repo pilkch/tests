@@ -13,17 +13,18 @@ std::string GetExecutableName(const char* szArg0)
 {
   assert(szArg0 != nullptr);
   
-  const char* szLastSlash = szArg0;
-  
+  const char* szAfterLastSlash = szArg0;
+
+  // Get the point just after the last slash
   for (; *szArg0 != 0; szArg0++) {
     switch (*szArg0) {
       case '/':
       case '\\':
-        szLastSlash = szArg0 + 1;
+        szAfterLastSlash = szArg0 + 1;
     }
   }
   
-  return szLastSlash;
+  return szAfterLastSlash;
 }
 
 void PrintUsage(const std::string& sExecutableName)
@@ -48,34 +49,39 @@ std::string UTF32ToUTF8(const std::wstring& sInput)
   return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(sInput);
 }
 
+// A definition for our translate functions
+// They should return the number of characters processed in the input string,
+// this allows the calling string to append more characters and do another call if required, to continue the translation where it left off
 typedef size_t (*TranslateFunctionPtr)(const std::string& sInput, std::string& sOutput);
 
 size_t TranslateUpper(const std::string& sInput, std::string& sOutput)
 {
+  // Convert the string to UTF32
   std::wstring sBuffer = UTF8ToUTF32(sInput);
 
+  // Transform the string to lower case
   auto transformation = [] (wchar_t ch) { return std::use_facet<std::ctype<wchar_t>>(std::locale()).toupper(ch); };
-
   auto cursor = std::transform(sBuffer.begin(), sBuffer.end(), sBuffer.begin(), transformation);
-  const size_t transformed = (cursor - sBuffer.begin());
 
+  // Convert the translated string back again
   sOutput = UTF32ToUTF8(sBuffer);
 
-  return transformed;
+  return sInput.length();
 }
 
 size_t TranslateLower(const std::string& sInput, std::string& sOutput)
 {
+  // Convert the string to UTF32
   std::wstring sBuffer = UTF8ToUTF32(sInput);
 
+  // Transform the string to lower case
   auto transformation = [] (wchar_t ch) { return std::use_facet<std::ctype<wchar_t>>(std::locale()).tolower(ch); };
-
   auto cursor = std::transform(sBuffer.begin(), sBuffer.end(), sBuffer.begin(), transformation);
-  const size_t transformed = (cursor - sBuffer.begin());
 
+  // Convert the translated string back again
   sOutput = UTF32ToUTF8(sBuffer);
 
-  return transformed;
+  return sInput.length();
 }
 
 void TranslateCommandLineArguments(TranslateFunctionPtr pTranslateFunction, const std::string& sInput)
@@ -90,6 +96,9 @@ void TranslateCommandLineArguments(TranslateFunctionPtr pTranslateFunction, cons
 void TranslateFromStandardInput(TranslateFunctionPtr pTranslateFunction)
 {
   std::string sOutput;
+
+  std::string sBuffer;
+  // TODO: Read from stdin
   (*pTranslateFunction)("Hello", sOutput);
   std::cout<<sOutput;
 }
