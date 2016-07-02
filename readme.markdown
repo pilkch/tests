@@ -37,6 +37,7 @@ A collection of tests and small utilities:
 - permutations: Given a string this will print all the permutations of the characters in that string  
 - size_test: Prints out the sizes of various types in the current architecture  
 - source_cleaner: Applys various very simple fixes such as replacing tabs with spaces, removing leading and trailing spaces, in source code and text files in a folder  
+- translator: Just a simple Linux/Unix style "Do one thing and do it well" executable, it just reads strings and performs a transformation on them, to upper/lower case for example, I just added this because I was fascinated with the Linux/Unix model of piping simple commands together by reading to and from stdin/stdout and wanted to do something with it.  
 - xdgmm: Test for using libxdgmm  
 
 ### Usage

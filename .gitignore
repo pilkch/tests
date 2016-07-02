@@ -24,8 +24,10 @@ stdout.txt
 *.perspectivev3
 *.mode1v3
 CMakeCache.txt
+CMakeFiles
 Makefile
 Thumbs.db
+
 discombobulator/*
 openglmm_fadein/openglmm_fadein
 openglmm_fadein/build
@@ -54,6 +56,7 @@ openglmm_shaders/ssao
 permutations/*
 size_test/*
 source_cleaner/*
+translator/translator
 xdgmm/*
 
 log/index.html
