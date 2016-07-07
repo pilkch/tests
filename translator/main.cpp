@@ -109,17 +109,19 @@ size_t TranslateReverseEachWord(const std::string& sInput, std::string& sOutput)
   std::wstring::iterator it = sBuffer.begin();
 
   while (it != sBuffer.end()) {
+      // Get the start of this word
       while (it != sBuffer.end() && (isspace(*it) || ispunct(*it))) {
           ++it;
       }
       auto begin = it;
 
+      // Get the end of this word
       while (it != sBuffer.end() && (!isspace(*it) && !ispunct(*it))) {
           ++it;
       }
       auto end = it;
 
-      // if you want to modify original string instead, just do this:
+      // Reverse this word
       std::reverse(begin, end);
   }
 
@@ -129,6 +131,51 @@ size_t TranslateReverseEachWord(const std::string& sInput, std::string& sOutput)
   return sInput.length();
 }
 
+// Typoglycemia
+// https://en.wikipedia.org/wiki/Typoglycemia
+size_t TranslateShuffleMiddleLettersOfEachWord(const std::string& sInput, std::string& sOutput)
+{
+  // Convert the string to UTF32
+  std::wstring sBuffer = UTF8ToUTF32(sInput);
+
+  // Create our RNG
+  std::random_device rd;
+  std::mt19937 rng(rd());
+
+  std::wstring::iterator it = sBuffer.begin();
+
+  while (it != sBuffer.end()) {
+      // Get the start of this word
+      while (it != sBuffer.end() && (isspace(*it) || ispunct(*it))) {
+          ++it;
+      }
+      auto begin = it;
+
+      // Get the end of this word
+      while (it != sBuffer.end() && (!isspace(*it) && !ispunct(*it))) {
+          ++it;
+      }
+      auto end = it;
+
+      // Reverse this word if it is at least 4 characters long
+      if ((end - begin) > 3) {
+        // Skip the first and last characters
+        begin++;
+        end--;
+
+        // Reverse this word
+        const std::wstring original(begin, end);
+
+        // Keep shuffle the middle letters until our string isn't the same any more
+        while (std::wstring(begin, end) == original) std::shuffle(begin, end, rng);
+      }
+  }
+
+  // Convert the translated string back again
+  sOutput = UTF32ToUTF8(sBuffer);
+
+  return sInput.length();
+}
 
 
 struct cMode {
@@ -144,6 +191,7 @@ const cMode modes[] = {
   { "titlecase", "Change the first character of each word to upper case", "The Quick Brown Fox Jumps Over The Lazy Dog.", &TranslateTitleCase },
   { "reverse", "Reverse the whole string", ".god yzal eht revo spmuj xof nworb kciuq eht", &TranslateReverse },
   { "reversewords", "Reverse each word", "eht kciuq nworb xof spmuj revo eht yzal god.", &TranslateReverseEachWord },
+  { "shufflemiddleletters", "Shuffle the middle letters in each word", "the qciuk bwron fox jmpus oevr the lzay dog.", &TranslateShuffleMiddleLettersOfEachWord },
 };
 
 
@@ -262,6 +310,10 @@ void UnitTest()
 
   TranslateReverseEachWord("abc Def. hij. klmnOPQrs TUV", sOutput);
   assert(sOutput == "cba feD. jih. srQPOnmlk VUT");
+
+
+  TranslateShuffleMiddleLettersOfEachWord("I couldn't believe that I could actually understand what I was reading: the phenomenal power of the human mind. According to a research team at Cambridge University, it doesn't matter in what order the letters in a word are, the only important thing is that the first and last letter be in the right place. The rest can be a total mess and you can still read it without a problem. This is because the human mind does not read every letter by itself, but the word as a whole. Such a condition is appropriately called Typoglycemia.", sOutput);
+  // It's a bit tricky to test this one without basically writing the function again which I couldn't be bothered doing
 }
 
 int main(int argc, char* argv[])
