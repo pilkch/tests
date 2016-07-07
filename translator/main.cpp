@@ -7,7 +7,7 @@
 #include <iostream>
 #include <locale>
 #include <string>
-#include <string>
+#include <sstream>
 
 std::string GetExecutableName(const char* szArg0)
 {
@@ -95,12 +95,29 @@ void TranslateCommandLineArguments(TranslateFunctionPtr pTranslateFunction, cons
 
 void TranslateFromStandardInput(TranslateFunctionPtr pTranslateFunction)
 {
+  std::ostringstream o;
   std::string sOutput;
 
-  std::string sBuffer;
-  // TODO: Read from stdin
-  (*pTranslateFunction)("Hello", sOutput);
-  std::cout<<sOutput;
+  while (true) {
+    const int c = getc(stdin);
+    if (c == EOF) break;
+    else if (char(c) == '\n') {
+      // Translate this line
+      (*pTranslateFunction)(o.str(), sOutput);
+      std::cout<<sOutput;
+
+      // Go to the next line for consistency
+      if (char(c) == '\n') std::cout<<std::endl;
+
+      // Clear the string
+      o.str("");
+    } else {
+      // Just add it to the current line
+      assert(c <= 255);
+      assert(c >= 0);
+      o<<char(c);
+    }
+  }
 }
 
 void UnitTest()
