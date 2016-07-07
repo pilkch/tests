@@ -101,6 +101,34 @@ size_t TranslateReverse(const std::string& sInput, std::string& sOutput)
   return sInput.length();
 }
 
+size_t TranslateReverseEachWord(const std::string& sInput, std::string& sOutput)
+{
+  // Convert the string to UTF32
+  std::wstring sBuffer = UTF8ToUTF32(sInput);
+
+  std::wstring::iterator it = sBuffer.begin();
+
+  while (it != sBuffer.end()) {
+      while (it != sBuffer.end() && (isspace(*it) || ispunct(*it))) {
+          ++it;
+      }
+      auto begin = it;
+
+      while (it != sBuffer.end() && (!isspace(*it) && !ispunct(*it))) {
+          ++it;
+      }
+      auto end = it;
+
+      // if you want to modify original string instead, just do this:
+      std::reverse(begin, end);
+  }
+
+  // Convert the translated string back again
+  sOutput = UTF32ToUTF8(sBuffer);
+
+  return sInput.length();
+}
+
 
 
 struct cMode {
@@ -115,6 +143,7 @@ const cMode modes[] = {
   { "lower", "Change characters A-Z to lower case", "the quick brown fox jumps over the lazy dog.", &TranslateLower },
   { "titlecase", "Change the first character of each word to upper case", "The Quick Brown Fox Jumps Over The Lazy Dog.", &TranslateTitleCase },
   { "reverse", "Reverse the whole string", ".god yzal eht revo spmuj xof nworb kciuq eht", &TranslateReverse },
+  { "reversewords", "Reverse each word", "eht kciuq nworb xof spmuj revo eht yzal god.", &TranslateReverseEachWord },
 };
 
 
@@ -223,6 +252,16 @@ void UnitTest()
 
   TranslateReverse("ABC DEF HIJ", sOutput);
   assert(sOutput == "JIH FED CBA");
+
+
+  TranslateReverseEachWord("abc def hij", sOutput);
+  assert(sOutput == "cba fed jih");
+
+  TranslateReverseEachWord("ABC DEF HIJ", sOutput);
+  assert(sOutput == "CBA FED JIH");
+
+  TranslateReverseEachWord("abc Def. hij. klmnOPQrs TUV", sOutput);
+  assert(sOutput == "cba feD. jih. srQPOnmlk VUT");
 }
 
 int main(int argc, char* argv[])
