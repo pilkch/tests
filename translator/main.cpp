@@ -85,6 +85,23 @@ size_t TranslateTitleCase(const std::string& sInput, std::string& sOutput)
   return sInput.length();
 }
 
+size_t TranslateReverse(const std::string& sInput, std::string& sOutput)
+{
+  // Convert the string to UTF32
+  std::wstring sBuffer = UTF8ToUTF32(sInput);
+
+  // Reverse the string
+  std::wstring::iterator begin = sBuffer.begin();
+  std::wstring::iterator end = sBuffer.end();
+  std::reverse(begin, end);
+
+  // Convert the translated string back again
+  sOutput = UTF32ToUTF8(sBuffer);
+
+  return sInput.length();
+}
+
+
 
 struct cMode {
   const char* szName;
@@ -97,6 +114,7 @@ const cMode modes[] = {
   { "upper", "Change characters a-z to upper case", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.", &TranslateUpper },
   { "lower", "Change characters A-Z to lower case", "the quick brown fox jumps over the lazy dog.", &TranslateLower },
   { "titlecase", "Change the first character of each word to upper case", "The Quick Brown Fox Jumps Over The Lazy Dog.", &TranslateTitleCase },
+  { "reverse", "Reverse the whole string", ".god yzal eht revo spmuj xof nworb kciuq eht", &TranslateReverse },
 };
 
 
@@ -174,6 +192,7 @@ void UnitTest()
   assert(UTF8ToUTF32("abc") == L"abc");
   assert(UTF32ToUTF8(L"abc") == "abc");
 
+
   std::string sOutput;
   TranslateUpper("abc", sOutput);
   assert(sOutput == "ABC");
@@ -181,11 +200,13 @@ void UnitTest()
   TranslateUpper("ABC", sOutput);
   assert(sOutput == "ABC");
 
+
   TranslateLower("ABC", sOutput);
   assert(sOutput == "abc");
 
   TranslateLower("abc", sOutput);
   assert(sOutput == "abc");
+
 
   TranslateTitleCase("abc def hij", sOutput);
   assert(sOutput == "Abc Def Hij");
@@ -195,6 +216,13 @@ void UnitTest()
 
   TranslateTitleCase("abc Def. hij. klmnOPQrs TUV", sOutput);
   assert(sOutput == "Abc Def. Hij. KlmnOPQrs TUV");
+
+
+  TranslateReverse("abc def hij", sOutput);
+  assert(sOutput == "jih fed cba");
+
+  TranslateReverse("ABC DEF HIJ", sOutput);
+  assert(sOutput == "JIH FED CBA");
 }
 
 int main(int argc, char* argv[])
