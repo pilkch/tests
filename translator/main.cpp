@@ -60,6 +60,31 @@ size_t TranslateLower(const std::string& sInput, std::string& sOutput)
   return sInput.length();
 }
 
+size_t TranslateTitleCase(const std::string& sInput, std::string& sOutput)
+{
+  // Convert the string to UTF32
+  std::wstring sBuffer = UTF8ToUTF32(sInput);
+
+  wchar_t lastCharacter = ' ';
+
+  // Transform the string to lower case
+  auto transformation = [&] (wchar_t ch) {
+    if (isspace(lastCharacter) && !isspace(ch)) {
+      ch = std::use_facet<std::ctype<wchar_t>>(std::locale()).toupper(ch);
+    }
+
+    lastCharacter = ch;
+
+    return ch;
+  };
+  auto cursor = std::transform(sBuffer.begin(), sBuffer.end(), sBuffer.begin(), transformation);
+
+  // Convert the translated string back again
+  sOutput = UTF32ToUTF8(sBuffer);
+
+  return sInput.length();
+}
+
 
 struct cMode {
   const char* szName;
@@ -71,6 +96,7 @@ struct cMode {
 const cMode modes[] = {
   { "upper", "Change characters a-z to upper case", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.", &TranslateUpper },
   { "lower", "Change characters A-Z to lower case", "the quick brown fox jumps over the lazy dog.", &TranslateLower },
+  { "titlecase", "Change the first character of each word to upper case", "The Quick Brown Fox Jumps Over The Lazy Dog.", &TranslateTitleCase },
 };
 
 
@@ -151,15 +177,24 @@ void UnitTest()
   std::string sOutput;
   TranslateUpper("abc", sOutput);
   assert(sOutput == "ABC");
-  
+
   TranslateUpper("ABC", sOutput);
   assert(sOutput == "ABC");
-  
+
   TranslateLower("ABC", sOutput);
   assert(sOutput == "abc");
-  
+
   TranslateLower("abc", sOutput);
   assert(sOutput == "abc");
+
+  TranslateTitleCase("abc def hij", sOutput);
+  assert(sOutput == "Abc Def Hij");
+
+  TranslateTitleCase("ABC DEF HIJ", sOutput);
+  assert(sOutput == "ABC DEF HIJ");
+
+  TranslateTitleCase("abc Def. hij. klmnOPQrs TUV", sOutput);
+  assert(sOutput == "Abc Def. Hij. KlmnOPQrs TUV");
 }
 
 int main(int argc, char* argv[])
