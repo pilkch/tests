@@ -9,34 +9,10 @@
 #include <string>
 #include <sstream>
 
-std::string GetExecutableName(const char* szArg0)
+template <typename T, std::size_t N>
+constexpr std::size_t countof(T const (&)[N]) noexcept
 {
-  assert(szArg0 != nullptr);
-  
-  const char* szAfterLastSlash = szArg0;
-
-  // Get the point just after the last slash
-  for (; *szArg0 != 0; szArg0++) {
-    switch (*szArg0) {
-      case '/':
-      case '\\':
-        szAfterLastSlash = szArg0 + 1;
-    }
-  }
-  
-  return szAfterLastSlash;
-}
-
-void PrintUsage(const std::string& sExecutableName)
-{
-  std::cout<<"Usage: "<<sExecutableName<<" --mode MODE [TEXT]"<<std::endl;
-  std::cout<<"Translate a string or stdin"<<std::endl;
-  std::cout<<" --mode MODE: Specify which mode to translate with"<<std::endl;
-  std::cout<<" TEXT: The text to translate, if this is omitted then the string is read from stdin instead"<<std::endl;
-  std::cout<<std::endl;
-  std::cout<<"Valid modes:"<<std::endl;
-  std::cout<<" upper: Change characters a-z to upper case"<<std::endl;
-  std::cout<<" lower: Change characters A-Z to lower case"<<std::endl;
+  return N;
 }
 
 std::wstring UTF8ToUTF32(const std::string& sInput)
@@ -83,6 +59,53 @@ size_t TranslateLower(const std::string& sInput, std::string& sOutput)
 
   return sInput.length();
 }
+
+
+struct cMode {
+  const char* szName;
+  const char* szDescription;
+  const char* szExample;
+  const TranslateFunctionPtr pTranslateFunction;
+};
+
+const cMode modes[] = {
+  { "upper", "Change characters a-z to upper case", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.", &TranslateUpper },
+  { "lower", "Change characters A-Z to lower case", "the quick brown fox jumps over the lazy dog.", &TranslateLower },
+};
+
+
+std::string GetExecutableName(const char* szArg0)
+{
+  assert(szArg0 != nullptr);
+
+  const char* szAfterLastSlash = szArg0;
+
+  // Get the point just after the last slash
+  for (; *szArg0 != 0; szArg0++) {
+    switch (*szArg0) {
+      case '/':
+      case '\\':
+        szAfterLastSlash = szArg0 + 1;
+    }
+  }
+
+  return szAfterLastSlash;
+}
+
+void PrintUsage(const std::string& sExecutableName)
+{
+  std::cout<<"Usage: "<<sExecutableName<<" --mode MODE [TEXT]"<<std::endl;
+  std::cout<<"Translate a string or stdin"<<std::endl;
+  std::cout<<" --mode MODE: Specify which mode to translate with"<<std::endl;
+  std::cout<<" TEXT: The text to translate, if this is omitted then the string is read from stdin instead"<<std::endl;
+  std::cout<<std::endl;
+  std::cout<<"Modes:"<<std::endl;
+  const size_t n = countof(modes);
+  for (size_t i = 0; i < n; i++) {
+    std::cout<<" "<<modes[i].szName<<": "<<modes[i].szDescription<<" (\""<<modes[i].szExample<<"\")"<<std::endl;
+  }
+}
+
 
 void TranslateCommandLineArguments(TranslateFunctionPtr pTranslateFunction, const std::string& sInput)
 {
@@ -158,17 +181,20 @@ int main(int argc, char* argv[])
 
   const std::string sMode = argv[2];
   TranslateFunctionPtr pTranslateFunction = nullptr;
-  if (sMode == "upper") {
-    pTranslateFunction = &TranslateUpper;
-  } else if (sMode == "lower") {
-    pTranslateFunction = &TranslateLower;
-  } else {
+
+  const size_t n = countof(modes);
+  for (size_t i = 0; i < n; i++) {
+    if (sMode == modes[i].szName) {
+      pTranslateFunction = modes[i].pTranslateFunction;
+      break;
+    }
+  }
+
+  if (pTranslateFunction == nullptr) {
     // Unknown translation mode, print the usage and exit
     PrintUsage(GetExecutableName(argv[0]));
     return EXIT_FAILURE;
   }
-
-  assert(pTranslateFunction != nullptr);
 
   if (argc > 3) {
     // Translate arguments
