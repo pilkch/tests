@@ -6,6 +6,7 @@
 #include <codecvt>
 #include <iostream>
 #include <locale>
+#include <map>
 #include <string>
 #include <sstream>
 
@@ -177,6 +178,146 @@ size_t TranslateShuffleMiddleLettersOfEachWord(const std::string& sInput, std::s
   return sInput.length();
 }
 
+std::map<char, std::string> BuildAsciiToMorseCodeMap()
+{
+  return std::map<char, std::string>({
+    { 'a', ".-" }, { 'A', ".-" },
+    { 'b', "-..." }, { 'B', "-..." },
+    { 'c', "-.-." }, { 'C', "-.-." },
+    { 'd', "-.." }, { 'D', "-.." },
+    { 'e', "." }, { 'E', "." },
+    { 'f', "..-." }, { 'F', "..-." },
+    { 'g', "--." }, { 'G', "--." },
+    { 'h', "...." }, { 'H', "...." },
+    { 'i', ".." }, { 'I', ".." },
+    { 'j', ".---" }, { 'J', ".---" },
+    { 'k', "-.-" }, { 'K', "-.-" },
+    { 'l', ".-.." }, { 'L', ".-.." },
+    { 'm', "--" }, { 'M', "--" },
+    { 'n', "-." }, { 'N', "-." },
+    { 'o', "---" }, { 'O', "---" },
+    { 'p', ".--." }, { 'P', ".--." },
+    { 'q', "--.-" }, { 'Q', "--.-" },
+    { 'r', ".-." }, { 'R', ".-." },
+    { 's', "..." }, { 'S', "..." },
+    { 't', "-" }, { 'T', "-" },
+    { 'u', "..-" }, { 'U', "..-" },
+    { 'v', "...-" }, { 'V', "...-" },
+    { 'w', ".--" }, { 'W', ".--" },
+    { 'x', "-..-" }, { 'X', "-..-" },
+    { 'y', "-.--" }, { 'Y', "-.--" },
+    { 'z', "--.." }, { 'Z', "--.." },
+
+    { '0', "-----" },
+    { '1', ".----" },
+    { '2', "..---" },
+    { '3', "...--" },
+    { '4', "....-" },
+    { '5', "....." },
+    { '6', "-...." },
+    { '7', "--..." },
+    { '8', "---.." },
+    { '9', "----." },
+
+    { '.', ".-.-.-" },
+    { ',', "--..--" },
+    { '?', "..--.." },
+    { '\'', ".----." },
+    { '!', "-.-.--" },
+    { '/', "-..-." },
+    { '(', "-.--." },
+    { ')', "-.--.-" },
+    { '&', ".-..." },
+    { ':', "---..." },
+    { ';', "-.-.-." },
+    { '=', "-...-" },
+    { '+', ".-.-." },
+    { '-', "-....-" },
+    { '_', "..--.-" },
+    { '"', ".-..-." },
+    { '$', "...-..-" },
+    { '@', ".--.-." },
+
+    { ' ', "   " },
+  });
+}
+
+
+// To Morse code
+// https://en.wikipedia.org/wiki/Morse_code
+// NOTE: This only supports A-Z, a-z, 0-9 and some basic punctuation, it doesn't support international characters, prosign, abbreviations, Q codes or other phrases
+size_t TranslateToMorseCode(const std::string& sInput, std::string& sOutput)
+{
+  sOutput.clear();
+
+  const std::map<char, std::string> mAsciiToMorseCode = BuildAsciiToMorseCodeMap();
+
+  bool first = true;
+
+  for (const char& c : sInput) {
+    auto iter = mAsciiToMorseCode.find(c);
+    if (iter != mAsciiToMorseCode.end()) {
+      if (first) first = false;
+      else sOutput += " ";
+      sOutput += iter->second;
+    } else sOutput += c;
+  }
+
+  return sInput.length();
+}
+
+// From Morse code
+// https://en.wikipedia.org/wiki/Morse_code
+// NOTE: This only supports A-Z, a-z, 0-9 and some basic punctuation
+size_t TranslateFromMorseCode(const std::string& sInput, std::string& sOutput)
+{
+  sOutput.clear();
+
+  const std::map<char, std::string> mAsciiToMorseCode = BuildAsciiToMorseCodeMap();
+
+  // Now build the morse code to ascii map
+  std::map<std::string, char> mMorseCodeToAscii;
+
+  for (const std::pair<char, std::string>& iter : mAsciiToMorseCode) {
+    mMorseCodeToAscii[iter.second] = iter.first;
+  }
+
+  std::experimental::string_view v = sInput;
+  while (!v.empty()) {
+    ssize_t firstSpace = v.find(' ');
+    if (firstSpace == std::experimental::string_view::npos) {
+      // No more spaces, just translate the string and break
+      auto iter = mMorseCodeToAscii.find(v.to_string());
+      if (iter == mMorseCodeToAscii.end()) {
+        // Didn't find the morse code sequence, just output the input string
+        sOutput += sInput;
+      } else sOutput += iter->second;
+
+      break;
+    } else if (firstSpace != 0) {
+      const std::string sMorseCode = v.substr(0, firstSpace).to_string();
+      auto iter = mMorseCodeToAscii.find(sMorseCode);
+      if (iter != mMorseCodeToAscii.end()) {
+        sOutput += iter->second;
+        v.remove_prefix(firstSpace + 1);
+      }
+    } else {
+      const size_t n = v.length();
+      for (size_t i = 0; i < n; i++) {
+        if (v[i] == ' ') {
+          const std::string sMorseCode = v.substr(0, i).to_string();
+          auto iter = mMorseCodeToAscii.find(sMorseCode);
+          if (iter != mMorseCodeToAscii.end()) {
+            sOutput += iter->second;
+            v.remove_prefix(i + 1);
+          }
+        }
+      }
+    }
+  }
+
+  return sInput.length();
+}
 
 struct cMode {
   const char* szName;
@@ -192,6 +333,8 @@ const cMode modes[] = {
   { "reverse", "Reverse the whole string", ".god yzal eht revo spmuj xof nworb kciuq eht", &TranslateReverse },
   { "reversewords", "Reverse each word", "eht kciuq nworb xof spmuj revo eht yzal god.", &TranslateReverseEachWord },
   { "shufflemiddleletters", "Shuffle the middle letters in each word", "the qciuk bwron fox jmpus oevr the lzay dog.", &TranslateShuffleMiddleLettersOfEachWord },
+  { "tomorsecode", "Convert a string to morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "- .... .   --.- ..- .. -.-. -.-   -... .-. --- .-- -.   ..-. --- -..-   .--- ..- -- .--. ...   --- ...- . .-.   - .... .   .-.. .- --.. -.--   -.. --- --.", &TranslateToMorseCode },
+  { "frommorsecode", "Convert a string from morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "the quick brown fox jumps over the lazy dog", &TranslateFromMorseCode },
 };
 
 
@@ -314,6 +457,30 @@ void UnitTest()
 
   TranslateShuffleMiddleLettersOfEachWord("I couldn't believe that I could actually understand what I was reading: the phenomenal power of the human mind. According to a research team at Cambridge University, it doesn't matter in what order the letters in a word are, the only important thing is that the first and last letter be in the right place. The rest can be a total mess and you can still read it without a problem. This is because the human mind does not read every letter by itself, but the word as a whole. Such a condition is appropriately called Typoglycemia.", sOutput);
   // It's a bit tricky to test this one without basically writing the function again which I couldn't be bothered doing
+
+
+  TranslateToMorseCode("sos SOS", sOutput);
+  assert(sOutput == "... --- ...     ... --- ...");
+
+  TranslateToMorseCode("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", sOutput);
+  assert(sOutput == ".- -... -.-. -.. . ..-. --. .... .. .--- -.- .-.. -- -. --- .--. --.- .-. ... - ..- ...- .-- -..- -.-- --..     .- -... -.-. -.. . ..-. --. .... .. .--- -.- .-.. -- -. --- .--. --.- .-. ... - ..- ...- .-- -..- -.-- --..     ----- .---- ..--- ...-- ....- ..... -.... --... ---.. ----.");
+
+  TranslateToMorseCode(".,?'!/()&:;=+-_\"$@", sOutput);
+  assert(sOutput == ".-.-.- --..-- ..--.. .----. -.-.-- -..-. -.--. -.--.- .-... ---... -.-.-. -...- .-.-. -....- ..--.- .-..-. ...-..- .--.-.");
+
+
+  std::string sTemp;
+  TranslateToMorseCode("sos SOS", sTemp);
+  TranslateFromMorseCode(sTemp, sOutput);
+  assert(sOutput == "sos sos");
+
+  TranslateToMorseCode("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", sTemp);
+  TranslateFromMorseCode(sTemp, sOutput);
+  assert(sOutput == "abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz 0123456789");
+
+  TranslateToMorseCode(".,?'!/()&:;=+-_\"$@", sTemp);
+  TranslateFromMorseCode(sTemp, sOutput);
+  assert(sOutput == ".,?'!/()&:;=+-_\"$@");
 }
 
 int main(int argc, char* argv[])
