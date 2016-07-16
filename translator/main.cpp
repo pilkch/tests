@@ -223,7 +223,7 @@ void PrintUsage(const std::string& sExecutableName)
   std::cout<<"Modes:"<<std::endl;
   const size_t n = countof(modes);
   for (size_t i = 0; i < n; i++) {
-    std::cout<<" "<<modes[i].szName<<": "<<modes[i].szDescription<<" (\""<<modes[i].szExample<<"\")"<<std::endl;
+    std::cout<<"  "<<modes[i].szName<<": "<<modes[i].szDescription<<" (\""<<modes[i].szExample<<"\")"<<std::endl;
   }
 }
 
