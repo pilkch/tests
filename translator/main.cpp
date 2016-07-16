@@ -413,8 +413,8 @@ void PrintUsage(const std::string& sExecutableName)
 {
   std::cout<<"Usage: "<<sExecutableName<<" --mode MODE [TEXT]"<<std::endl;
   std::cout<<"Translate a string or stdin"<<std::endl;
-  std::cout<<" --mode MODE: Specify which mode to translate with"<<std::endl;
-  std::cout<<" TEXT: The text to translate, if this is omitted then the string is read from stdin instead"<<std::endl;
+  std::cout<<"  --mode MODE: Specify which mode to translate with"<<std::endl;
+  std::cout<<"  TEXT: The text to translate, if this is omitted then the string is read from stdin instead"<<std::endl;
   std::cout<<std::endl;
   std::cout<<"Modes:"<<std::endl;
   const size_t n = countof(modes);
