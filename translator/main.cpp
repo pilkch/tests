@@ -10,6 +10,8 @@
 #include <string>
 #include <sstream>
 
+#include <experimental/string_view>
+
 template <typename T, std::size_t N>
 constexpr std::size_t countof(T const (&)[N]) noexcept
 {
@@ -319,6 +321,55 @@ size_t TranslateFromMorseCode(const std::string& sInput, std::string& sOutput)
   return sInput.length();
 }
 
+
+const std::string sBase64Characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+size_t TranslateToBase64(const std::string& sInput, std::string& sOutput)
+{
+  sOutput.clear();
+
+  int val = 0;
+  int valb = -6;
+  for (const char& c : sInput) {
+    val = (val<<8) + c;
+    valb += 8;
+    while (valb >= 0) {
+      sOutput += sBase64Characters[(val>>valb) & 0x3F];
+      valb -= 6;
+    }
+  }
+
+  if (valb > -6) sOutput += sBase64Characters[((val<<8)>>(valb + 8)) & 0x3F];
+
+  // Pad out equals characters to make the text a multiple of 4 bytes
+  while (sOutput.length() % 4) sOutput += '=';
+}
+
+size_t TranslateFromBase64(const std::string& sInput, std::string& sOutput)
+{
+  sOutput.clear();
+
+  std::array<int, 256> fullCharacterTable;
+
+  fullCharacterTable.fill(-1);
+
+  for (int i = 0; i < 64; i++) fullCharacterTable[sBase64Characters[i]] = i;
+
+  int val = 0;
+  int valb = -8;
+  for (const char& c : sInput) {
+    if (fullCharacterTable[c] == -1) break;
+
+    val = (val<<6) + fullCharacterTable[c];
+    valb += 6;
+    if (valb >= 0) {
+      sOutput += char((val>>valb) & 0xFF);
+      valb -= 8;
+    }
+  }
+}
+
+
 struct cMode {
   const char* szName;
   const char* szDescription;
@@ -335,6 +386,8 @@ const cMode modes[] = {
   { "shufflemiddleletters", "Shuffle the middle letters in each word", "the qciuk bwron fox jmpus oevr the lzay dog.", &TranslateShuffleMiddleLettersOfEachWord },
   { "tomorsecode", "Convert a string to morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "- .... .   --.- ..- .. -.-. -.-   -... .-. --- .-- -.   ..-. --- -..-   .--- ..- -- .--. ...   --- ...- . .-.   - .... .   .-.. .- --.. -.--   -.. --- --.", &TranslateToMorseCode },
   { "frommorsecode", "Convert a string from morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "the quick brown fox jumps over the lazy dog", &TranslateFromMorseCode },
+  { "tobase64", "Convert a string to morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "- .... .   --.- ..- .. -.-. -.-   -... .-. --- .-- -.   ..-. --- -..-   .--- ..- -- .--. ...   --- ...- . .-.   - .... .   .-.. .- --.. -.--   -.. --- --.", &TranslateToMorseCode },
+  { "frombase64", "Convert a string from morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "the quick brown fox jumps over the lazy dog", &TranslateFromMorseCode },
 };
 
 
@@ -481,6 +534,14 @@ void UnitTest()
   TranslateToMorseCode(".,?'!/()&:;=+-_\"$@", sTemp);
   TranslateFromMorseCode(sTemp, sOutput);
   assert(sOutput == ".,?'!/()&:;=+-_\"$@");
+
+
+  TranslateToBase64("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", sOutput);
+  assert(sOutput == "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXogQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVogMDEyMzQ1Njc4OQ==");
+
+  TranslateToBase64("abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789", sTemp);
+  TranslateFromBase64(sTemp, sOutput);
+  assert(sOutput == "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789");
 }
 
 int main(int argc, char* argv[])
