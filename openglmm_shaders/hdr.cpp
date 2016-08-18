@@ -109,7 +109,7 @@ void cHDR::Destroy(opengl::cContext& context)
   context.DestroyShader(shaderBlurV);
 }
 
-float cHDR::GetMaximumRGBValue() const
+float cHDR::GetExposure() const
 {
   return fMaxRGBValue;
 }

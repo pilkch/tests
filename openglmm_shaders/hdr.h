@@ -70,9 +70,9 @@ public:
   void RenderBloom(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output);
   void RenderToneMapping(cApplication& application, spitfire::durationms_t currentTime, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output);
 
-private:
-  float GetMaximumRGBValue() const;
+  float GetExposure() const;
 
+private:
   opengl::cTextureFrameBufferObject fboLuminanceBuffer;
   cTextureFrameBufferObjectVBOPair MinificationBuffer[8];
   opengl::cTextureFrameBufferObject fboBrightPixelsBuffer;
