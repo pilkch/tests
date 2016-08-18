@@ -39,13 +39,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>C:\Users\media\dev\boost_1_59_0\lib64-msvc-14.0;C:\Users\media\dev\SDL2-2.0.4\lib\x64;C:\Users\media\dev\library\lib;C:\Users\media\dev\lib32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\..\..\boost_1_61_0\lib64-msvc-14.0;..\..\..\SDL2-2.0.4\lib\x64;..\..\..\library\lib;..\..\..\lib32;$(LibraryPath)</LibraryPath>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <IncludePath>C:\Users\media\dev\boost_1_59_0;C:\Users\media\dev\SDL2-2.0.4\include;C:\Users\media\dev\include;C:\Users\media\dev\library\include;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\boost_1_61_0;..\..\..\SDL2-2.0.4\include;..\..\..\include;..\..\..\library\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>C:\Users\media\dev\boost_1_55_0\lib64-msvc-12.0;C:\Users\media\dev\library\lib;C:\Users\media\dev\lib32;$(LibraryPath)</LibraryPath>
-    <IncludePath>C:\Users\media\dev\boost_1_55_0;C:\Users\media\dev\include;C:\Users\media\dev\library\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\..\..\boost_1_55_0\lib64-msvc-12.0;..\..\..\library\lib;..\..\..\lib32;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\..\boost_1_55_0;..\..\..\include;..\..\..\library\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
