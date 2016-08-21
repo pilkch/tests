@@ -225,6 +225,7 @@ private:
   opengl::cShader shaderFire;
   opengl::cShader shaderLights;
   opengl::cShader shaderLambert;
+  opengl::cShader shaderRimLit;
   opengl::cShader shaderPassThrough;
   opengl::cShader shaderScreen1D;
   opengl::cShader shaderScreen2D;

@@ -4,3 +4,13 @@ float CalculateLambertDiffuse(vec3 lightDirection, vec3 surfaceNormal)
 {
   return max(0.0, dot(lightDirection, surfaceNormal));
 }
+
+float CalculateRimLighting(vec3 eyePosition, vec3 normal)
+{
+  // From:
+  // https://oneclick-code.blogspot.com.au/2012/01/ios-opengl-es-20-lighting-models-for.html
+
+  float fRimPower = 8.0;
+  float fBias = 0.3;
+  return pow(1.0 + fBias - max(dot(normal, eyePosition), 0.0), fRimPower);
+}

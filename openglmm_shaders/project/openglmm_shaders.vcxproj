@@ -182,6 +182,8 @@
     <None Include="..\shaders\passthrough2d.frag" />
     <None Include="..\shaders\passthrough2d.vert" />
     <None Include="..\shaders\passthrough2dnonrect.frag" />
+    <None Include="..\shaders\rimlighting.frag" />
+    <None Include="..\shaders\rimlighting.vert" />
     <None Include="..\shaders\sepia.frag" />
     <None Include="..\shaders\shadowmapping.frag" />
     <None Include="..\shaders\shadowmapping.vert" />

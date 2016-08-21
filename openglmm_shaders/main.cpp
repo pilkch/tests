@@ -1145,6 +1145,9 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderLambert, TEXT("shaders/lambert.vert"), TEXT("shaders/lambert.frag"));
   assert(shaderLambert.IsCompiledProgram());
 
+  pContext->CreateShader(shaderRimLit, TEXT("shaders/rimlighting.vert"), TEXT("shaders/rimlighting.frag"));
+  assert(shaderRimLit.IsCompiledProgram());
+
   pContext->CreateShader(shaderLights, TEXT("shaders/lights.vert"), TEXT("shaders/lights.frag"));
   assert(shaderLights.IsCompiledProgram());
 
@@ -1197,6 +1200,7 @@ void cApplication::DestroyShaders()
   if (parallaxNormalMap.shader.IsCompiledProgram()) pContext->DestroyShader(parallaxNormalMap.shader);
 
   if (shaderLambert.IsCompiledProgram()) pContext->DestroyShader(shaderLambert);
+  if (shaderRimLit.IsCompiledProgram()) pContext->DestroyShader(shaderRimLit);
   if (shaderLights.IsCompiledProgram()) pContext->DestroyShader(shaderLights);
 
   if (light.shader.IsCompiledProgram()) pContext->DestroyShader(light.shader);
@@ -1645,6 +1649,7 @@ void cApplication::Run()
   assert(shaderSmoke.IsCompiledProgram());
   assert(shaderFire.IsCompiledProgram());
   assert(shaderLambert.IsCompiledProgram());
+  assert(shaderRimLit.IsCompiledProgram());
   assert(shaderLights.IsCompiledProgram());
   assert(parallaxNormalMap.shader.IsCompiledProgram());
   assert(shaderPassThrough.IsCompiledProgram());
@@ -1733,7 +1738,7 @@ void cApplication::Run()
 
   // Set up the translations for our objects
   const size_t columns = 5; // 5 types of objects
-  const size_t rows = 8; // 8 types of materials
+  const size_t rows = 9; // 8 types of materials
 
   const float fSpacingX = 0.007f * pContext->GetWidth() / float(rows);
   const float fSpacingZ = 0.03f * pContext->GetHeight() / float(columns);
@@ -2752,6 +2757,60 @@ void cApplication::Run()
       }
 
       pContext->UnBindShader(shaderLambert);
+
+
+
+      // Render the rim lit objects
+      pContext->BindShader(shaderRimLit);
+
+      {
+        pContext->BindTexture(0, textureDiffuse);
+
+        pContext->SetShaderConstant("ambientColour", spitfire::math::cColour3(0.35f, 0.35f, 0.2f));
+        pContext->SetShaderConstant("rimColour", spitfire::math::cColour3(0.2f, 1.0f, 0.2f));
+
+        pContext->SetShaderConstant("eyePosition", camera.GetPosition());
+
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane2);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[25] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlane2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlane2);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCube2);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[26] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCube2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCube2);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox2);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[27] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox2);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere2);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[28] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere2);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[29] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot2);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot2);
+        }
+
+        pContext->UnBindTexture(0, textureDiffuse);
+      }
+
+      pContext->UnBindShader(shaderRimLit);
 
 
       // Render spheres with a variety of colours
