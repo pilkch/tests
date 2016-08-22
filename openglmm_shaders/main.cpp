@@ -2838,7 +2838,7 @@ void cApplication::Run()
         for (size_t index = 0; index < 5; index++) {
           pContext->SetShaderConstant("colour", spitfire::math::cColour(colours[index].r, colours[index].g, colours[index].b, 1.0f));
 
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[(5 * columns) + index]);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[(6 * columns) + index]);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
         }
 
@@ -2846,7 +2846,7 @@ void cApplication::Run()
         for (size_t index = 0; index < 5; index++) {
           pContext->SetShaderConstant("colour", spitfire::math::cColour(colours2[index].r, colours2[index].g, colours2[index].b, 1.0f));
 
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[(6 * columns) + index]);
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationArray[(8 * columns) + index]);
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
         }
 
