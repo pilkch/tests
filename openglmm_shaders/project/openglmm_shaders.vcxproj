@@ -117,6 +117,7 @@
     <ClCompile Include="..\..\..\library\src\spitfire\util\string.cpp" />
     <ClCompile Include="..\..\..\library\src\spitfire\util\thread.cpp" />
     <ClCompile Include="..\..\..\library\src\spitfire\util\timer.cpp" />
+    <ClCompile Include="..\anamorphic_lens_flare.cpp" />
     <ClCompile Include="..\dofbokeh.cpp" />
     <ClCompile Include="..\hdr.cpp" />
     <ClCompile Include="..\lensflaredirt.cpp" />
@@ -125,6 +126,8 @@
     <ClCompile Include="..\util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\shaders\anamorphiclensflare\bluetinge.frag" />
+    <None Include="..\shaders\anamorphiclensflare\horizontalblur.frag" />
     <None Include="..\shaders\billboard.frag" />
     <None Include="..\shaders\billboard.vert" />
     <None Include="..\shaders\brdf.frag" />
@@ -194,6 +197,7 @@
     <None Include="..\shaders\tealandorange.frag" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\anamorphic_lens_flare.h" />
     <ClInclude Include="..\dofbokeh.h" />
     <ClInclude Include="..\hdr.h" />
     <ClInclude Include="..\lensflaredirt.h" />

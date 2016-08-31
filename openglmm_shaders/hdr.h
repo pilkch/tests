@@ -72,6 +72,8 @@ public:
 
   float GetExposure() const;
 
+  opengl::cTextureFrameBufferObject& GetBrightPixelsBuffer();
+
 private:
   opengl::cTextureFrameBufferObject fboLuminanceBuffer;
   cTextureFrameBufferObjectVBOPair MinificationBuffer[8];

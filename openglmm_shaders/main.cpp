@@ -88,8 +88,8 @@ cApplication::cApplication() :
   bIsWireframe(false),
 
   bIsDOFBokeh(true),
-  bIsLensFlareDirt(true),
   bIsHDR(true),
+  lensFlare(LENS_FLARE::ANAMORPHIC),
   bDebugShowFlareOnly(false),
   bIsSplitScreenSimplePostEffectShaders(true),
 
@@ -144,7 +144,7 @@ void cApplication::CreateText()
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
   const float fExposure = hdr.GetExposure();
   lines.push_back(spitfire::string_t(TEXT("Exposure: ")) + spitfire::string::ToString(fExposure));
-  lines.push_back(spitfire::string_t(TEXT("Lens Flare and Dirt: ")) + (bIsLensFlareDirt ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Lens Flare: ")) + (lensFlare == LENS_FLARE::NONE ? TEXT("Off") : (lensFlare == LENS_FLARE::DIRT ? TEXT("Dirt") : TEXT("Anamorphic"))));
   lines.push_back(spitfire::string_t(TEXT("Debug show lens flare and dirt only: ")) + (bDebugShowFlareOnly ? TEXT("On") : TEXT("Off")));
 
   // Post render shaders
@@ -1101,6 +1101,7 @@ void cApplication::Destroy()
   shadowMapping.Destroy(*pContext);
   hdr.Destroy(*pContext);
   lensFlareDirt.Destroy(*pContext);
+  lensFlareAnamorphic.Destroy(*pContext);
   dofBokeh.Destroy(*pContext);
 
   pContext = nullptr;
@@ -1523,7 +1524,9 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_7: {
-        bIsLensFlareDirt = !bIsLensFlareDirt;
+        if (lensFlare == LENS_FLARE::NONE) lensFlare = LENS_FLARE::DIRT;
+        else if (lensFlare == LENS_FLARE::DIRT) lensFlare = LENS_FLARE::ANAMORPHIC;
+        else lensFlare = LENS_FLARE::NONE;
         break;
       }
       case SDLK_8: {
@@ -1718,6 +1721,9 @@ void cApplication::Run()
 
   lensFlareDirt.Init(*this, *pContext);
   lensFlareDirt.Resize(*pContext);
+
+  lensFlareAnamorphic.Init(*this, *pContext);
+  lensFlareAnamorphic.Resize(*pContext);
 
   shadowMapping.Init(*pContext);
 
@@ -3222,6 +3228,16 @@ void cApplication::Run()
       std::swap(outputFBO, inputFBO);
     }
 
+    // Recommended rendering order
+    // https://extremeistan.wordpress.com/2014/09/24/physically-based-camera-rendering/
+    // 1) Depth of Field
+    // 2) Motion blur (note that you can do these independently and mix them later as shown here, but quality suffers a bit)
+    // 3) Bloom rendering (input: motion blur output), the usual bright pass, etc. plus eye adoptation!
+    // 4) Lens flare rendering (input: bright pass output)
+    // 5) Combine the output of the motion blur pass, lens flares, bloom. Do the vignetting here, on the combined color. Do tone mapping and gamma correction here on the vignetted color.
+    // 6) Render chromatic aberration and film grain here (so after tonemapping, in gamma space)
+    // 7) Post processing AA comes here (eg.SMAA)
+
     // Apply depth of field and bokeh
     if (bIsDOFBokeh) {
       dofBokeh.Render(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenDepth, textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
@@ -3234,10 +3250,14 @@ void cApplication::Run()
       std::swap(outputFBO, inputFBO);
     }
 
-    // Apply lens flare with dirt specks
-    if (bIsLensFlareDirt) {
+    if (lensFlare == LENS_FLARE::DIRT) {
+      // Apply lens flare with dirt specks
       const float fExposure = hdr.GetExposure();
       lensFlareDirt.Render(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO], fExposure, bDebugShowFlareOnly);
+      std::swap(outputFBO, inputFBO);
+    } else if (lensFlare == LENS_FLARE::ANAMORPHIC) {
+      // Apply an anamorphic lens flare
+      lensFlareAnamorphic.Render(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], hdr.GetBrightPixelsBuffer(), textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
     }
 
@@ -3311,7 +3331,7 @@ void cApplication::Run()
       }
       x = 0.125f;
       y += 0.25f;
-      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, *hdr.BrightPixelsBuffer, shaderScreenRect); x += 0.25f;
+      RenderScreenRectangle(x, y, staticVertexBufferObjectScreenRectTeapot, hdr.GetBrightPixelsBuffer(), shaderScreenRect); x += 0.25f;
       x = 0.125f;
       y += 0.25f;
       for (size_t i = 0; i < 12; i++) {
@@ -3319,7 +3339,7 @@ void cApplication::Run()
       }
       #endif
 
-      #if 1
+      #if 0
       // Draw the shadow map depth texture
       RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, shadowMapping.GetShadowMapTexture(), shaderScreenRectDepthShadow);
       position += spitfire::math::cVec2(0.25f, 0.0f);
