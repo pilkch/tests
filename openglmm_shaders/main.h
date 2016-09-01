@@ -53,6 +53,7 @@
 #include <libopenglmm/cWindow.h>
 
 // Application headers
+#include "anamorphic_lens_flare.h"
 #include "dofbokeh.h"
 #include "hdr.h"
 #include "lensflaredirt.h"
@@ -78,6 +79,7 @@ class cApplication : public opengl::cWindowEventListener, public opengl::cInputE
 public:
   cApplication();
 
+  friend class cAnamorphicLensFlare;
   friend class cDOFBokeh;
   friend class cHDR;
   friend class cLensFlareDirt;
@@ -171,10 +173,15 @@ private:
   bool bIsRotating;
   bool bIsWireframe;
 
-  bool bIsDOFBokeh;
+  enum class LENS_FLARE {
+    NONE,
+    DIRT, // A traditional lens flare with dirty screen effect
+    ANAMORPHIC, // An anamorphic lens flare (Hi JJ Abrams!)
+  };
 
+  bool bIsDOFBokeh;
   bool bIsHDR;
-  bool bIsLensFlareDirt;
+  LENS_FLARE lensFlare;
   bool bDebugShowFlareOnly;
   bool bIsSplitScreenSimplePostEffectShaders; // Tells us whether to split the screen down the middle when a simple post effect shader is active
 
@@ -283,6 +290,7 @@ private:
   cDOFBokeh dofBokeh;
   cHDR hdr;
   cLensFlareDirt lensFlareDirt;
+  cAnamorphicLensFlare lensFlareAnamorphic;
   cShadowMapping shadowMapping;
 
   std::vector<cSimplePostRenderShader> simplePostRenderShaders;

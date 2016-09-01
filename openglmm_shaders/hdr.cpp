@@ -114,6 +114,11 @@ float cHDR::GetExposure() const
   return fMaxRGBValue;
 }
 
+opengl::cTextureFrameBufferObject& cHDR::GetBrightPixelsBuffer()
+{
+  return fboBrightPixelsBuffer;
+}
+
 void cHDR::Resize(cApplication& application, opengl::cContext& context)
 {
   const size_t Width = context.GetWidth();
