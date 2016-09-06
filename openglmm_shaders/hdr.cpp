@@ -210,10 +210,10 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
   // get the maximal value of the RGB components of the HDR image -----------------------------------------------------------
 
   static float maxrgbvalue = 1.0f, mrgbvi, oldmaxrgbvalue = maxrgbvalue;
-  static DWORD LastTime = 0;
-  static DWORD LastAdjustmentTime = 0;
+  static spitfire::durationms_t LastTime = 0;
+  static spitfire::durationms_t LastAdjustmentTime = 0;
 
-  DWORD Time = GetTickCount();
+  spitfire::durationms_t Time = GetTickCount();
 
   if (Time - LastTime > 125) { // 8 times per second only ----------------------------------------------------------------------
     LastTime = Time;
