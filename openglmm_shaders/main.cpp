@@ -89,6 +89,7 @@ cApplication::cApplication() :
 
   bIsDOFBokeh(true),
   bIsHDR(true),
+  bIsToneMapping(true),
   lensFlare(LENS_FLARE::ANAMORPHIC),
   bDebugShowFlareOnly(false),
   bIsSplitScreenSimplePostEffectShaders(true),
@@ -142,6 +143,7 @@ void cApplication::CreateText()
 
   lines.push_back(TEXT(""));
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Tone Mapping: ")) + (bIsToneMapping ? TEXT("On") : TEXT("Off")));
   const float fExposure = hdr.GetExposure();
   lines.push_back(spitfire::string_t(TEXT("Exposure: ")) + spitfire::string::ToString(fExposure));
   lines.push_back(spitfire::string_t(TEXT("Lens Flare: ")) + (lensFlare == LENS_FLARE::NONE ? TEXT("Off") : (lensFlare == LENS_FLARE::DIRT ? TEXT("Dirt") : TEXT("Anamorphic"))));
@@ -1490,7 +1492,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bSimplePostRenderDirty = true;
         break;
       }
-      case SDLK_l: {
+      case SDLK_z: {
         if (IsColourBlindSimplePostRenderShaderEnabled()) {
           if (colourBlindMode == COLOUR_BLIND_MODE::PROTANOPIA) colourBlindMode = COLOUR_BLIND_MODE::DEUTERANOPIA;
           else if (colourBlindMode == COLOUR_BLIND_MODE::DEUTERANOPIA) colourBlindMode = COLOUR_BLIND_MODE::TRITANOPIA;
@@ -1499,28 +1501,32 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         }
         break;
       }
-      case SDLK_1: {
+      case SDLK_x: {
         bIsWireframe = !bIsWireframe;
         break;
       }
-      case SDLK_2: {
+      case SDLK_1: {
         bIsDirectionalLightOn = !bIsDirectionalLightOn;
         break;
       }
-      case SDLK_3: {
+      case SDLK_2: {
         bIsPointLightOn = !bIsPointLightOn;
         break;
       }
-      case SDLK_4: {
+      case SDLK_3: {
         bIsSpotLightOn = !bIsSpotLightOn;
         break;
       }
-      case SDLK_5: {
+      case SDLK_4: {
         bIsDOFBokeh = !bIsDOFBokeh;
         break;
       }
-      case SDLK_6: {
+      case SDLK_5: {
         bIsHDR = !bIsHDR;
+        break;
+      }
+      case SDLK_6: {
+        bIsToneMapping = !bIsToneMapping;
         break;
       }
       case SDLK_7: {
@@ -3262,7 +3268,7 @@ void cApplication::Run()
     }
 
     // Process HDR tone mapping
-    if (bIsHDR) {
+    if (bIsToneMapping) {
       hdr.RenderToneMapping(*this, currentTime, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
     }
