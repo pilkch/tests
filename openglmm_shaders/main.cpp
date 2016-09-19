@@ -2259,6 +2259,7 @@ void cApplication::Run()
 
         // Set our constants
         pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
+        pContext->SetShaderConstant("lightPosition", lightDirectionalPosition);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 

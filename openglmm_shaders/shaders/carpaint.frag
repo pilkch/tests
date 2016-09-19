@@ -26,6 +26,7 @@ smooth in vec2 vertOutTexCoord0;
 smooth in vec3 worldNormal;
 smooth in vec3 mvPosition;
 smooth in vec3 cameraToVertex;
+smooth in vec3 lightToVertex;
 
 out vec4 fragmentColour;
 
@@ -74,13 +75,21 @@ vec3 CalculateMultiTonePaint()
   vec3 vNp2 = microflakePerturbation * ( vFlakesNormal + worldNormal ) ;
 
   float  fFresnel1 = clamp(dot( -cameraToVertex, vNp1 ), 0.0, 1.0);
-  float  fFresnel2 = clamp(dot( -cameraToVertex, vNp2 ), 0.0, 1.0);
+  float  fFresnel2 = clamp(dot( -lightToVertex, vNp2 ), 0.0, 1.0);
 
   float fFresnel1Sq = fFresnel1 * fFresnel1;
-  return fFresnel1   * paintColor1 +
-         fFresnel1Sq * paintColor2 +
-         fFresnel1Sq * fFresnel1Sq * paintColor3 +
-         pow( fFresnel2, 16.0 ) * flakeColor;
+  // Original
+  //return fFresnel1   * paintColor1 +
+  //       fFresnel1Sq * paintColor2 +
+  //       fFresnel1Sq * fFresnel1Sq * paintColor3 +
+  //       pow( fFresnel2, 16.0 ) * flakeColor;
+
+  return (
+    0.5 * (fFresnel1   * paintColor1) +
+    6.0 * (fFresnel1Sq * paintColor2) +
+    1.0 * (fFresnel1Sq * fFresnel1Sq * paintColor3) +
+    0.5 * (fFresnel2 * flakeColor)
+  );
 }
 
 vec3 CalculateReflection()
@@ -104,5 +113,5 @@ void main()
   // Calculate multitone paint
   vec3 paintColour = CalculateMultiTonePaint();
 
-  fragmentColour = vec4(3.0 * paintColour + 0.01 * reflectionColour, 1.0);
+  fragmentColour = vec4(4.0 * paintColour + 1.0 * reflectionColour, 1.0);
 }
