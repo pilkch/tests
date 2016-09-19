@@ -210,10 +210,14 @@ private:
   opengl::cTexture textureLightMap;
   opengl::cTexture textureDetail;
   opengl::cTextureCubeMap textureCubeMap;
+  opengl::cTextureCubeMap textureCarCubeMap;
   opengl::cTexture textureMarble;
 
   opengl::cTexture textureMetalDiffuse;
   opengl::cTexture textureMetalSpecular;
+
+  opengl::cTexture textureCarNormalMap;
+  opengl::cTexture textureCarMicroFlakeNormalMap;
 
   opengl::cTexture textureNormalMapDiffuse;
   opengl::cTexture textureNormalMapSpecular;
