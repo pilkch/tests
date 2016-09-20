@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 uniform sampler2D texUnit0; // Diffuse texture
 uniform sampler2D texUnit1; // Lightmap texture
@@ -12,9 +12,9 @@ out vec4 fragmentColour;
 
 void main()
 {
-  vec4 diffuse = texture2D(texUnit0, vertOutTexCoord0);
-  vec4 lightmap = texture2D(texUnit1, vertOutTexCoord1);
-  vec4 detail = texture2D(texUnit2, vertOutTexCoord2);
+  vec3 diffuse = texture(texUnit0, vertOutTexCoord0).rgb;
+  vec3 lightmap = texture(texUnit1, vertOutTexCoord1).rgb;
+  vec3 detail = texture(texUnit2, vertOutTexCoord2).rgb;
 
-  fragmentColour = vec4((diffuse * lightmap * detail).rgb, 1.0);
+  fragmentColour = vec4(diffuse * lightmap * detail, 1.0);
 }
