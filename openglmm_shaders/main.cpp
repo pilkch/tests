@@ -89,6 +89,7 @@ cApplication::cApplication() :
 
   bIsDOFBokeh(true),
   bIsHDR(true),
+  bIsToneMapping(true),
   lensFlare(LENS_FLARE::ANAMORPHIC),
   bDebugShowFlareOnly(false),
   bIsSplitScreenSimplePostEffectShaders(true),
@@ -142,6 +143,7 @@ void cApplication::CreateText()
 
   lines.push_back(TEXT(""));
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Tone Mapping: ")) + (bIsToneMapping ? TEXT("On") : TEXT("Off")));
   const float fExposure = hdr.GetExposure();
   lines.push_back(spitfire::string_t(TEXT("Exposure: ")) + spitfire::string::ToString(fExposure));
   lines.push_back(spitfire::string_t(TEXT("Lens Flare: ")) + (lensFlare == LENS_FLARE::NONE ? TEXT("Off") : (lensFlare == LENS_FLARE::DIRT ? TEXT("Dirt") : TEXT("Anamorphic"))));
@@ -851,6 +853,11 @@ bool cApplication::Create()
   pContext->CreateTexture(textureMetalSpecular, TEXT("textures/metal_specular.jpg"));
   assert(textureMetalSpecular.IsValid());
 
+  pContext->CreateTexture(textureCarNormalMap, TEXT("textures/car_normal.png"));
+  assert(textureCarNormalMap.IsValid());
+  pContext->CreateTexture(textureCarMicroFlakeNormalMap, TEXT("textures/SparkleNoiseMap.png"));
+  assert(textureCarMicroFlakeNormalMap.IsValid());
+
   pContext->CreateTextureCubeMap(
     textureCubeMap,
     TEXT("textures/skybox_positive_x.jpg"),
@@ -861,6 +868,17 @@ bool cApplication::Create()
     TEXT("textures/skybox_negative_z.jpg")
   );
   assert(textureCubeMap.IsValid());
+
+  pContext->CreateTextureCubeMap(
+    textureCarCubeMap,
+    TEXT("textures/car_background_right.png"),
+    TEXT("textures/car_background_left.jpg"),
+    TEXT("textures/car_background_front.jpg"),
+    TEXT("textures/car_background_back.jpg"),
+    TEXT("textures/car_background_up.jpg"),
+    TEXT("textures/car_background_down.jpg")
+  );
+  assert(textureCarCubeMap.IsValid());
 
   pContext->CreateTexture(textureMarble, TEXT("textures/marble.png"));
   assert(textureMarble.IsValid());
@@ -1050,7 +1068,11 @@ void cApplication::Destroy()
 
   if (textureMarble.IsValid()) pContext->DestroyTexture(textureMarble);
 
+  if (textureCarMicroFlakeNormalMap.IsValid()) pContext->DestroyTexture(textureCarMicroFlakeNormalMap);
+  if (textureCarNormalMap.IsValid()) pContext->DestroyTexture(textureCarNormalMap);
+
   if (textureCubeMap.IsValid()) pContext->DestroyTextureCubeMap(textureCubeMap);
+  if (textureCarCubeMap.IsValid()) pContext->DestroyTextureCubeMap(textureCarCubeMap);
 
   if (textureDetail.IsValid()) pContext->DestroyTexture(textureDetail);
   if (textureLightMap.IsValid()) pContext->DestroyTexture(textureLightMap);
@@ -1490,7 +1512,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bSimplePostRenderDirty = true;
         break;
       }
-      case SDLK_l: {
+      case SDLK_z: {
         if (IsColourBlindSimplePostRenderShaderEnabled()) {
           if (colourBlindMode == COLOUR_BLIND_MODE::PROTANOPIA) colourBlindMode = COLOUR_BLIND_MODE::DEUTERANOPIA;
           else if (colourBlindMode == COLOUR_BLIND_MODE::DEUTERANOPIA) colourBlindMode = COLOUR_BLIND_MODE::TRITANOPIA;
@@ -1499,28 +1521,32 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         }
         break;
       }
-      case SDLK_1: {
+      case SDLK_x: {
         bIsWireframe = !bIsWireframe;
         break;
       }
-      case SDLK_2: {
+      case SDLK_1: {
         bIsDirectionalLightOn = !bIsDirectionalLightOn;
         break;
       }
-      case SDLK_3: {
+      case SDLK_2: {
         bIsPointLightOn = !bIsPointLightOn;
         break;
       }
-      case SDLK_4: {
+      case SDLK_3: {
         bIsSpotLightOn = !bIsSpotLightOn;
         break;
       }
-      case SDLK_5: {
+      case SDLK_4: {
         bIsDOFBokeh = !bIsDOFBokeh;
         break;
       }
-      case SDLK_6: {
+      case SDLK_5: {
         bIsHDR = !bIsHDR;
+        break;
+      }
+      case SDLK_6: {
+        bIsToneMapping = !bIsToneMapping;
         break;
       }
       case SDLK_7: {
@@ -1631,7 +1657,10 @@ void cApplication::Run()
   assert(textureFelt.IsValid());
   assert(textureLightMap.IsValid());
   assert(textureDetail.IsValid());
+  assert(textureCarNormalMap.IsValid());
+  assert(textureCarMicroFlakeNormalMap.IsValid());
   assert(textureCubeMap.IsValid());
+  assert(textureCarCubeMap.IsValid());
   assert(textureMarble.IsValid());
   assert(textureMetalDiffuse.IsValid());
   assert(textureMetalSpecular.IsValid());
@@ -2224,34 +2253,27 @@ void cApplication::Run()
         pContext->BindShader(shaderCarPaint);
 
         // Render the car paint teapot
-        pContext->BindTexture(0, textureDiffuse);
-        pContext->BindTextureCubeMap(1, textureCubeMap);
+        pContext->BindTexture(0, textureCarNormalMap);
+        pContext->BindTexture(1, textureCarMicroFlakeNormalMap);
+        pContext->BindTextureCubeMap(2, textureCarCubeMap);
 
         // Set our constants
-        const spitfire::math::cMat4 matModelView = matView * matTranslationCarPaintTeapot;
-        pContext->SetShaderConstant("fvLightPosition", matModelView * lightDirectionalPosition);
-        pContext->SetShaderConstant("fvEyePosition", spitfire::math::cVec3());// matModelView * camera.GetPosition());
-
-        pContext->SetShaderConstant("cameraPos", camera.GetPosition());
-        pContext->SetShaderConstant("matModel", matTranslationCarPaintTeapot * matObjectRotation);
-
-        // The world matrix is the model matrix apparently, matObjectToBeRendered
-        //const spitfire::math::cMat4 matWorld = matTranslationCarPaintTeapot;
-        //const spitfire::math::cMat4 matWorldInverseTranspose = matWorld.GetInverseTranspose();
-        //pContext->SetShaderConstant("matWorldInverseTranspose", matWorldInverseTranspose);
+        pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
+        pContext->SetShaderConstant("lightPosition", lightDirectionalPosition);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
         {
-          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationCarPaintTeapot * matObjectRotation);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationCarPaintTeapot * matObjectRotation);
 
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectLargeTeapot);
         }
 
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
-        pContext->UnBindTextureCubeMap(1, textureCubeMap);
-        pContext->UnBindTexture(0, textureDiffuse);
+        pContext->UnBindTextureCubeMap(2, textureCarCubeMap);
+        pContext->UnBindTexture(1, textureCarMicroFlakeNormalMap);
+        pContext->UnBindTexture(0, textureCarNormalMap);
 
         pContext->UnBindShader(shaderCarPaint);
       }
@@ -3262,7 +3284,7 @@ void cApplication::Run()
     }
 
     // Process HDR tone mapping
-    if (bIsHDR) {
+    if (bIsToneMapping) {
       hdr.RenderToneMapping(*this, currentTime, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
     }

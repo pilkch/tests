@@ -181,6 +181,7 @@ private:
 
   bool bIsDOFBokeh;
   bool bIsHDR;
+  bool bIsToneMapping;
   LENS_FLARE lensFlare;
   bool bDebugShowFlareOnly;
   bool bIsSplitScreenSimplePostEffectShaders; // Tells us whether to split the screen down the middle when a simple post effect shader is active
@@ -209,10 +210,14 @@ private:
   opengl::cTexture textureLightMap;
   opengl::cTexture textureDetail;
   opengl::cTextureCubeMap textureCubeMap;
+  opengl::cTextureCubeMap textureCarCubeMap;
   opengl::cTexture textureMarble;
 
   opengl::cTexture textureMetalDiffuse;
   opengl::cTexture textureMetalSpecular;
+
+  opengl::cTexture textureCarNormalMap;
+  opengl::cTexture textureCarMicroFlakeNormalMap;
 
   opengl::cTexture textureNormalMapDiffuse;
   opengl::cTexture textureNormalMapSpecular;
