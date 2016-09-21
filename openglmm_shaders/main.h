@@ -213,6 +213,10 @@ private:
   opengl::cTextureCubeMap textureCarCubeMap;
   opengl::cTexture textureMarble;
 
+  opengl::cTexture textureStainedGlass;
+  opengl::cTexture textureStainedGlassNormalMap;
+  opengl::cTexture textureStainedGlassGlossMap;
+
   opengl::cTexture textureMetalDiffuse;
   opengl::cTexture textureMetalSpecular;
 
@@ -231,6 +235,7 @@ private:
   opengl::cShader shaderBRDF;
   opengl::cShader shaderCarPaint;
   opengl::cShader shaderGlass;
+  opengl::cShader shaderStainedGlass;
   opengl::cShader shaderSilhouette;
   opengl::cShader shaderCelShaded;
   opengl::cShader shaderSmoke;
@@ -268,6 +273,8 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectSphere0;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectTeapot0;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectGear0;
+
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectPlane1;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPlane2;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectCube2;
