@@ -5,7 +5,7 @@
 #include <math.header>
 
 uniform sampler2D texUnit0; // Diffuse texture
-//uniform sampler2D texUnit1; // Normal texture
+uniform sampler2D texUnit1; // Normal texture
 uniform sampler2D texUnit2; // Gloss texture
 uniform samplerCube texUnit3; // Cubemap texture
 
@@ -51,14 +51,15 @@ float very_fast_fresnel(vec3 I, vec3 N)
 
 void main()
 {
-  //------ normalize incoming vectors
-  //
-  vec3 normal = normalize(N);
-  vec3 incident = normalize(E);
-
   vec3 base_color = texture(texUnit0, vertOutTexCoord0).rgb;
 
-  //vec3 normal_colour = texture(texUnit1, vertOutTexCoord0).rgb;
+  // Local normal, in tangent space
+  vec3 textureNormalInTangentSpace = normalize(texture(texUnit1, vertOutTexCoord0).rgb * 2.0 - 1.0);
+
+  //------ normalize incoming vectors
+  //
+  vec3 normal = normalize(N + textureNormalInTangentSpace);
+  vec3 incident = normalize(E);
 
   //------ Do a gloss map look up and compute the reflectivity.
   //
@@ -84,6 +85,6 @@ void main()
 
   //------ Write the final pixel.
   //
-  vec3 color = mix(refractColor, reflectColor, fresnelTerm);
-  fragmentColour = vec4( mix(base_color, color, reflectivity), 1.0);
+  vec3 cubeMapColour = mix(refractColor, reflectColor, fresnelTerm);
+  fragmentColour = vec4( mix(base_color, cubeMapColour, reflectivity), 1.0);
 }

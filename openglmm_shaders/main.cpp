@@ -2350,7 +2350,7 @@ void cApplication::Run()
 
         // Render the stained glass plane
         pContext->BindTexture(0, textureStainedGlass);
-        //pContext->BindTexture(1, textureStainedGlassNormalMap);
+        pContext->BindTexture(1, textureStainedGlassNormalMap);
         pContext->BindTexture(2, textureStainedGlassGlossMap);
         pContext->BindTextureCubeMap(3, textureCubeMap);
 
@@ -2382,7 +2382,7 @@ void cApplication::Run()
 
         pContext->UnBindTextureCubeMap(3, textureCubeMap);
         pContext->UnBindTexture(2, textureStainedGlassGlossMap);
-        //pContext->UnBindTexture(1, textureStainedGlassNormalMap);
+        pContext->UnBindTexture(1, textureStainedGlassNormalMap);
         pContext->UnBindTexture(0, textureStainedGlass);
 
         pContext->UnBindShader(shaderStainedGlass);
