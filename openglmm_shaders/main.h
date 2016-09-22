@@ -105,6 +105,7 @@ private:
   void DestroyShaders();
 
   void CreateText();
+  void CreateSquare(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fSizeMeters, float fTextureWidthWorldSpaceMeters);
   void CreateCube(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
@@ -213,6 +214,14 @@ private:
   opengl::cTextureCubeMap textureCarCubeMap;
   opengl::cTexture textureMarble;
 
+  opengl::cTexture textureStainedGlass;
+  opengl::cTexture textureStainedGlassNormalMap;
+  opengl::cTexture textureStainedGlassGlossMap;
+
+  opengl::cTexture textureStainedGlass2;
+  opengl::cTexture textureStainedGlass2NormalMap;
+  opengl::cTexture textureStainedGlass2GlossMap;
+
   opengl::cTexture textureMetalDiffuse;
   opengl::cTexture textureMetalSpecular;
 
@@ -231,6 +240,7 @@ private:
   opengl::cShader shaderBRDF;
   opengl::cShader shaderCarPaint;
   opengl::cShader shaderGlass;
+  opengl::cShader shaderStainedGlass;
   opengl::cShader shaderSilhouette;
   opengl::cShader shaderCelShaded;
   opengl::cShader shaderSmoke;
@@ -268,6 +278,8 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectSphere0;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectTeapot0;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectGear0;
+
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectSquare1;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPlane2;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectCube2;

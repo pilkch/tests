@@ -194,6 +194,8 @@
     <None Include="..\shaders\silhouette.vert" />
     <None Include="..\shaders\smoke.frag" />
     <None Include="..\shaders\smoke.vert" />
+    <None Include="..\shaders\stained_glass.frag" />
+    <None Include="..\shaders\stained_glass.vert" />
     <None Include="..\shaders\tealandorange.frag" />
   </ItemGroup>
   <ItemGroup>
