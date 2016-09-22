@@ -105,6 +105,7 @@ private:
   void DestroyShaders();
 
   void CreateText();
+  void CreateSquare(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fSizeMeters, float fTextureWidthWorldSpaceMeters);
   void CreateCube(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
@@ -274,7 +275,7 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectTeapot0;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectGear0;
 
-  opengl::cStaticVertexBufferObject staticVertexBufferObjectPlane1;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectSquare1;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPlane2;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectCube2;

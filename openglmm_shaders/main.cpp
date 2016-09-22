@@ -187,6 +187,20 @@ void cApplication::CreateText()
   textVBO.Compile2D();
 }
 
+void cApplication::CreateSquare(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates)
+{
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const float fWidth = 2.0f;
+
+  opengl::cGeometryBuilder builder;
+  builder.CreatePlane(fWidth, fWidth, *pGeometryDataPtr, nTextureCoordinates);
+
+  vbo.SetData(pGeometryDataPtr);
+
+  vbo.Compile();
+}
+
 void cApplication::CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
@@ -978,8 +992,8 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectGear0);
   CreateGear(staticVertexBufferObjectGear0);
 
-  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectPlane1);
-  CreatePlane(staticVertexBufferObjectPlane1, 1);
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+  CreateSquare(staticVertexBufferObjectSquare1, 1);
 
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectPlane2);
   CreatePlane(staticVertexBufferObjectPlane2, 2);
@@ -1045,7 +1059,7 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectBox2);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube2);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPlane2);
-  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPlane1);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSquare1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectGear0);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSphere0);
@@ -1738,7 +1752,7 @@ void cApplication::Run()
   assert(staticVertexBufferObjectTeapot0.IsCompiled());
   //assert(staticVertexBufferObjectGear0.IsCompiled());
 
-  assert(staticVertexBufferObjectPlane1.IsCompiled());
+  assert(staticVertexBufferObjectSquare1.IsCompiled());
 
   assert(staticVertexBufferObjectPlane2.IsCompiled());
   assert(staticVertexBufferObjectCube2.IsCompiled());
@@ -1820,7 +1834,7 @@ void cApplication::Run()
   spitfire::math::cMat4 matRotation;
 
   float fAngleRadians = 0.0f;
-  const float fRotationSpeed = 0.001f;
+  const float fRotationSpeed = 0.0005f;
 
   spitfire::math::cMat4 matObjectRotation;
 
@@ -2367,7 +2381,7 @@ void cApplication::Run()
         const float fresnelB = 0.0f;
         pContext->SetShaderConstant("fresnelValues", spitfire::math::cColour3(fresnelR, fresnelG, fresnelB));
 
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane1);
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
 
         {
           spitfire::math::cMat4 matRotateToVertical;
@@ -2375,10 +2389,10 @@ void cApplication::Run()
 
           pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationStainedGlass * matObjectRotation * matRotateToVertical);
 
-          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlane1);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
         }
 
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlane1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
 
         pContext->UnBindTextureCubeMap(3, textureCubeMap);
         pContext->UnBindTexture(2, textureStainedGlassGlossMap);
