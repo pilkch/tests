@@ -218,6 +218,10 @@ private:
   opengl::cTexture textureStainedGlassNormalMap;
   opengl::cTexture textureStainedGlassGlossMap;
 
+  opengl::cTexture textureStainedGlass2;
+  opengl::cTexture textureStainedGlass2NormalMap;
+  opengl::cTexture textureStainedGlass2GlossMap;
+
   opengl::cTexture textureMetalDiffuse;
   opengl::cTexture textureMetalSpecular;
 

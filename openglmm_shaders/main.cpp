@@ -869,6 +869,13 @@ bool cApplication::Create()
   pContext->CreateTexture(textureStainedGlassGlossMap, TEXT("textures/stained_glass_gloss.png"));
   assert(textureStainedGlassGlossMap.IsValid());
 
+  pContext->CreateTexture(textureStainedGlass2, TEXT("textures/stained_glass2.png"));
+  assert(textureStainedGlass2.IsValid());
+  pContext->CreateTexture(textureStainedGlass2NormalMap, TEXT("textures/stained_glass2_normal.png"));
+  assert(textureStainedGlass2NormalMap.IsValid());
+  pContext->CreateTexture(textureStainedGlass2GlossMap, TEXT("textures/stained_glass2_gloss.png"));
+  assert(textureStainedGlass2GlossMap.IsValid());
+
   pContext->CreateTexture(textureMetalDiffuse, TEXT("textures/metal.png"));
   assert(textureMetalDiffuse.IsValid());
   pContext->CreateTexture(textureMetalSpecular, TEXT("textures/metal_specular.jpg"));
@@ -1102,6 +1109,10 @@ void cApplication::Destroy()
   if (textureStainedGlass.IsValid()) pContext->DestroyTexture(textureStainedGlass);
   if (textureStainedGlassNormalMap.IsValid()) pContext->DestroyTexture(textureStainedGlassNormalMap);
   if (textureStainedGlassGlossMap.IsValid()) pContext->DestroyTexture(textureStainedGlassGlossMap);
+
+  if (textureStainedGlass2.IsValid()) pContext->DestroyTexture(textureStainedGlass2);
+  if (textureStainedGlass2NormalMap.IsValid()) pContext->DestroyTexture(textureStainedGlass2NormalMap);
+  if (textureStainedGlass2GlossMap.IsValid()) pContext->DestroyTexture(textureStainedGlass2GlossMap);
 
   if (textureDetail.IsValid()) pContext->DestroyTexture(textureDetail);
   if (textureLightMap.IsValid()) pContext->DestroyTexture(textureLightMap);
@@ -1692,6 +1703,9 @@ void cApplication::Run()
   assert(textureStainedGlass.IsValid());
   assert(textureStainedGlassNormalMap.IsValid());
   assert(textureStainedGlassGlossMap.IsValid());
+  assert(textureStainedGlass2.IsValid());
+  assert(textureStainedGlass2NormalMap.IsValid());
+  assert(textureStainedGlass2GlossMap.IsValid());
   assert(textureCarNormalMap.IsValid());
   assert(textureCarMicroFlakeNormalMap.IsValid());
   assert(textureCubeMap.IsValid());
@@ -1853,10 +1867,15 @@ void cApplication::Run()
   spitfire::math::cMat4 matTranslationGlassTeapot;
   matTranslationGlassTeapot.SetTranslation(positionGlassTeapot);
 
-  // Glass teapot
-  const spitfire::math::cVec3 positionStainedGlass(-7.5f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
+  // Stained glass window
+  const spitfire::math::cVec3 positionStainedGlass(-3.0f * fSpacingX, 0.0f, (-2.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationStainedGlass;
   matTranslationStainedGlass.SetTranslation(positionStainedGlass);
+
+  // Another stained glass window
+  const spitfire::math::cVec3 positionStainedGlass2(-6.0f * fSpacingX, 0.0f, (-2.0f * fSpacingZ));
+  spitfire::math::cMat4 matTranslationStainedGlass2;
+  matTranslationStainedGlass2.SetTranslation(positionStainedGlass2);
 
   // Cel shaded teapot
   const spitfire::math::cVec3 positionCelShadedTeapot(-9.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
@@ -2398,6 +2417,49 @@ void cApplication::Run()
         pContext->UnBindTexture(2, textureStainedGlassGlossMap);
         pContext->UnBindTexture(1, textureStainedGlassNormalMap);
         pContext->UnBindTexture(0, textureStainedGlass);
+
+        pContext->UnBindShader(shaderStainedGlass);
+      }
+
+      {
+        pContext->BindShader(shaderStainedGlass);
+
+        // Render the stained glass plane
+        pContext->BindTexture(0, textureStainedGlass2);
+        pContext->BindTexture(1, textureStainedGlass2NormalMap);
+        pContext->BindTexture(2, textureStainedGlass2GlossMap);
+        pContext->BindTextureCubeMap(3, textureCubeMap);
+
+        // Set our constants
+        pContext->SetShaderConstant("cameraPosition", camera.GetPosition());
+
+        const float IoR_R = 1.14f;
+        const float IoR_G = 1.12f;
+        const float IoR_B = 1.10f;
+        pContext->SetShaderConstant("IoR_Values", spitfire::math::cColour3(IoR_R, IoR_G, IoR_B));
+
+        const float fresnelR = 0.15f;
+        const float fresnelG = 2.0f;
+        const float fresnelB = 0.0f;
+        pContext->SetShaderConstant("fresnelValues", spitfire::math::cColour3(fresnelR, fresnelG, fresnelB));
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        {
+          spitfire::math::cMat4 matRotateToVertical;
+          matRotateToVertical.SetRotationX(spitfire::math::DegreesToRadians(90.0f));
+
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationStainedGlass2 * matObjectRotation * matRotateToVertical);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        }
+
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        pContext->UnBindTextureCubeMap(3, textureCubeMap);
+        pContext->UnBindTexture(2, textureStainedGlass2GlossMap);
+        pContext->UnBindTexture(1, textureStainedGlass2NormalMap);
+        pContext->UnBindTexture(0, textureStainedGlass2);
 
         pContext->UnBindShader(shaderStainedGlass);
       }
