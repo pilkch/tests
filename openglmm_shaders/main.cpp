@@ -2348,6 +2348,8 @@ void cApplication::Run()
 
       pContext->UnBindShader(shaderCubeMap);
 
+      tronGlow.AddNonGlowingObject(matTranslationCubeMappedTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
+
 
       {
         pContext->BindShader(shaderCarPaint);
@@ -2376,6 +2378,8 @@ void cApplication::Run()
         pContext->UnBindTexture(0, textureCarNormalMap);
 
         pContext->UnBindShader(shaderCarPaint);
+
+        tronGlow.AddNonGlowingObject(matTranslationCarPaintTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
       }
 
       {
@@ -2583,6 +2587,8 @@ void cApplication::Run()
 
           pContext->UnBindShader(shaderCelShaded);
         }
+
+        tronGlow.AddNonGlowingObject(matTranslationCelShadedTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
       }
 
 

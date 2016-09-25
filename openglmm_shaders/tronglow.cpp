@@ -29,7 +29,6 @@ void cTronGlow::AddNonGlowingObject(const spitfire::math::cMat4& matModel, openg
 {
   assert(pVBO != nullptr);
   assert(pVBO->IsCompiled());
-  assert(pVBO->GetTextureUnitCount() == 0);
 
   lNotGlowingObjects.push_back(std::make_pair(matModel, pVBO));
 }
@@ -42,8 +41,6 @@ void cTronGlow::BeginRender(cApplication& application, opengl::cContext& context
 
   context.BeginRenderToTexture(temp);
 
-  context.BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
-
   // Render black objects
   context.BindShader(shaderBlack);
 
@@ -55,7 +52,6 @@ void cTronGlow::BeginRender(cApplication& application, opengl::cContext& context
   }
 
   context.UnBindShader(shaderBlack);
-
 
   context.BindShader(shaderGlowHighlights);
 
@@ -70,6 +66,8 @@ void cTronGlow::RenderSceneWithTronGlow(cApplication& application, opengl::cCont
 
   context.BeginRenderToTexture(output);
 
+  context.BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
+
   context.BindShader(shaderTronGlowScreen);
   context.BindTexture(0, input);
   context.BindTexture(1, temp);
@@ -78,15 +76,14 @@ void cTronGlow::RenderSceneWithTronGlow(cApplication& application, opengl::cCont
   context.UnBindTexture(0, input);
   context.UnBindShader(shaderTronGlowScreen);
 
+  context.EndRenderMode2D();
+
   context.EndRenderToTexture(output);
 }
 
 void cTronGlow::EndRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& temp, opengl::cTextureFrameBufferObject& output)
 {
   context.UnBindShader(shaderGlowHighlights);
-
-  // Finish rendering objects to the temporary texture
-  context.EndRenderMode2D();
 
   context.EndRenderToTexture(temp);
 
@@ -96,4 +93,8 @@ void cTronGlow::EndRender(cApplication& application, opengl::cContext& context, 
 
   // Now render the normal texture mixed with the blur texture to the screen
   RenderSceneWithTronGlow(application, context, input, temp, output);
+
+
+  // Clear the list of black objects
+  lNotGlowingObjects.clear();
 }
