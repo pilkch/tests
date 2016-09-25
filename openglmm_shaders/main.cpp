@@ -846,7 +846,7 @@ bool cApplication::Create()
   pContext->CreateTextureFrameBufferObject(textureFrameBufferObjectTeapot, resolution.width, resolution.height, opengl::PIXELFORMAT::R8G8B8A8);
   assert(textureFrameBufferObjectTeapot.IsValid());
 
-  for (size_t i = 0; i < 2; i++) {
+  for (size_t i = 0; i < 3; i++) {
     pContext->CreateTextureFrameBufferObjectWithDepth(textureFrameBufferObjectScreenColourAndDepth[i], resolution.width, resolution.height);
     assert(textureFrameBufferObjectScreenColourAndDepth[i].IsValid());
   }
@@ -1123,7 +1123,7 @@ void cApplication::Destroy()
 
   if (textureFrameBufferObjectScreenDepth.IsValid()) pContext->DestroyTextureFrameBufferObject(textureFrameBufferObjectScreenDepth);
 
-  for (size_t i = 0; i < 2; i++) {
+  for (size_t i = 0; i < 3; i++) {
     if (textureFrameBufferObjectScreenColourAndDepth[i].IsValid()) pContext->DestroyTextureFrameBufferObject(textureFrameBufferObjectScreenColourAndDepth[i]);
   }
 
@@ -2279,6 +2279,7 @@ void cApplication::Run()
 
     size_t outputFBO = 0;
     size_t inputFBO = 1;
+    const size_t tempFBO = 2;
 
     {
       opengl::cTextureFrameBufferObject& fbo = textureFrameBufferObjectScreenColourAndDepth[outputFBO];

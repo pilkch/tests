@@ -203,7 +203,7 @@ private:
   opengl::cStaticVertexBufferObject textVBO;
 
   opengl::cTextureFrameBufferObject textureFrameBufferObjectTeapot;
-  opengl::cTextureFrameBufferObject textureFrameBufferObjectScreenColourAndDepth[2];
+  opengl::cTextureFrameBufferObject textureFrameBufferObjectScreenColourAndDepth[3];
   opengl::cTextureFrameBufferObject textureFrameBufferObjectScreenDepth;
 
   opengl::cTexture textureDiffuse;
