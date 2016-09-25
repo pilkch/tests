@@ -58,6 +58,7 @@
 #include "hdr.h"
 #include "lensflaredirt.h"
 #include "shadowmapping.h"
+#include "tronglow.h"
 #include "util.h"
 
 // Test various lights, unfortunately it is a very large model which takes ages to load, so it is disabled by default
@@ -79,6 +80,7 @@ class cApplication : public opengl::cWindowEventListener, public opengl::cInputE
 public:
   cApplication();
 
+  friend class cTronGlow;
   friend class cAnamorphicLensFlare;
   friend class cDOFBokeh;
   friend class cHDR;
@@ -93,7 +95,7 @@ public:
   opengl::cResolution GetResolution() const;
 
 protected:
-  // Called from cHDR and cLensFlareDirt
+  // Called from cTronGlow, cHDR and cLensFlareDirt
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fVBOWidth, float_t fVBOHeight, float_t fTextureWidth, float_t fTextureHeight);
   void RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader);
   void RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader, opengl::cStaticVertexBufferObject& staticVertexBufferObject);
@@ -180,6 +182,7 @@ private:
     ANAMORPHIC, // An anamorphic lens flare (Hi JJ Abrams!)
   };
 
+  bool bIsTronGlow;
   bool bIsDOFBokeh;
   bool bIsHDR;
   bool bIsToneMapping;
@@ -227,6 +230,12 @@ private:
 
   opengl::cTexture textureCarNormalMap;
   opengl::cTexture textureCarMicroFlakeNormalMap;
+
+  opengl::cTexture textureSciFi;
+  opengl::cTexture textureSciFiSpecular;
+  opengl::cTexture textureSciFiNormalMap;
+  opengl::cTexture textureSciFiHeightMap;
+  opengl::cTexture textureSciFiGlowMap;
 
   opengl::cTexture textureNormalMapDiffuse;
   opengl::cTexture textureNormalMapSpecular;
@@ -304,6 +313,7 @@ private:
 
   std::vector<cTextureVBOPair*> testImages;
 
+  cTronGlow tronGlow;
   cDOFBokeh dofBokeh;
   cHDR hdr;
   cLensFlareDirt lensFlareDirt;
