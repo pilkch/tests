@@ -87,10 +87,10 @@ cApplication::cApplication() :
   bIsRotating(true),
   bIsWireframe(false),
 
-  bIsDOFBokeh(true),
-  bIsHDR(true),
-  bIsToneMapping(true),
-  lensFlare(LENS_FLARE::ANAMORPHIC),
+  bIsDOFBokeh(false),
+  bIsHDR(false),
+  bIsToneMapping(false),
+  lensFlare(LENS_FLARE::NONE),
   bDebugShowFlareOnly(false),
   bIsSplitScreenSimplePostEffectShaders(true),
 
