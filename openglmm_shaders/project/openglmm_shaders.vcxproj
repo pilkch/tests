@@ -119,6 +119,7 @@
     <ClCompile Include="..\..\..\library\src\spitfire\util\timer.cpp" />
     <ClCompile Include="..\anamorphic_lens_flare.cpp" />
     <ClCompile Include="..\dofbokeh.cpp" />
+    <ClCompile Include="..\gaussian_blur.cpp" />
     <ClCompile Include="..\hdr.cpp" />
     <ClCompile Include="..\lensflaredirt.cpp" />
     <ClCompile Include="..\main.cpp" />
@@ -170,7 +171,7 @@
     <None Include="..\shaders\hdr\tone_mapping.frag" />
     <None Include="..\shaders\lambert.frag" />
     <None Include="..\shaders\lambert.vert" />
-    <None Include="..\shaders\lensflaredirt\gauss1d.frag" />
+    <None Include="..\shaders\lensflaredirt\gaussian_blur.frag" />
     <None Include="..\shaders\lensflaredirt\lensflare.frag" />
     <None Include="..\shaders\lensflaredirt\postprocess.frag" />
     <None Include="..\shaders\lensflaredirt\scalebias.frag" />
@@ -207,6 +208,7 @@
   <ItemGroup>
     <ClInclude Include="..\anamorphic_lens_flare.h" />
     <ClInclude Include="..\dofbokeh.h" />
+    <ClInclude Include="..\gaussian_blur.h" />
     <ClInclude Include="..\hdr.h" />
     <ClInclude Include="..\lensflaredirt.h" />
     <ClInclude Include="..\main.h" />
