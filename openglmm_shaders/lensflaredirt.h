@@ -49,6 +49,7 @@
 #include <libopenglmm/cWindow.h>
 
 // Application headers
+#include "gaussian_blur.h"
 #include "util.h"
 
 class cApplication;
@@ -74,22 +75,12 @@ public:
   opengl::cTextureFrameBufferObject& GetTempC() { return fboTempC_; }
 
 private:
-  /*	Apply a Gaussian blur to the 0th color attachment of input fbo. The result
-  is written to output fbo, which may be the same as in. */
-  void gaussBlur(
-    cApplication& application,
-    opengl::cContext& context,
-    opengl::cTextureFrameBufferObject& in,
-    opengl::cTextureFrameBufferObject& temp,
-    opengl::cTextureFrameBufferObject& out, // can be the same as in
-    int radius // blur kernel radius in texels
-    );
-
   void CreateTempBuffers(cApplication& application, opengl::cContext& context);
   void DestroyTempBuffers(opengl::cContext& context);
 
+  cGaussianBlur blur;
+
   opengl::cShader shaderPostProcess_;
-  opengl::cShader shaderGaussBlur_;
   opengl::cShader shaderScaleBias_;
   opengl::cStaticVertexBufferObject vboScaleBias;
 
@@ -104,7 +95,7 @@ private:
   float flareDispersal_;
   float flareHaloWidth_;
   float flareDistortion_;
-  float flareBlurRadius_;
+  unsigned int uiFlareBlurRadius;
   opengl::cStaticVertexBufferObject vboLensFlare;
 
   // Render textures/framebuffers

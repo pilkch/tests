@@ -87,10 +87,11 @@ cApplication::cApplication() :
   bIsRotating(true),
   bIsWireframe(false),
 
-  bIsDOFBokeh(true),
-  bIsHDR(true),
-  bIsToneMapping(true),
-  lensFlare(LENS_FLARE::ANAMORPHIC),
+  bIsTronGlow(true),
+  bIsDOFBokeh(false),
+  bIsHDR(false),
+  bIsToneMapping(false),
+  lensFlare(LENS_FLARE::NONE),
   bDebugShowFlareOnly(false),
   bIsSplitScreenSimplePostEffectShaders(true),
 
@@ -142,6 +143,7 @@ void cApplication::CreateText()
   lines.push_back(spitfire::string_t(TEXT("f stops:") + spitfire::string::ToString(dofBokeh.GetFStop())));
 
   lines.push_back(TEXT(""));
+  lines.push_back(spitfire::string_t(TEXT("Tron Glow: ")) + (bIsTronGlow ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Tone Mapping: ")) + (bIsToneMapping ? TEXT("On") : TEXT("Off")));
   const float fExposure = hdr.GetExposure();
@@ -846,7 +848,7 @@ bool cApplication::Create()
   pContext->CreateTextureFrameBufferObject(textureFrameBufferObjectTeapot, resolution.width, resolution.height, opengl::PIXELFORMAT::R8G8B8A8);
   assert(textureFrameBufferObjectTeapot.IsValid());
 
-  for (size_t i = 0; i < 2; i++) {
+  for (size_t i = 0; i < 4; i++) {
     pContext->CreateTextureFrameBufferObjectWithDepth(textureFrameBufferObjectScreenColourAndDepth[i], resolution.width, resolution.height);
     assert(textureFrameBufferObjectScreenColourAndDepth[i].IsValid());
   }
@@ -875,6 +877,17 @@ bool cApplication::Create()
   assert(textureStainedGlass2NormalMap.IsValid());
   pContext->CreateTexture(textureStainedGlass2GlossMap, TEXT("textures/stained_glass2_gloss.png"));
   assert(textureStainedGlass2GlossMap.IsValid());
+
+  pContext->CreateTexture(textureSciFi, TEXT("textures/sci_fi.png"));
+  assert(textureSciFi.IsValid());
+  pContext->CreateTexture(textureSciFiSpecular, TEXT("textures/sci_fi_specular.png"));
+  assert(textureSciFiSpecular.IsValid());
+  pContext->CreateTexture(textureSciFiNormalMap, TEXT("textures/sci_fi_normal.png"));
+  assert(textureSciFiNormalMap.IsValid());
+  pContext->CreateTexture(textureSciFiHeightMap, TEXT("textures/sci_fi_heightmap.png"));
+  assert(textureSciFiHeightMap.IsValid());
+  pContext->CreateTexture(textureSciFiGlowMap, TEXT("textures/sci_fi_glow.png"));
+  assert(textureSciFiGlowMap.IsValid());
 
   pContext->CreateTexture(textureMetalDiffuse, TEXT("textures/metal.png"));
   assert(textureMetalDiffuse.IsValid());
@@ -1114,6 +1127,12 @@ void cApplication::Destroy()
   if (textureStainedGlass2NormalMap.IsValid()) pContext->DestroyTexture(textureStainedGlass2NormalMap);
   if (textureStainedGlass2GlossMap.IsValid()) pContext->DestroyTexture(textureStainedGlass2GlossMap);
 
+  if (textureSciFi.IsValid()) pContext->DestroyTexture(textureSciFi);
+  if (textureSciFiSpecular.IsValid()) pContext->DestroyTexture(textureSciFiSpecular);
+  if (textureSciFiNormalMap.IsValid()) pContext->DestroyTexture(textureSciFiNormalMap);
+  if (textureSciFiHeightMap.IsValid()) pContext->DestroyTexture(textureSciFiHeightMap);
+  if (textureSciFiGlowMap.IsValid()) pContext->DestroyTexture(textureSciFiGlowMap);
+
   if (textureDetail.IsValid()) pContext->DestroyTexture(textureDetail);
   if (textureLightMap.IsValid()) pContext->DestroyTexture(textureLightMap);
   if (textureFelt.IsValid()) pContext->DestroyTexture(textureFelt);
@@ -1123,7 +1142,7 @@ void cApplication::Destroy()
 
   if (textureFrameBufferObjectScreenDepth.IsValid()) pContext->DestroyTextureFrameBufferObject(textureFrameBufferObjectScreenDepth);
 
-  for (size_t i = 0; i < 2; i++) {
+  for (size_t i = 0; i < 4; i++) {
     if (textureFrameBufferObjectScreenColourAndDepth[i].IsValid()) pContext->DestroyTextureFrameBufferObject(textureFrameBufferObjectScreenColourAndDepth[i]);
   }
 
@@ -1165,6 +1184,7 @@ void cApplication::Destroy()
   lensFlareDirt.Destroy(*pContext);
   lensFlareAnamorphic.Destroy(*pContext);
   dofBokeh.Destroy(*pContext);
+  tronGlow.Destroy(*pContext);
 
   pContext = nullptr;
 
@@ -1585,24 +1605,28 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_5: {
-        bIsHDR = !bIsHDR;
+        bIsTronGlow = !bIsTronGlow;
         break;
       }
       case SDLK_6: {
-        bIsToneMapping = !bIsToneMapping;
+        bIsHDR = !bIsHDR;
         break;
       }
       case SDLK_7: {
+        bIsToneMapping = !bIsToneMapping;
+        break;
+      }
+      case SDLK_8: {
         if (lensFlare == LENS_FLARE::NONE) lensFlare = LENS_FLARE::DIRT;
         else if (lensFlare == LENS_FLARE::DIRT) lensFlare = LENS_FLARE::ANAMORPHIC;
         else lensFlare = LENS_FLARE::NONE;
         break;
       }
-      case SDLK_8: {
+      case SDLK_9: {
         bDebugShowFlareOnly = !bDebugShowFlareOnly;
         break;
       }
-      case SDLK_9: {
+      case SDLK_0: {
         bIsSplitScreenSimplePostEffectShaders = !bIsSplitScreenSimplePostEffectShaders;
         break;
       }
@@ -1706,6 +1730,11 @@ void cApplication::Run()
   assert(textureStainedGlass2.IsValid());
   assert(textureStainedGlass2NormalMap.IsValid());
   assert(textureStainedGlass2GlossMap.IsValid());
+  assert(textureSciFi.IsValid());
+  assert(textureSciFiSpecular.IsValid());
+  assert(textureSciFiNormalMap.IsValid());
+  assert(textureSciFiHeightMap.IsValid());
+  assert(textureSciFiGlowMap.IsValid());
   assert(textureCarNormalMap.IsValid());
   assert(textureCarMicroFlakeNormalMap.IsValid());
   assert(textureCubeMap.IsValid());
@@ -1794,6 +1823,9 @@ void cApplication::Run()
 
   assert(parallaxNormalMap.vbo.IsCompiled());
 
+  tronGlow.Init(*this, *pContext);
+  tronGlow.Resize(*this, *pContext);
+
   dofBokeh.Init(*pContext);
   dofBokeh.Resize(*this, *pContext);
 
@@ -1876,6 +1908,11 @@ void cApplication::Run()
   const spitfire::math::cVec3 positionStainedGlass2(-6.0f * fSpacingX, 0.0f, (-2.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationStainedGlass2;
   matTranslationStainedGlass2.SetTranslation(positionStainedGlass2);
+
+  // Glowing sci fi crate
+  const spitfire::math::cVec3 positionSciFi(-9.0f * fSpacingX, 0.0f, (-2.0f * fSpacingZ));
+  spitfire::math::cMat4 matTranslationSciFi;
+  matTranslationSciFi.SetTranslation(positionSciFi);
 
   // Cel shaded teapot
   const spitfire::math::cVec3 positionCelShadedTeapot(-9.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
@@ -2279,6 +2316,8 @@ void cApplication::Run()
 
     size_t outputFBO = 0;
     size_t inputFBO = 1;
+    const size_t tempFBO = 2;
+    const size_t tempFBO2 = 3;
 
     {
       opengl::cTextureFrameBufferObject& fbo = textureFrameBufferObjectScreenColourAndDepth[outputFBO];
@@ -2310,6 +2349,8 @@ void cApplication::Run()
 
       pContext->UnBindShader(shaderCubeMap);
 
+      tronGlow.AddNonGlowingObject(matTranslationCubeMappedTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
+
 
       {
         pContext->BindShader(shaderCarPaint);
@@ -2338,6 +2379,8 @@ void cApplication::Run()
         pContext->UnBindTexture(0, textureCarNormalMap);
 
         pContext->UnBindShader(shaderCarPaint);
+
+        tronGlow.AddNonGlowingObject(matTranslationCarPaintTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
       }
 
       {
@@ -2465,6 +2508,31 @@ void cApplication::Run()
       }
 
       {
+        // Render the parallax normal map cube
+        pContext->BindShader(parallaxNormalMap.shader);
+
+        pContext->BindTexture(0, textureSciFi);
+        pContext->BindTexture(1, textureSciFiSpecular);
+        pContext->BindTexture(2, textureSciFiNormalMap);
+        pContext->BindTexture(3, textureSciFiHeightMap);
+
+        // Set up the shader uniforms
+        pContext->SetShaderConstant("directionalLight.direction", (positionSciFi - lightDirectionalPosition).GetNormalised());
+
+        pContext->BindStaticVertexBufferObject(parallaxNormalMap.vbo);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationSciFi * matObjectRotation);
+        pContext->DrawStaticVertexBufferObjectTriangles(parallaxNormalMap.vbo);
+        pContext->UnBindStaticVertexBufferObject(parallaxNormalMap.vbo);
+
+        pContext->UnBindTexture(3, textureSciFiHeightMap);
+        pContext->UnBindTexture(2, textureSciFiNormalMap);
+        pContext->UnBindTexture(1, textureSciFiSpecular);
+        pContext->UnBindTexture(0, textureSciFi);
+
+        pContext->UnBindShader(parallaxNormalMap.shader);
+      }
+
+      {
         // Render the cel shaded teapot which consists of a black silhouette pass and a cel shaded pass
 
         // Black silhouette
@@ -2520,6 +2588,8 @@ void cApplication::Run()
 
           pContext->UnBindShader(shaderCelShaded);
         }
+
+        tronGlow.AddNonGlowingObject(matTranslationCelShadedTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
       }
 
 
@@ -3414,13 +3484,39 @@ void cApplication::Run()
       std::swap(outputFBO, inputFBO);
     }
 
+    // Apply tron glow
+    if (bIsTronGlow) {
+      tronGlow.BeginRender(*this, *pContext, matProjection, matView, textureFrameBufferObjectScreenColourAndDepth[tempFBO]);
+
+      // Render glowing objects
+
+      {
+        // Render the parallax normal map cube but with the tron glow highlights shader
+
+        pContext->BindTexture(0, textureSciFiGlowMap);
+
+        // Set up the shader uniforms
+        pContext->SetShaderConstant("glowColour", spitfire::math::cColour3(0.14f, 0.98f, 1.0f));
+
+        pContext->BindStaticVertexBufferObject(parallaxNormalMap.vbo);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationSciFi * matObjectRotation);
+        pContext->DrawStaticVertexBufferObjectTriangles(parallaxNormalMap.vbo);
+        pContext->UnBindStaticVertexBufferObject(parallaxNormalMap.vbo);
+
+        pContext->UnBindTexture(0, textureSciFiGlowMap);
+      }
+
+      tronGlow.EndRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO2], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
+      std::swap(outputFBO, inputFBO);
+    }
+
     // Process HDR bloom
     if (bIsHDR) {
       hdr.RenderBloom(*this, currentTime, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
     }
 
-    if (lensFlare == LENS_FLARE::DIRT) {
+    if (bIsHDR && (lensFlare == LENS_FLARE::DIRT)) {
       // Apply lens flare with dirt specks
       const float fExposure = hdr.GetExposure();
       lensFlareDirt.Render(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO], fExposure, bDebugShowFlareOnly);
@@ -3470,17 +3566,27 @@ void cApplication::Run()
       spitfire::math::cVec2 position(0.0f + (0.5f * 0.25f), 0.0f + (0.5f * 0.25f));
 
       #if 0
-      // Draw the lens flare and dirt textures for debugging purposes
-      // Down the side
-      RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensColor(), shaderScreen1D); position.y += 0.25f;
-      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTextureLensDirt()); position.y += 0.25f;
-      RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensStar(), shaderScreen2D); position.y += 0.25f;
+      if (bIsTronGlow) {
+        // Draw the temp texture for debugging purposes
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, textureFrameBufferObjectScreenColourAndDepth[tempFBO]); position.x += 0.25f;
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, tronGlow.GetGlowTexture()); position.x += 0.25f;
+      }
 
-      // Along the bottom
-      position.Set(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f));
-      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempA()); position.x += 0.25f;
-      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempB()); position.x += 0.25f;
-      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempC()); position.x += 0.25f;
+      if (bIsHDR && (lensFlare == LENS_FLARE::DIRT)) {
+        position.x = 0.0f + (0.5f * 0.25f);
+
+        // Draw the lens flare and dirt textures for debugging purposes
+        // Down the side
+        RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensColor(), shaderScreen1D); position.y += 0.25f;
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTextureLensDirt()); position.y += 0.25f;
+        RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensStar(), shaderScreen2D); position.y += 0.25f;
+
+        // Along the bottom
+        position.Set(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f));
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempA()); position.x += 0.25f;
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempB()); position.x += 0.25f;
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempC()); position.x += 0.25f;
+      }
       #endif
 
       #if 0

@@ -119,10 +119,12 @@
     <ClCompile Include="..\..\..\library\src\spitfire\util\timer.cpp" />
     <ClCompile Include="..\anamorphic_lens_flare.cpp" />
     <ClCompile Include="..\dofbokeh.cpp" />
+    <ClCompile Include="..\gaussian_blur.cpp" />
     <ClCompile Include="..\hdr.cpp" />
     <ClCompile Include="..\lensflaredirt.cpp" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\shadowmapping.cpp" />
+    <ClCompile Include="..\tronglow.cpp" />
     <ClCompile Include="..\util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -130,6 +132,8 @@
     <None Include="..\shaders\anamorphiclensflare\horizontalblur.frag" />
     <None Include="..\shaders\billboard.frag" />
     <None Include="..\shaders\billboard.vert" />
+    <None Include="..\shaders\black.frag" />
+    <None Include="..\shaders\black.vert" />
     <None Include="..\shaders\brdf.frag" />
     <None Include="..\shaders\brdf.vert" />
     <None Include="..\shaders\carpaint.frag" />
@@ -157,6 +161,8 @@
     <None Include="..\shaders\font.vert" />
     <None Include="..\shaders\glass.frag" />
     <None Include="..\shaders\glass.vert" />
+    <None Include="..\shaders\glowhighlights.frag" />
+    <None Include="..\shaders\glowhighlights.vert" />
     <None Include="..\shaders\hdr\blurh.frag" />
     <None Include="..\shaders\hdr\blurv.frag" />
     <None Include="..\shaders\hdr\bright_pixels.frag" />
@@ -165,7 +171,7 @@
     <None Include="..\shaders\hdr\tone_mapping.frag" />
     <None Include="..\shaders\lambert.frag" />
     <None Include="..\shaders\lambert.vert" />
-    <None Include="..\shaders\lensflaredirt\gauss1d.frag" />
+    <None Include="..\shaders\lensflaredirt\gaussian_blur.frag" />
     <None Include="..\shaders\lensflaredirt\lensflare.frag" />
     <None Include="..\shaders\lensflaredirt\postprocess.frag" />
     <None Include="..\shaders\lensflaredirt\scalebias.frag" />
@@ -197,14 +203,17 @@
     <None Include="..\shaders\stained_glass.frag" />
     <None Include="..\shaders\stained_glass.vert" />
     <None Include="..\shaders\tealandorange.frag" />
+    <None Include="..\shaders\tronglow.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\anamorphic_lens_flare.h" />
     <ClInclude Include="..\dofbokeh.h" />
+    <ClInclude Include="..\gaussian_blur.h" />
     <ClInclude Include="..\hdr.h" />
     <ClInclude Include="..\lensflaredirt.h" />
     <ClInclude Include="..\main.h" />
     <ClInclude Include="..\shadowmapping.h" />
+    <ClInclude Include="..\tronglow.h" />
     <ClInclude Include="..\util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -56,7 +56,7 @@ cLensFlareDirt::cLensFlareDirt() :
   flareDispersal_(0.3f),
   flareHaloWidth_(0.6f),
   flareDistortion_(10.5f),
-  flareBlurRadius_(24.0f),
+  uiFlareBlurRadius(24),
   tempBufferSize_(12),
   setTempBufferSize_(12.0f)
 {
@@ -90,8 +90,6 @@ void cLensFlareDirt::Init(cApplication& application, opengl::cContext& context)
   //------------------------------------------------------------------------------
   context.CreateShader(shaderScaleBias_, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/scalebias.frag"));
   ASSERT(shaderScaleBias_.IsCompiledProgram());
-  context.CreateShader(shaderGaussBlur_, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/gauss1d.frag"));
-  ASSERT(shaderGaussBlur_.IsCompiledProgram());
   context.CreateShader(shaderLensflare_, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/lensflare.frag"));
   ASSERT(shaderLensflare_.IsCompiledProgram());
   context.CreateShader(shaderPostProcess_, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/lensflaredirt/postprocess.frag"));
@@ -107,7 +105,6 @@ void cLensFlareDirt::Destroy(opengl::cContext& context)
 
 
   if (shaderPostProcess_.IsCompiledProgram()) context.DestroyShader(shaderPostProcess_);
-  if (shaderGaussBlur_.IsCompiledProgram()) context.DestroyShader(shaderGaussBlur_);
   if (shaderScaleBias_.IsCompiledProgram()) context.DestroyShader(shaderScaleBias_);
   if (shaderLensflare_.IsCompiledProgram()) context.DestroyShader(shaderLensflare_);
 
@@ -144,6 +141,9 @@ void cLensFlareDirt::CreateTempBuffers(cApplication& application, opengl::cConte
   // VBOs
   application.CreateScreenRectVBO(vboScaleBias, 1.0f, 1.0f, width, height);
   application.CreateScreenRectVBO(vboLensFlare, 1.0f, 1.0f, fboWidth, fboHeight);
+
+
+  blur.Init(application, context, fboWidth, fboHeight);
 }
 
 void cLensFlareDirt::DestroyTempBuffers(opengl::cContext& context)
@@ -156,42 +156,14 @@ void cLensFlareDirt::DestroyTempBuffers(opengl::cContext& context)
   if (fboTempA_.IsValid()) context.DestroyTextureFrameBufferObject(fboTempA_);
   if (fboTempB_.IsValid()) context.DestroyTextureFrameBufferObject(fboTempB_);
   if (fboTempC_.IsValid()) context.DestroyTextureFrameBufferObject(fboTempC_);
+
+
+  blur.Destroy(context);
 }
 
 void cLensFlareDirt::Resize(opengl::cContext& context)
 {
-
-}
-
-void cLensFlareDirt::gaussBlur(
-  cApplication& application,
-  opengl::cContext& context,
-  opengl::cTextureFrameBufferObject& in,
-  opengl::cTextureFrameBufferObject& temp,
-  opengl::cTextureFrameBufferObject& out,
-  int radius
-  )
-{
-  context.BindShader(shaderGaussBlur_);
-  context.SetShaderConstant("uBlurRadius", radius);
-
-  // horizontal pass:
-  context.BeginRenderToTexture(temp);
-  context.SetShaderConstant("uBlurDirection", spitfire::math::cVec2(1.0f, 0.0f));
-  context.BindTexture(0, in);
-  application.RenderScreenRectangleShaderAndTextureAlreadySet(vboLensFlare);
-  context.UnBindTexture(0, in);
-  context.EndRenderToTexture(temp);
-
-  // vertical pass:
-  context.BeginRenderToTexture(out);
-  context.SetShaderConstant("uBlurDirection", spitfire::math::cVec2(0.0f, 1.0f));
-  context.BindTexture(0, temp);
-  application.RenderScreenRectangleShaderAndTextureAlreadySet(vboLensFlare);
-  context.UnBindTexture(0, temp);
-  context.EndRenderToTexture(out);
-
-  context.UnBindShader(shaderGaussBlur_);
+  blur.Resize(context);
 }
 
 void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& fboIn, opengl::cTextureFrameBufferObject& fboOut, float fExposure, bool bDebugShowFlareOnly)
@@ -238,8 +210,8 @@ void cLensFlareDirt::Render(cApplication& application, opengl::cContext& context
   context.UnBindShader(shaderLensflare_);
   context.EndRenderToTexture(fboTempB_);
 
-  //	gaussian blur:
-  gaussBlur(application, context, fboTempB_, fboTempA_, fboTempC_, (int)flareBlurRadius_);
+  //	Apply gaussian blur
+  blur.Render(application, context, fboTempB_, fboTempA_, fboTempC_, uiFlareBlurRadius);
 
 
   // We can't upscale/blend as per bloom; we need to apply the lens flare after motion blur, etc. in the final post process
