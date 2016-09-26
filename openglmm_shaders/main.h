@@ -80,6 +80,7 @@ class cApplication : public opengl::cWindowEventListener, public opengl::cInputE
 public:
   cApplication();
 
+  friend class cGaussianBlur;
   friend class cTronGlow;
   friend class cAnamorphicLensFlare;
   friend class cDOFBokeh;

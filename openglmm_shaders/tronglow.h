@@ -12,6 +12,7 @@
 
 // Application headers
 #include "util.h"
+#include "gaussian_blur.h"
 
 class cApplication;
 
@@ -22,13 +23,17 @@ public:
 
   void Resize(cApplication& application, opengl::cContext& context);
 
+  opengl::cTextureFrameBufferObject& GetGlowTexture() { return fboGlow; }
+
   void AddNonGlowingObject(const spitfire::math::cMat4& matModel, opengl::cStaticVertexBufferObject* pVBO);
 
-  void BeginRender(cApplication& application, opengl::cContext& context, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView, opengl::cTextureFrameBufferObject& temp);
-  void EndRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& temp, opengl::cTextureFrameBufferObject& output);
+  void BeginRender(cApplication& application, opengl::cContext& context, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView, opengl::cTextureFrameBufferObject& temp0);
+  void EndRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& temp0, opengl::cTextureFrameBufferObject& temp1, opengl::cTextureFrameBufferObject& output);
 
 private:
-  void RenderSceneWithTronGlow(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& temp, opengl::cTextureFrameBufferObject& output);
+  void RenderSceneWithTronGlow(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& glow, opengl::cTextureFrameBufferObject& brightPixels, opengl::cTextureFrameBufferObject& output);
+
+  std::list<std::pair<spitfire::math::cMat4, opengl::cStaticVertexBufferObject*>> lNotGlowingObjects;
 
   opengl::cShader shaderBlack; // For rendering objects that are not glowing
   opengl::cShader shaderGlowHighlights; // For rendering objects that should glow
@@ -36,7 +41,9 @@ private:
 
   opengl::cStaticVertexBufferObject vbo;
 
-  std::list<std::pair<spitfire::math::cMat4, opengl::cStaticVertexBufferObject*>> lNotGlowingObjects;
+  opengl::cTextureFrameBufferObject fboGlow;
+
+  cGaussianBlur blur;
 };
 
 #endif // TRONGLOW_H

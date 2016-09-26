@@ -3506,7 +3506,7 @@ void cApplication::Run()
         pContext->UnBindTexture(0, textureSciFiGlowMap);
       }
 
-      tronGlow.EndRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
+      tronGlow.EndRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO2], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
     }
 
@@ -3516,7 +3516,7 @@ void cApplication::Run()
       std::swap(outputFBO, inputFBO);
     }
 
-    if (lensFlare == LENS_FLARE::DIRT) {
+    if (bIsHDR && (lensFlare == LENS_FLARE::DIRT)) {
       // Apply lens flare with dirt specks
       const float fExposure = hdr.GetExposure();
       lensFlareDirt.Render(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO], fExposure, bDebugShowFlareOnly);
@@ -3565,23 +3565,28 @@ void cApplication::Run()
 
       spitfire::math::cVec2 position(0.0f + (0.5f * 0.25f), 0.0f + (0.5f * 0.25f));
 
-      #if 1
-      // Draw the temp texture for debugging purposes
-      RenderDebugScreenRectangleVariableSize(position.x, position.y, textureFrameBufferObjectScreenColourAndDepth[tempFBO]); position.x += 0.25f;
-      #endif
-
       #if 0
-      // Draw the lens flare and dirt textures for debugging purposes
-      // Down the side
-      RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensColor(), shaderScreen1D); position.y += 0.25f;
-      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTextureLensDirt()); position.y += 0.25f;
-      RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensStar(), shaderScreen2D); position.y += 0.25f;
+      if (bIsTronGlow) {
+        // Draw the temp texture for debugging purposes
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, textureFrameBufferObjectScreenColourAndDepth[tempFBO]); position.x += 0.25f;
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, tronGlow.GetGlowTexture()); position.x += 0.25f;
+      }
 
-      // Along the bottom
-      position.Set(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f));
-      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempA()); position.x += 0.25f;
-      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempB()); position.x += 0.25f;
-      RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempC()); position.x += 0.25f;
+      if (bIsHDR && (lensFlare == LENS_FLARE::DIRT)) {
+        position.x = 0.0f + (0.5f * 0.25f);
+
+        // Draw the lens flare and dirt textures for debugging purposes
+        // Down the side
+        RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensColor(), shaderScreen1D); position.y += 0.25f;
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTextureLensDirt()); position.y += 0.25f;
+        RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreen2DTeapot, lensFlareDirt.GetTextureLensStar(), shaderScreen2D); position.y += 0.25f;
+
+        // Along the bottom
+        position.Set(0.0f + (0.5f * 0.25f), 0.75f + (0.5f * 0.25f));
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempA()); position.x += 0.25f;
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempB()); position.x += 0.25f;
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, lensFlareDirt.GetTempC()); position.x += 0.25f;
+      }
       #endif
 
       #if 0

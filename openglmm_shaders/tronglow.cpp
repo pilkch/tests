@@ -12,10 +12,21 @@ void cTronGlow::Init(cApplication& application, opengl::cContext& context)
   assert(shaderGlowHighlights.IsCompiledProgram());
   context.CreateShader(shaderTronGlowScreen, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/tronglow.frag"));
   assert(shaderTronGlowScreen.IsCompiledProgram());
+
+  context.CreateTextureFrameBufferObjectWithDepth(fboGlow, context.GetWidth() / 4, context.GetHeight() / 4);
+  ASSERT(fboGlow.IsValid());
+  fboGlow.SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
+  fboGlow.SetWrap(opengl::TEXTURE_WRAP::CLAMP_TO_EDGE);
+
+  blur.Init(application, context, context.GetWidth(), context.GetHeight());
 }
 
 void cTronGlow::Destroy(opengl::cContext& context)
 {
+  blur.Destroy(context);
+
+  if (fboGlow.IsValid()) context.DestroyTextureFrameBufferObject(fboGlow);
+
   context.DestroyShader(shaderBlack);
   context.DestroyShader(shaderGlowHighlights);
   context.DestroyShader(shaderTronGlowScreen);
@@ -23,6 +34,7 @@ void cTronGlow::Destroy(opengl::cContext& context)
 
 void cTronGlow::Resize(cApplication& application, opengl::cContext& context)
 {
+  blur.Resize(context);
 }
 
 void cTronGlow::AddNonGlowingObject(const spitfire::math::cMat4& matModel, opengl::cStaticVertexBufferObject* pVBO)
@@ -33,13 +45,13 @@ void cTronGlow::AddNonGlowingObject(const spitfire::math::cMat4& matModel, openg
   lNotGlowingObjects.push_back(std::make_pair(matModel, pVBO));
 }
 
-void cTronGlow::BeginRender(cApplication& application, opengl::cContext& context, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView, opengl::cTextureFrameBufferObject& temp)
+void cTronGlow::BeginRender(cApplication& application, opengl::cContext& context, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView, opengl::cTextureFrameBufferObject& temp0)
 {
   // Render the black and glowing pixels to a temporary texture
   const spitfire::math::cColour clearColour(0.0f, 0.0f, 0.0f);
   context.SetClearColour(clearColour);
 
-  context.BeginRenderToTexture(temp);
+  context.BeginRenderToTexture(temp0);
 
   // Render black objects
   context.BindShader(shaderBlack);
@@ -58,7 +70,7 @@ void cTronGlow::BeginRender(cApplication& application, opengl::cContext& context
   // Now hand back control to the caller to render the glowing objects
 }
 
-void cTronGlow::RenderSceneWithTronGlow(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& temp, opengl::cTextureFrameBufferObject& output)
+void cTronGlow::RenderSceneWithTronGlow(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& glow, opengl::cTextureFrameBufferObject& brightPixels, opengl::cTextureFrameBufferObject& output)
 {
   // Render the HDRColorBuffer to our framebuffer
   const spitfire::math::cColour clearColour(0.0f, 0.0f, 0.0f);
@@ -69,10 +81,15 @@ void cTronGlow::RenderSceneWithTronGlow(cApplication& application, opengl::cCont
   context.BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
   context.BindShader(shaderTronGlowScreen);
+
+  context.SetShaderConstant("iGlowTextureSize", 4);
+
   context.BindTexture(0, input);
-  context.BindTexture(1, temp);
+  context.BindTexture(1, glow);
+  context.BindTexture(2, brightPixels);
   application.RenderScreenRectangleShaderAndTextureAlreadySet();
-  context.UnBindTexture(1, temp);
+  context.UnBindTexture(2, brightPixels);
+  context.UnBindTexture(1, glow);
   context.UnBindTexture(0, input);
   context.UnBindShader(shaderTronGlowScreen);
 
@@ -81,18 +98,20 @@ void cTronGlow::RenderSceneWithTronGlow(cApplication& application, opengl::cCont
   context.EndRenderToTexture(output);
 }
 
-void cTronGlow::EndRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& temp, opengl::cTextureFrameBufferObject& output)
+void cTronGlow::EndRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& temp0, opengl::cTextureFrameBufferObject& temp1, opengl::cTextureFrameBufferObject& output)
 {
   context.UnBindShader(shaderGlowHighlights);
 
-  context.EndRenderToTexture(temp);
+  context.EndRenderToTexture(temp0);
 
-  // Now render the blur textures
+  // Create blur texture
+  const size_t uiBlurRadius = 48;
+  blur.Render(application, context, temp0, temp1, fboGlow, uiBlurRadius);
 
   // Combine the blur textures
 
   // Now render the normal texture mixed with the blur texture to the screen
-  RenderSceneWithTronGlow(application, context, input, temp, output);
+  RenderSceneWithTronGlow(application, context, input, fboGlow, temp0, output);
 
 
   // Clear the list of black objects
