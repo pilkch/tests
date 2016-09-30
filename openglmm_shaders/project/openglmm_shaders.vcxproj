@@ -159,6 +159,7 @@
     <None Include="..\shaders\fog.vert" />
     <None Include="..\shaders\font.frag" />
     <None Include="..\shaders\font.vert" />
+    <None Include="..\shaders\gaussian_blur.frag" />
     <None Include="..\shaders\glass.frag" />
     <None Include="..\shaders\glass.vert" />
     <None Include="..\shaders\glowhighlights.frag" />
@@ -171,7 +172,6 @@
     <None Include="..\shaders\hdr\tone_mapping.frag" />
     <None Include="..\shaders\lambert.frag" />
     <None Include="..\shaders\lambert.vert" />
-    <None Include="..\shaders\lensflaredirt\gaussian_blur.frag" />
     <None Include="..\shaders\lensflaredirt\lensflare.frag" />
     <None Include="..\shaders\lensflaredirt\postprocess.frag" />
     <None Include="..\shaders\lensflaredirt\scalebias.frag" />

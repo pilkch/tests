@@ -238,6 +238,9 @@ private:
   opengl::cTexture textureSciFiHeightMap;
   opengl::cTexture textureSciFiGlowMap;
 
+  opengl::cTexture textureCircuitTree;
+  opengl::cTexture textureCircuitTreeGlowMap;
+
   opengl::cTexture textureNormalMapDiffuse;
   opengl::cTexture textureNormalMapSpecular;
   opengl::cTexture textureNormalMapNormal;
@@ -259,6 +262,7 @@ private:
   opengl::cShader shaderLambert;
   opengl::cShader shaderRimLit;
   opengl::cShader shaderPassThrough;
+  opengl::cShader shaderPassThroughNonRect;
   opengl::cShader shaderScreen1D;
   opengl::cShader shaderScreen2D;
   opengl::cShader shaderScreenRectVariableTextureSize;

@@ -889,6 +889,11 @@ bool cApplication::Create()
   pContext->CreateTexture(textureSciFiGlowMap, TEXT("textures/sci_fi_glow.png"));
   assert(textureSciFiGlowMap.IsValid());
 
+  pContext->CreateTexture(textureCircuitTree, TEXT("textures/circuit_tree.png"));
+  assert(textureCircuitTree.IsValid());
+  pContext->CreateTexture(textureCircuitTreeGlowMap, TEXT("textures/circuit_tree_glow.png"));
+  assert(textureCircuitTreeGlowMap.IsValid());
+
   pContext->CreateTexture(textureMetalDiffuse, TEXT("textures/metal.png"));
   assert(textureMetalDiffuse.IsValid());
   pContext->CreateTexture(textureMetalSpecular, TEXT("textures/metal_specular.jpg"));
@@ -1133,6 +1138,9 @@ void cApplication::Destroy()
   if (textureSciFiHeightMap.IsValid()) pContext->DestroyTexture(textureSciFiHeightMap);
   if (textureSciFiGlowMap.IsValid()) pContext->DestroyTexture(textureSciFiGlowMap);
 
+  if (textureCircuitTree.IsValid()) pContext->DestroyTexture(textureCircuitTree);
+  if (textureCircuitTreeGlowMap.IsValid()) pContext->DestroyTexture(textureCircuitTreeGlowMap);
+
   if (textureDetail.IsValid()) pContext->DestroyTexture(textureDetail);
   if (textureLightMap.IsValid()) pContext->DestroyTexture(textureLightMap);
   if (textureFelt.IsValid()) pContext->DestroyTexture(textureFelt);
@@ -1242,6 +1250,9 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderPassThrough, TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(shaderPassThrough.IsCompiledProgram());
 
+  pContext->CreateShader(shaderPassThroughNonRect, TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough2dnonrect.frag"));
+  assert(shaderPassThroughNonRect.IsCompiledProgram());
+
   pContext->CreateShader(shaderScreen1D, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough1d.frag"));
   assert(shaderScreen1D.IsCompiledProgram());
 
@@ -1280,6 +1291,7 @@ void cApplication::DestroyShaders()
   if (shaderScreenRectVariableTextureSize.IsCompiledProgram()) pContext->DestroyShader(shaderScreenRectVariableTextureSize);
   if (shaderScreen2D.IsCompiledProgram()) pContext->DestroyShader(shaderScreen2D);
   if (shaderScreen1D.IsCompiledProgram()) pContext->DestroyShader(shaderScreen1D);
+  if (shaderPassThroughNonRect.IsCompiledProgram()) pContext->DestroyShader(shaderPassThroughNonRect);
   if (shaderPassThrough.IsCompiledProgram()) pContext->DestroyShader(shaderPassThrough);
 
   if (parallaxNormalMap.shader.IsCompiledProgram()) pContext->DestroyShader(parallaxNormalMap.shader);
@@ -1735,6 +1747,8 @@ void cApplication::Run()
   assert(textureSciFiNormalMap.IsValid());
   assert(textureSciFiHeightMap.IsValid());
   assert(textureSciFiGlowMap.IsValid());
+  assert(textureCircuitTree.IsValid());
+  assert(textureCircuitTreeGlowMap.IsValid());
   assert(textureCarNormalMap.IsValid());
   assert(textureCarMicroFlakeNormalMap.IsValid());
   assert(textureCubeMap.IsValid());
@@ -1764,6 +1778,7 @@ void cApplication::Run()
   assert(shaderLights.IsCompiledProgram());
   assert(parallaxNormalMap.shader.IsCompiledProgram());
   assert(shaderPassThrough.IsCompiledProgram());
+  assert(shaderPassThroughNonRect.IsCompiledProgram());
   assert(shaderScreen1D.IsCompiledProgram());
   assert(shaderScreen2D.IsCompiledProgram());
   assert(shaderScreenRectVariableTextureSize.IsCompiledProgram());
@@ -1884,6 +1899,9 @@ void cApplication::Run()
 
   spitfire::math::cMat4 matObjectRotation;
 
+  spitfire::math::cMat4 matRotateToVertical;
+  matRotateToVertical.SetRotationX(spitfire::math::DegreesToRadians(90.0f));
+
   // Cube mapped teapot
   const spitfire::math::cVec3 positionCubeMappedTeapot(-fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationCubeMappedTeapot;
@@ -1913,6 +1931,11 @@ void cApplication::Run()
   const spitfire::math::cVec3 positionSciFi(-9.0f * fSpacingX, 0.0f, (-2.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationSciFi;
   matTranslationSciFi.SetTranslation(positionSciFi);
+
+  // Glowing circuit tree
+  const spitfire::math::cVec3 positionCircuitTree(-12.0f * fSpacingX, 0.0f, (-2.0f * fSpacingZ));
+  spitfire::math::cMat4 matTranslationCircuitTree;
+  matTranslationCircuitTree.SetTranslation(positionCircuitTree);
 
   // Cel shaded teapot
   const spitfire::math::cVec3 positionCelShadedTeapot(-9.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
@@ -2446,9 +2469,6 @@ void cApplication::Run()
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
 
         {
-          spitfire::math::cMat4 matRotateToVertical;
-          matRotateToVertical.SetRotationX(spitfire::math::DegreesToRadians(90.0f));
-
           pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationStainedGlass * matObjectRotation * matRotateToVertical);
 
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
@@ -2489,9 +2509,6 @@ void cApplication::Run()
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
 
         {
-          spitfire::math::cMat4 matRotateToVertical;
-          matRotateToVertical.SetRotationX(spitfire::math::DegreesToRadians(90.0f));
-
           pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationStainedGlass2 * matObjectRotation * matRotateToVertical);
 
           pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
@@ -2530,6 +2547,28 @@ void cApplication::Run()
         pContext->UnBindTexture(0, textureSciFi);
 
         pContext->UnBindShader(parallaxNormalMap.shader);
+      }
+
+      {
+        // Render circuit tree background
+        pContext->BindShader(shaderPassThroughNonRect);
+
+        // Render the stained glass plane
+        pContext->BindTexture(0, textureCircuitTree);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        {
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationCircuitTree * matObjectRotation * matRotateToVertical);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        }
+
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        pContext->UnBindTexture(0, textureCircuitTree);
+
+        pContext->UnBindShader(shaderPassThroughNonRect);
       }
 
       {
@@ -3504,6 +3543,22 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(parallaxNormalMap.vbo);
 
         pContext->UnBindTexture(0, textureSciFiGlowMap);
+      }
+
+      {
+        // Render the circuit tree plane but with the tron glow highlights shader
+
+        pContext->BindTexture(0, textureCircuitTreeGlowMap);
+
+        // Set up the shader uniforms
+        pContext->SetShaderConstant("glowColour", spitfire::math::cColour3(0.0f, 1.0f, 1.0f));
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationCircuitTree * matObjectRotation * matRotateToVertical);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        pContext->UnBindTexture(0, textureCircuitTreeGlowMap);
       }
 
       tronGlow.EndRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO2], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
