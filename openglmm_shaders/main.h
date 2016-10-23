@@ -56,6 +56,7 @@
 #include "anamorphic_lens_flare.h"
 #include "dofbokeh.h"
 #include "hdr.h"
+#include "heathaze.h"
 #include "lensflaredirt.h"
 #include "shadowmapping.h"
 #include "tronglow.h"
@@ -82,6 +83,7 @@ public:
 
   friend class cGaussianBlur;
   friend class cTronGlow;
+  friend class cHeatHaze;
   friend class cAnamorphicLensFlare;
   friend class cDOFBokeh;
   friend class cHDR;
@@ -96,7 +98,7 @@ public:
   opengl::cResolution GetResolution() const;
 
 protected:
-  // Called from cTronGlow, cHDR and cLensFlareDirt
+  // Called from cTronGlow, cHeatHaze, cHDR and cLensFlareDirt
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fVBOWidth, float_t fVBOHeight, float_t fTextureWidth, float_t fTextureHeight);
   void RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader);
   void RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader, opengl::cStaticVertexBufferObject& staticVertexBufferObject);
@@ -116,6 +118,9 @@ private:
   void CreateSphere(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fRadius);
   void CreateTeapot(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates);
   void CreateGear(opengl::cStaticVertexBufferObject& vbo);
+
+  void CreateBoxWithColourGradient(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fWidthMeters, float fDepthMeters, float fHeightMeters, const spitfire::math::cColour4& colourBottom, const spitfire::math::cColour4& colourTop);
+  void CreateCylinderWithColourGradient(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fRadiusMeters, float fHeightMeters, const spitfire::math::cColour4& colourBottom, const spitfire::math::cColour4& colourTop);
 
   void CreateLightBillboard();
   void CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo);
@@ -174,7 +179,7 @@ private:
   bool bIsSpotLightOn;
   spitfire::math::cVec3 lightPointPosition;
 
-  bool bIsRotating;
+  bool bIsPhysicsRunning;
   bool bIsWireframe;
 
   enum class LENS_FLARE {
@@ -184,6 +189,7 @@ private:
   };
 
   bool bIsTronGlow;
+  bool bIsHeatHaze;
   bool bIsDOFBokeh;
   bool bIsHDR;
   bool bIsToneMapping;
@@ -293,7 +299,12 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectTeapot0;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectGear0;
 
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectBox0WithColours;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectCylinder0WithColours;
+
   opengl::cStaticVertexBufferObject staticVertexBufferObjectSquare1;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectCube1;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectTeapot1;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPlane2;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectCube2;
@@ -319,6 +330,7 @@ private:
   std::vector<cTextureVBOPair*> testImages;
 
   cTronGlow tronGlow;
+  cHeatHaze heatHaze;
   cDOFBokeh dofBokeh;
   cHDR hdr;
   cLensFlareDirt lensFlareDirt;

@@ -8,6 +8,7 @@
 
 // libopenglmm headers
 #include <libopenglmm/cShader.h>
+#include <libopenglmm/cTexture.h>
 #include <libopenglmm/cVertexBufferObject.h>
 
 // Application headers
@@ -22,6 +23,8 @@ public:
   void Destroy(opengl::cContext& context);
 
   void Resize(cApplication& application, opengl::cContext& context);
+
+  void ReloadShaders(opengl::cContext& context);
 
   opengl::cTextureFrameBufferObject& GetGlowTexture() { return fboGlow; }
 
@@ -38,8 +41,6 @@ private:
   opengl::cShader shaderBlack; // For rendering objects that are not glowing
   opengl::cShader shaderGlowHighlights; // For rendering objects that should glow
   opengl::cShader shaderTronGlowScreen; // For rendering all objects to the screen
-
-  opengl::cStaticVertexBufferObject vbo;
 
   opengl::cTextureFrameBufferObject fboGlow;
 

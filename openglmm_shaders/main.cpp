@@ -84,10 +84,11 @@ cApplication::cApplication() :
   bIsSpotLightOn(true),
   lightPointPosition(-2.3f, 7.0f, 0.8f),
 
-  bIsRotating(true),
+  bIsPhysicsRunning(true),
   bIsWireframe(false),
 
   bIsTronGlow(true),
+  bIsHeatHaze(true),
   bIsDOFBokeh(false),
   bIsHDR(false),
   bIsToneMapping(false),
@@ -131,7 +132,7 @@ void cApplication::CreateText()
   lines.push_back(spitfire::string_t(TEXT("FPS: ")) + spitfire::string::ToString(int(fFPS)));
   lines.push_back(TEXT(""));
 
-  lines.push_back(spitfire::string_t(TEXT("Rotating: ")) + (bIsRotating ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Physics running: ")) + (bIsPhysicsRunning ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Wireframe: ")) + (bIsWireframe ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Direction light: ")) + (bIsDirectionalLightOn ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Point light: ")) + (bIsPointLightOn ? TEXT("On") : TEXT("Off")));
@@ -144,6 +145,7 @@ void cApplication::CreateText()
 
   lines.push_back(TEXT(""));
   lines.push_back(spitfire::string_t(TEXT("Tron Glow: ")) + (bIsTronGlow ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Heat Haze: ")) + (bIsHeatHaze ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("HDR: ")) + (bIsHDR ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Tone Mapping: ")) + (bIsToneMapping ? TEXT("On") : TEXT("Off")));
   const float fExposure = hdr.GetExposure();
@@ -540,6 +542,32 @@ void cApplication::CreateNormalMappedCube()
   parallaxNormalMap.vbo.SetData(pGeometryDataPtr);
 
   parallaxNormalMap.vbo.Compile();
+}
+
+void cApplication::CreateBoxWithColourGradient(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fWidthMeters, float fDepthMeters, float fHeightMeters, const spitfire::math::cColour4& colourBottom, const spitfire::math::cColour4& colourTop)
+{
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  opengl::cGeometryBuilder builder;
+  builder.CreateBoxWithTopAndBottomColours(fWidthMeters, fDepthMeters, fHeightMeters, *pGeometryDataPtr, nTextureCoordinates, colourBottom, colourTop);
+
+  vbo.SetData(pGeometryDataPtr);
+
+  vbo.Compile();
+}
+
+void cApplication::CreateCylinderWithColourGradient(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates, float fRadiusMeters, float fHeightMeters, const spitfire::math::cColour4& colourBottom, const spitfire::math::cColour4& colourTop)
+{
+  opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+  const size_t nSegments = 30;
+
+  opengl::cGeometryBuilder builder;
+  builder.CreateCylinderWithTopAndBottomColours(fRadiusMeters, fHeightMeters, nSegments, colourBottom, colourTop, *pGeometryDataPtr, nTextureCoordinates);
+
+  vbo.SetData(pGeometryDataPtr);
+
+  vbo.Compile();
 }
 
 void cApplication::CreateTeapotVBO()
@@ -1017,8 +1045,17 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectGear0);
   CreateGear(staticVertexBufferObjectGear0);
 
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectBox0WithColours);
+  CreateBoxWithColourGradient(staticVertexBufferObjectBox0WithColours, 0, 1.0f, 1.0f, 0.5f, spitfire::math::cColour4(1.0f, 1.0f, 1.0f), spitfire::math::cColour4(0.0f, 0.0f, 0.0f));
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectCylinder0WithColours);
+  CreateCylinderWithColourGradient(staticVertexBufferObjectCylinder0WithColours, 0, 0.2f, 0.5f, spitfire::math::cColour4(1.0f, 1.0f, 1.0f), spitfire::math::cColour4(0.0f, 0.0f, 0.0f));
+
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectSquare1);
   CreateSquare(staticVertexBufferObjectSquare1, 1);
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectCube1);
+  CreateCube(staticVertexBufferObjectCube1, 1);
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+  CreateTeapot(staticVertexBufferObjectTeapot1, 1);
 
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectPlane2);
   CreatePlane(staticVertexBufferObjectPlane2, 2);
@@ -1084,7 +1121,11 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectBox2);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube2);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPlane2);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCylinder0WithColours);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectBox0WithColours);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectGear0);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSphere0);
@@ -1192,6 +1233,7 @@ void cApplication::Destroy()
   lensFlareDirt.Destroy(*pContext);
   lensFlareAnamorphic.Destroy(*pContext);
   dofBokeh.Destroy(*pContext);
+  heatHaze.Destroy(*pContext);
   tronGlow.Destroy(*pContext);
 
   pContext = nullptr;
@@ -1502,7 +1544,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
 
       case SDLK_SPACE: {
         //LOG("spacebar down");
-        bIsRotating = false;
+        bIsPhysicsRunning = false;
         break;
       }
     }
@@ -1510,7 +1552,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
     switch (event.GetKeyCode()) {
       case SDLK_SPACE: {
         LOG("spacebar up");
-        bIsRotating = true;
+        bIsPhysicsRunning = true;
         break;
       }
       case SDLK_w: {
@@ -1621,24 +1663,28 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
       case SDLK_6: {
-        bIsHDR = !bIsHDR;
+        bIsHeatHaze = !bIsHeatHaze;
         break;
       }
       case SDLK_7: {
-        bIsToneMapping = !bIsToneMapping;
+        bIsHDR = !bIsHDR;
         break;
       }
       case SDLK_8: {
+        bIsToneMapping = !bIsToneMapping;
+        break;
+      }
+      case SDLK_9: {
         if (lensFlare == LENS_FLARE::NONE) lensFlare = LENS_FLARE::DIRT;
         else if (lensFlare == LENS_FLARE::DIRT) lensFlare = LENS_FLARE::ANAMORPHIC;
         else lensFlare = LENS_FLARE::NONE;
         break;
       }
-      case SDLK_9: {
+      case SDLK_0: {
         bDebugShowFlareOnly = !bDebugShowFlareOnly;
         break;
       }
-      case SDLK_0: {
+      case SDLK_MINUS: {
         bIsSplitScreenSimplePostEffectShaders = !bIsSplitScreenSimplePostEffectShaders;
         break;
       }
@@ -1810,7 +1856,12 @@ void cApplication::Run()
   assert(staticVertexBufferObjectTeapot0.IsCompiled());
   //assert(staticVertexBufferObjectGear0.IsCompiled());
 
+  assert(staticVertexBufferObjectBox0WithColours.IsCompiled());
+  assert(staticVertexBufferObjectCylinder0WithColours.IsCompiled());
+
   assert(staticVertexBufferObjectSquare1.IsCompiled());
+  assert(staticVertexBufferObjectCube1.IsCompiled());
+  assert(staticVertexBufferObjectTeapot1.IsCompiled());
 
   assert(staticVertexBufferObjectPlane2.IsCompiled());
   assert(staticVertexBufferObjectCube2.IsCompiled());
@@ -1840,6 +1891,8 @@ void cApplication::Run()
 
   tronGlow.Init(*this, *pContext);
   tronGlow.Resize(*this, *pContext);
+
+  heatHaze.Init(*this, *pContext);
 
   dofBokeh.Init(*pContext);
   dofBokeh.Resize(*this, *pContext);
@@ -1936,6 +1989,24 @@ void cApplication::Run()
   const spitfire::math::cVec3 positionCircuitTree(-12.0f * fSpacingX, 0.0f, (-2.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationCircuitTree;
   matTranslationCircuitTree.SetTranslation(positionCircuitTree);
+
+  // Heat haze crate
+  const spitfire::math::cVec3 positionHeatHazeCrate(-15.0f * fSpacingX, 0.0f, (-2.0f * fSpacingZ));
+  spitfire::math::cMat4 matTranslationHeatHazeCrate;
+  matTranslationHeatHazeCrate.SetTranslation(positionHeatHazeCrate);
+
+  const spitfire::math::cVec3 positionHeatHazeCrateRelativeHeatPosition(0.0f, 0.75f, 0.0f);
+  spitfire::math::cMat4 matTranslationHeatHazeCrateRelativeHeatPosition;
+  matTranslationHeatHazeCrateRelativeHeatPosition.SetTranslation(positionHeatHazeCrateRelativeHeatPosition);
+
+  // Heat haze teapot
+  const spitfire::math::cVec3 positionHeatHazeTeapot(-18.0f * fSpacingX, 0.0f, (-2.0f * fSpacingZ));
+  spitfire::math::cMat4 matTranslationHeatHazeTeapot;
+  matTranslationHeatHazeTeapot.SetTranslation(positionHeatHazeTeapot);
+
+  const spitfire::math::cVec3 positionHeatHazeTeapotRelativeSteamPosition(1.43f, 0.44f, 0.0f);
+  spitfire::math::cMat4 matTranslationHeatHazeTeapotRelativeSteamPosition;
+  matTranslationHeatHazeTeapotRelativeSteamPosition.SetTranslation(positionHeatHazeTeapotRelativeSteamPosition);
 
   // Cel shaded teapot
   const spitfire::math::cVec3 positionCelShadedTeapot(-9.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
@@ -2034,6 +2105,8 @@ void cApplication::Run()
   const uint32_t uiUpdateInputDelta = uint32_t(1000.0f / 120.0f);
   const uint32_t uiUpdateDelta = uint32_t(1000.0f / 60.0f);
 
+  spitfire::durationms_t currentSimulationTime = 0;
+
   while (!bIsDone) {
     // Update state
     currentTime = spitfire::util::GetTimeMS();
@@ -2070,18 +2143,22 @@ void cApplication::Run()
       if (moveLightLeft.bDown) lightPointPosition.z -= fDistance;
       if (moveLightRight.bDown) lightPointPosition.z += fDistance;
 
-      // Update object rotation
-      if (bIsRotating) fAngleRadians += float(uiUpdateDelta) * fRotationSpeed;
-
-      rotation.SetFromAxisAngle(spitfire::math::v3Up, fAngleRadians);
-
-      matObjectRotation.SetRotation(rotation);
-
       if (bIsFocalLengthIncrease) dofBokeh.IncreaseFocalLength();
       if (bIsFocalLengthDecrease) dofBokeh.DecreaseFocalLength();
 
       if (bIsFStopIncrease) dofBokeh.IncreaseFStop();
       if (bIsFStopDecrease) dofBokeh.DecreaseFStop();
+
+      if (bIsPhysicsRunning) {
+        currentSimulationTime++;
+
+        // Update object rotation
+        fAngleRadians += float(uiUpdateDelta) * fRotationSpeed;
+
+        rotation.SetFromAxisAngle(spitfire::math::v3Up, fAngleRadians);
+
+        matObjectRotation.SetRotation(rotation);
+      }
 
       previousUpdateTime = currentTime;
     }
@@ -2092,6 +2169,10 @@ void cApplication::Run()
       // Destroy and create our shaders
       DestroyShaders();
       CreateShaders();
+
+      // Reload effect specific shaders
+      tronGlow.ReloadShaders(*pContext);
+      heatHaze.ReloadShaders(*pContext);
 
       bReloadShaders = false;
     }
@@ -2373,6 +2454,7 @@ void cApplication::Run()
       pContext->UnBindShader(shaderCubeMap);
 
       tronGlow.AddNonGlowingObject(matTranslationCubeMappedTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
+      heatHaze.AddColdObject(matTranslationCubeMappedTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
 
 
       {
@@ -2404,6 +2486,7 @@ void cApplication::Run()
         pContext->UnBindShader(shaderCarPaint);
 
         tronGlow.AddNonGlowingObject(matTranslationCarPaintTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
+        heatHaze.AddColdObject(matTranslationCarPaintTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
       }
 
       {
@@ -2572,6 +2655,39 @@ void cApplication::Run()
       }
 
       {
+        // Render objects that will be affected by heat later
+        pContext->BindShader(shaderPassThroughNonRect);
+
+        pContext->BindTexture(0, textureDiffuse);
+
+        {
+          {
+            pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCube1);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationHeatHazeCrate * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCube1);
+            pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCube1);
+          }
+
+          tronGlow.AddNonGlowingObject(matTranslationHeatHazeCrate * matObjectRotation, &staticVertexBufferObjectCube1);
+          heatHaze.AddColdObject(matTranslationHeatHazeCrate * matObjectRotation, &staticVertexBufferObjectCube1);
+
+          {
+            pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+            pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationHeatHazeTeapot * matObjectRotation);
+            pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+            pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+          }
+
+          tronGlow.AddNonGlowingObject(matTranslationHeatHazeTeapot * matObjectRotation, &staticVertexBufferObjectTeapot1);
+          heatHaze.AddColdObject(matTranslationHeatHazeTeapot * matObjectRotation, &staticVertexBufferObjectTeapot1);
+        }
+
+        pContext->UnBindTexture(0, textureDiffuse);
+
+        pContext->UnBindShader(shaderPassThroughNonRect);
+      }
+
+      {
         // Render the cel shaded teapot which consists of a black silhouette pass and a cel shaded pass
 
         // Black silhouette
@@ -2629,6 +2745,7 @@ void cApplication::Run()
         }
 
         tronGlow.AddNonGlowingObject(matTranslationCelShadedTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
+        heatHaze.AddColdObject(matTranslationCelShadedTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
       }
 
 
@@ -3565,9 +3682,37 @@ void cApplication::Run()
       std::swap(outputFBO, inputFBO);
     }
 
+    // Apply heat haze
+    if (bIsHeatHaze) {
+      heatHaze.BeginRender(*this, *pContext, matProjection, matView);
+
+      if (bIsWireframe) pContext->EnableWireframe();
+
+      // Render heat volumes
+
+      {
+        // Render a rectanglar prism on the top of the cube
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox0WithColours);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationHeatHazeCrate * matObjectRotation * matTranslationHeatHazeCrateRelativeHeatPosition);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox0WithColours);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox0WithColours);
+
+        // Render a cylinder for the steam coming out
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCylinder0WithColours);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationHeatHazeTeapot * matObjectRotation * matTranslationHeatHazeTeapotRelativeSteamPosition);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCylinder0WithColours);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCylinder0WithColours);
+      }
+
+      if (bIsWireframe) pContext->DisableWireframe();
+
+      heatHaze.EndRender(*this, *pContext, currentSimulationTime, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
+      std::swap(outputFBO, inputFBO);
+    }
+
     // Process HDR bloom
     if (bIsHDR) {
-      hdr.RenderBloom(*this, currentTime, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
+      hdr.RenderBloom(*this, currentSimulationTime, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
     }
 
@@ -3584,7 +3729,7 @@ void cApplication::Run()
 
     // Process HDR tone mapping
     if (bIsToneMapping) {
-      hdr.RenderToneMapping(*this, currentTime, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
+      hdr.RenderToneMapping(*this, currentSimulationTime, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
     }
 
@@ -3622,9 +3767,13 @@ void cApplication::Run()
 
       #if 0
       if (bIsTronGlow) {
-        // Draw the temp texture for debugging purposes
-        RenderDebugScreenRectangleVariableSize(position.x, position.y, textureFrameBufferObjectScreenColourAndDepth[tempFBO]); position.x += 0.25f;
+        // Draw the glow texture for debugging purposes
         RenderDebugScreenRectangleVariableSize(position.x, position.y, tronGlow.GetGlowTexture()); position.x += 0.25f;
+      }
+
+      if (bIsHeatHaze) {
+        // Draw the glow texture for debugging purposes
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, heatHaze.GetHeatMapTexture()); position.x += 0.25f;
       }
 
       if (bIsHDR && (lensFlare == LENS_FLARE::DIRT)) {

@@ -37,6 +37,20 @@ void cTronGlow::Resize(cApplication& application, opengl::cContext& context)
   blur.Resize(context);
 }
 
+void cTronGlow::ReloadShaders(opengl::cContext& context)
+{
+  if (shaderBlack.IsCompiledProgram()) context.DestroyShader(shaderBlack);
+  if (shaderGlowHighlights.IsCompiledProgram()) context.DestroyShader(shaderGlowHighlights);
+  if (shaderTronGlowScreen.IsCompiledProgram()) context.DestroyShader(shaderTronGlowScreen);
+
+  context.CreateShader(shaderBlack, TEXT("shaders/black.vert"), TEXT("shaders/black.frag"));
+  assert(shaderBlack.IsCompiledProgram());
+  context.CreateShader(shaderGlowHighlights, TEXT("shaders/glowhighlights.vert"), TEXT("shaders/glowhighlights.frag"));
+  assert(shaderGlowHighlights.IsCompiledProgram());
+  context.CreateShader(shaderTronGlowScreen, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/tronglow.frag"));
+  assert(shaderTronGlowScreen.IsCompiledProgram());
+}
+
 void cTronGlow::AddNonGlowingObject(const spitfire::math::cMat4& matModel, opengl::cStaticVertexBufferObject* pVBO)
 {
   assert(pVBO != nullptr);
@@ -72,7 +86,6 @@ void cTronGlow::BeginRender(cApplication& application, opengl::cContext& context
 
 void cTronGlow::RenderSceneWithTronGlow(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& glow, opengl::cTextureFrameBufferObject& brightPixels, opengl::cTextureFrameBufferObject& output)
 {
-  // Render the HDRColorBuffer to our framebuffer
   const spitfire::math::cColour clearColour(0.0f, 0.0f, 0.0f);
   context.SetClearColour(clearColour);
 
