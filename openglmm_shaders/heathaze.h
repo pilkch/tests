@@ -25,12 +25,12 @@ public:
 
   void ReloadShaders(opengl::cContext& context);
 
-  opengl::cTextureFrameBufferObject& GetHeatMapTexture() { return fboHeatMap; }
+  const opengl::cTextureFrameBufferObject& GetNoiseAndHeatMapTexture() const { return fboNoiseAndHeatMap; }
 
   void AddColdObject(const spitfire::math::cMat4& matModel, opengl::cStaticVertexBufferObject* pVBO);
 
-  void BeginRender(cApplication& application, opengl::cContext& context, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView);
-  void EndRender(cApplication& application, opengl::cContext& context, spitfire::durationms_t time, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output);
+  void BeginRender(cApplication& application, opengl::cContext& context, spitfire::durationms_t time, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView);
+  void EndRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output);
 
 private:
   std::list<std::pair<spitfire::math::cMat4, opengl::cStaticVertexBufferObject*>> lColdObjects;
@@ -41,7 +41,7 @@ private:
 
   opengl::cTexture textureNoiseTiled;
 
-  opengl::cTextureFrameBufferObject fboHeatMap;
+  opengl::cTextureFrameBufferObject fboNoiseAndHeatMap;
 };
 
 #endif // HEATHAZE_H

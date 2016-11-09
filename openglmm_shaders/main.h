@@ -137,9 +137,9 @@ private:
   void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateGuiRectangle(opengl::cStaticVertexBufferObject& staticVertexBufferObject, size_t nTextureWidth, size_t nTextureHeight);
 
-  void RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader);
-  void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader);
-  void RenderDebugScreenRectangleVariableSize(float x, float y, opengl::cTexture& texture);
+  void RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader);
+  void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTexture& texture, opengl::cShader& shader);
+  void RenderDebugScreenRectangleVariableSize(float x, float y, const opengl::cTexture& texture);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
@@ -299,12 +299,12 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectTeapot0;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectGear0;
 
-  opengl::cStaticVertexBufferObject staticVertexBufferObjectBox0WithColours;
-  opengl::cStaticVertexBufferObject staticVertexBufferObjectCylinder0WithColours;
-
   opengl::cStaticVertexBufferObject staticVertexBufferObjectSquare1;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectCube1;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectTeapot1;
+
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectBox1WithColours;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectCylinder1WithColours;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPlane2;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectCube2;

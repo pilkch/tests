@@ -18,15 +18,15 @@ void cHeatHaze::Init(cApplication& application, opengl::cContext& context)
   textureNoiseTiled.SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
   textureNoiseTiled.SetWrap(opengl::TEXTURE_WRAP::REPEAT);
 
-  context.CreateTextureFrameBufferObjectWithDepth(fboHeatMap, context.GetWidth(), context.GetHeight());
-  ASSERT(fboHeatMap.IsValid());
-  fboHeatMap.SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
-  fboHeatMap.SetWrap(opengl::TEXTURE_WRAP::CLAMP_TO_EDGE);
+  context.CreateTextureFrameBufferObjectWithDepth(fboNoiseAndHeatMap, context.GetWidth(), context.GetHeight());
+  ASSERT(fboNoiseAndHeatMap.IsValid());
+  fboNoiseAndHeatMap.SetMagFilter(opengl::TEXTURE_FILTER::LINEAR);
+  fboNoiseAndHeatMap.SetWrap(opengl::TEXTURE_WRAP::CLAMP_TO_EDGE);
 }
 
 void cHeatHaze::Destroy(opengl::cContext& context)
 {
-  if (fboHeatMap.IsValid()) context.DestroyTextureFrameBufferObject(fboHeatMap);
+  if (fboNoiseAndHeatMap.IsValid()) context.DestroyTextureFrameBufferObject(fboNoiseAndHeatMap);
 
   if (textureNoiseTiled.IsValid()) context.DestroyTexture(textureNoiseTiled);
 
@@ -57,13 +57,13 @@ void cHeatHaze::AddColdObject(const spitfire::math::cMat4& matModel, opengl::cSt
   lColdObjects.push_back(std::make_pair(matModel, pVBO));
 }
 
-void cHeatHaze::BeginRender(cApplication& application, opengl::cContext& context, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView)
+void cHeatHaze::BeginRender(cApplication& application, opengl::cContext& context, spitfire::durationms_t time, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView)
 {
   // Render the black and glowing pixels to a heat map texture
   const spitfire::math::cColour clearColour(0.0f, 0.0f, 0.0f);
   context.SetClearColour(clearColour);
 
-  context.BeginRenderToTexture(fboHeatMap);
+  context.BeginRenderToTexture(fboNoiseAndHeatMap);
 
   // Render black objects
   context.BindShader(shaderBlack);
@@ -79,14 +79,20 @@ void cHeatHaze::BeginRender(cApplication& application, opengl::cContext& context
 
   context.BindShader(shaderHeatHighlights);
 
+  context.BindTexture(0, textureNoiseTiled);
+
+  context.SetShaderConstant("currentTime", float(time));
+
   // Now hand back control to the caller to render the glowing objects
 }
 
-void cHeatHaze::EndRender(cApplication& application, opengl::cContext& context, spitfire::durationms_t time, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output)
+void cHeatHaze::EndRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& output)
 {
+  context.UnBindTexture(0, textureNoiseTiled);
+
   context.UnBindShader(shaderHeatHighlights);
 
-  context.EndRenderToTexture(fboHeatMap);
+  context.EndRenderToTexture(fboNoiseAndHeatMap);
 
   // Now render the normal texture mixed with the heat texture to the screen
   const spitfire::math::cColour clearColour(0.0f, 0.0f, 0.0f);
@@ -99,14 +105,11 @@ void cHeatHaze::EndRender(cApplication& application, opengl::cContext& context, 
   context.BindShader(shaderHeatHazeScreen);
 
   context.SetShaderConstant("screenSize", spitfire::math::cVec2(context.GetResolution().width, context.GetResolution().height));
-  context.SetShaderConstant("currentTime", float(time));
 
   context.BindTexture(0, input);
-  context.BindTexture(1, fboHeatMap);
-  context.BindTexture(2, textureNoiseTiled);
+  context.BindTexture(1, fboNoiseAndHeatMap);
   application.RenderScreenRectangleShaderAndTextureAlreadySet();
-  context.UnBindTexture(2, textureNoiseTiled);
-  context.UnBindTexture(1, fboHeatMap);
+  context.UnBindTexture(1, fboNoiseAndHeatMap);
   context.UnBindTexture(0, input);
   context.UnBindShader(shaderHeatHazeScreen);
 

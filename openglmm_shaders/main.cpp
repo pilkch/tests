@@ -1045,10 +1045,10 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectGear0);
   CreateGear(staticVertexBufferObjectGear0);
 
-  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectBox0WithColours);
-  CreateBoxWithColourGradient(staticVertexBufferObjectBox0WithColours, 0, 1.0f, 1.0f, 0.5f, spitfire::math::cColour4(1.0f, 1.0f, 1.0f), spitfire::math::cColour4(0.0f, 0.0f, 0.0f));
-  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectCylinder0WithColours);
-  CreateCylinderWithColourGradient(staticVertexBufferObjectCylinder0WithColours, 0, 0.2f, 0.5f, spitfire::math::cColour4(1.0f, 1.0f, 1.0f), spitfire::math::cColour4(0.0f, 0.0f, 0.0f));
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectBox1WithColours);
+  CreateBoxWithColourGradient(staticVertexBufferObjectBox1WithColours, 1, 1.0f, 1.0f, 0.5f, spitfire::math::cColour4(1.0f, 1.0f, 1.0f), spitfire::math::cColour4(0.0f, 0.0f, 0.0f));
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectCylinder1WithColours);
+  CreateCylinderWithColourGradient(staticVertexBufferObjectCylinder1WithColours, 1, 0.2f, 0.5f, spitfire::math::cColour4(1.0f, 1.0f, 1.0f), spitfire::math::cColour4(0.0f, 0.0f, 0.0f));
 
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectSquare1);
   CreateSquare(staticVertexBufferObjectSquare1, 1);
@@ -1124,8 +1124,8 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSquare1);
-  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCylinder0WithColours);
-  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectBox0WithColours);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCylinder1WithColours);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectBox1WithColours);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectGear0);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSphere0);
@@ -1359,7 +1359,7 @@ void cApplication::DestroyShaders()
   if (shaderCrate.IsCompiledProgram()) pContext->DestroyShader(shaderCrate);
 }
 
-void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, opengl::cTexture& texture)
+void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, const opengl::cTexture& texture)
 {
   spitfire::math::cMat4 matModelView2D;
   matModelView2D.SetTranslation(x, y, 0.0f);
@@ -1385,7 +1385,7 @@ void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, open
   pContext->UnBindShader(shaderScreenRectVariableTextureSize);
 }
 
-void cApplication::RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader)
+void cApplication::RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader)
 {
   spitfire::math::cMat4 matModelView2D;
   matModelView2D.SetTranslation(x, y, 0.0f);
@@ -1409,7 +1409,7 @@ void cApplication::RenderScreenRectangleDepthTexture(float x, float y, opengl::c
   pContext->UnBindShader(shader);
 }
 
-void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, opengl::cTexture& texture, opengl::cShader& shader)
+void cApplication::RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTexture& texture, opengl::cShader& shader)
 {
   spitfire::math::cMat4 matModelView2D;
   matModelView2D.SetTranslation(x, y, 0.0f);
@@ -1856,12 +1856,12 @@ void cApplication::Run()
   assert(staticVertexBufferObjectTeapot0.IsCompiled());
   //assert(staticVertexBufferObjectGear0.IsCompiled());
 
-  assert(staticVertexBufferObjectBox0WithColours.IsCompiled());
-  assert(staticVertexBufferObjectCylinder0WithColours.IsCompiled());
-
   assert(staticVertexBufferObjectSquare1.IsCompiled());
   assert(staticVertexBufferObjectCube1.IsCompiled());
   assert(staticVertexBufferObjectTeapot1.IsCompiled());
+
+  assert(staticVertexBufferObjectBox1WithColours.IsCompiled());
+  assert(staticVertexBufferObjectCylinder1WithColours.IsCompiled());
 
   assert(staticVertexBufferObjectPlane2.IsCompiled());
   assert(staticVertexBufferObjectCube2.IsCompiled());
@@ -3684,7 +3684,7 @@ void cApplication::Run()
 
     // Apply heat haze
     if (bIsHeatHaze) {
-      heatHaze.BeginRender(*this, *pContext, matProjection, matView);
+      heatHaze.BeginRender(*this, *pContext, currentSimulationTime, matProjection, matView);
 
       if (bIsWireframe) pContext->EnableWireframe();
 
@@ -3692,21 +3692,21 @@ void cApplication::Run()
 
       {
         // Render a rectanglar prism on the top of the cube
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox0WithColours);
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox1WithColours);
           pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationHeatHazeCrate * matObjectRotation * matTranslationHeatHazeCrateRelativeHeatPosition);
-          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox0WithColours);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox0WithColours);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox1WithColours);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox1WithColours);
 
         // Render a cylinder for the steam coming out
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCylinder0WithColours);
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCylinder1WithColours);
           pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationHeatHazeTeapot * matObjectRotation * matTranslationHeatHazeTeapotRelativeSteamPosition);
-          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCylinder0WithColours);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCylinder0WithColours);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCylinder1WithColours);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCylinder1WithColours);
       }
 
       if (bIsWireframe) pContext->DisableWireframe();
 
-      heatHaze.EndRender(*this, *pContext, currentSimulationTime, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
+      heatHaze.EndRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
     }
 
@@ -3773,7 +3773,7 @@ void cApplication::Run()
 
       if (bIsHeatHaze) {
         // Draw the glow texture for debugging purposes
-        RenderDebugScreenRectangleVariableSize(position.x, position.y, heatHaze.GetHeatMapTexture()); position.x += 0.25f;
+        RenderDebugScreenRectangleVariableSize(position.x, position.y, heatHaze.GetNoiseAndHeatMapTexture()); position.x += 0.25f;
       }
 
       if (bIsHDR && (lensFlare == LENS_FLARE::DIRT)) {
