@@ -1893,6 +1893,7 @@ void cApplication::Run()
   tronGlow.Resize(*this, *pContext);
 
   heatHaze.Init(*this, *pContext);
+  heatHaze.Resize(*this, *pContext);
 
   dofBokeh.Init(*pContext);
   dofBokeh.Resize(*this, *pContext);
@@ -3684,7 +3685,7 @@ void cApplication::Run()
 
     // Apply heat haze
     if (bIsHeatHaze) {
-      heatHaze.BeginRender(*this, *pContext, currentSimulationTime, matProjection, matView);
+      heatHaze.BeginRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[tempFBO], currentTime, matProjection, matView);
 
       if (bIsWireframe) pContext->EnableWireframe();
 
@@ -3706,7 +3707,7 @@ void cApplication::Run()
 
       if (bIsWireframe) pContext->DisableWireframe();
 
-      heatHaze.EndRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
+      heatHaze.EndRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO2], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
     }
 
