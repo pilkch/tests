@@ -121,6 +121,7 @@
     <ClCompile Include="..\dofbokeh.cpp" />
     <ClCompile Include="..\gaussian_blur.cpp" />
     <ClCompile Include="..\hdr.cpp" />
+    <ClCompile Include="..\heathaze.cpp" />
     <ClCompile Include="..\lensflaredirt.cpp" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\shadowmapping.cpp" />
@@ -170,6 +171,9 @@
     <None Include="..\shaders\hdr\luminance.frag" />
     <None Include="..\shaders\hdr\minification.frag" />
     <None Include="..\shaders\hdr\tone_mapping.frag" />
+    <None Include="..\shaders\heathaze.frag" />
+    <None Include="..\shaders\heathazevolumes.frag" />
+    <None Include="..\shaders\heathazevolumes.vert" />
     <None Include="..\shaders\lambert.frag" />
     <None Include="..\shaders\lambert.vert" />
     <None Include="..\shaders\lensflaredirt\lensflare.frag" />
@@ -210,6 +214,7 @@
     <ClInclude Include="..\dofbokeh.h" />
     <ClInclude Include="..\gaussian_blur.h" />
     <ClInclude Include="..\hdr.h" />
+    <ClInclude Include="..\heathaze.h" />
     <ClInclude Include="..\lensflaredirt.h" />
     <ClInclude Include="..\main.h" />
     <ClInclude Include="..\shadowmapping.h" />
