@@ -39,6 +39,8 @@ void cTronGlow::Resize(cApplication& application, opengl::cContext& context)
 
 void cTronGlow::ReloadShaders(opengl::cContext& context)
 {
+  blur.ReloadShaders(context);
+
   if (shaderBlack.IsCompiledProgram()) context.DestroyShader(shaderBlack);
   if (shaderGlowHighlights.IsCompiledProgram()) context.DestroyShader(shaderGlowHighlights);
   if (shaderTronGlowScreen.IsCompiledProgram()) context.DestroyShader(shaderTronGlowScreen);

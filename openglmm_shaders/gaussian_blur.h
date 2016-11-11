@@ -21,6 +21,8 @@ public:
   void Init(cApplication& application, opengl::cContext& context, size_t fboWidth, size_t fboHeight);
   void Destroy(opengl::cContext& context);
 
+  void ReloadShaders(opengl::cContext& context);
+
   void Resize(opengl::cContext& context);
 
   // Apply a Gaussian blur to the 0th color attachment of input fbo. The result is written to output fbo, which may be the same as input

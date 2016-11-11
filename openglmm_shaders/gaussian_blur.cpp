@@ -29,6 +29,14 @@ void cGaussianBlur::Destroy(opengl::cContext& context)
   context.DestroyStaticVertexBufferObject(vbo);
 }
 
+void cGaussianBlur::ReloadShaders(opengl::cContext& context)
+{
+  if (shaderGaussBlur.IsCompiledProgram()) context.DestroyShader(shaderGaussBlur);
+
+  context.CreateShader(shaderGaussBlur, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/gaussian_blur.frag"));
+  ASSERT(shaderGaussBlur.IsCompiledProgram());
+}
+
 void cGaussianBlur::Resize(opengl::cContext& context)
 {
 }
