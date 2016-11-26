@@ -266,6 +266,7 @@ private:
   opengl::cShader shaderFire;
   opengl::cShader shaderLights;
   opengl::cShader shaderLambert;
+  opengl::cShader shaderHemisphereLighting;
   opengl::cShader shaderRimLit;
   opengl::cShader shaderPassThrough;
   opengl::cShader shaderPassThroughNonRect;
