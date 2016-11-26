@@ -1280,6 +1280,9 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderLambert, TEXT("shaders/lambert.vert"), TEXT("shaders/lambert.frag"));
   assert(shaderLambert.IsCompiledProgram());
 
+  pContext->CreateShader(shaderHemisphereLighting, TEXT("shaders/hemispherelighting.vert"), TEXT("shaders/hemispherelighting.frag"));
+  assert(shaderHemisphereLighting.IsCompiledProgram());
+
   pContext->CreateShader(shaderRimLit, TEXT("shaders/rimlighting.vert"), TEXT("shaders/rimlighting.frag"));
   assert(shaderRimLit.IsCompiledProgram());
 
@@ -1338,6 +1341,7 @@ void cApplication::DestroyShaders()
 
   if (parallaxNormalMap.shader.IsCompiledProgram()) pContext->DestroyShader(parallaxNormalMap.shader);
 
+  if (shaderHemisphereLighting.IsCompiledProgram()) pContext->DestroyShader(shaderHemisphereLighting);
   if (shaderLambert.IsCompiledProgram()) pContext->DestroyShader(shaderLambert);
   if (shaderRimLit.IsCompiledProgram()) pContext->DestroyShader(shaderRimLit);
   if (shaderLights.IsCompiledProgram()) pContext->DestroyShader(shaderLights);
@@ -1820,6 +1824,7 @@ void cApplication::Run()
   assert(shaderSmoke.IsCompiledProgram());
   assert(shaderFire.IsCompiledProgram());
   assert(shaderLambert.IsCompiledProgram());
+  assert(shaderHemisphereLighting.IsCompiledProgram());
   assert(shaderRimLit.IsCompiledProgram());
   assert(shaderLights.IsCompiledProgram());
   assert(parallaxNormalMap.shader.IsCompiledProgram());
@@ -3159,6 +3164,52 @@ void cApplication::Run()
 
       pContext->UnBindShader(shaderLambert);
 
+
+
+      // Render the hemisphere lit objects
+      {
+        pContext->BindShader(shaderHemisphereLighting);
+
+        pContext->SetShaderConstant("skyColour", skyColour.GetRGB());
+        pContext->SetShaderConstant("groundColour", spitfire::math::cColour3(0.13f, 0.37f, 0.24f));
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectPlane0);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[translation++] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectPlane0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectPlane0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCube0);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[translation++] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCube0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCube0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectBox0);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[translation++] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectBox0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectBox0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[translation++] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+        }
+
+        {
+          pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationArray[translation++] * matObjectRotation);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot0);
+          pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot0);
+        }
+
+        pContext->UnBindShader(shaderHemisphereLighting);
+      }
 
 
       // Render the rim lit objects
