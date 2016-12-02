@@ -27,8 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 A collection of tests and small utilities:
 - c++11_test: Just a basic test for using implementing a type safe printf in C++11 using variadic template arguments  
-- discombobulator: You give it a string and it creates a function to build a value from obfuscated data.  The idea being that you can use this function to store sensitive  
-- data instead of just storing it as raw strings that can be viewed in a hex editor or with the "strings" utility.  
+- discombobulator: You give it a string and it creates a function to build a value from obfuscated data. The idea being that you can use this function to store sensitive data instead of just storing it as raw strings that can be viewed in a hex editor or with the "strings" utility. This is barely better than that :) The function could still be decompiled or the application could be debugged and the real key would be present in RAM.
 - openglmm_fadein: Fades into the scene from the desktop.  The way it does is by saving a screenshot image of the desktop, creating a full screen context that spans across all monitors, showing the stored image and then fading between that and the actual scene.  
 - openglmm_font: Testing use of fonts.  
 - openglmm_gears: Similar to the glxgears test application  
