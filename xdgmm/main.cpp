@@ -12,8 +12,6 @@
 // libxdgmm headers
 #include <libxdgmm/libxdgmm.h>
 
-#define nullptr NULL
-
 bool RunTest()
 {
   if (!xdg::IsInstalled()) {

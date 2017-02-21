@@ -17,8 +17,6 @@
 #define BUILD_LINUX_OR_UNIX
 #endif
 
-#define nullptr NULL
-
 // Adjust these to your personal preferences
 const size_t nSpacesInEachTab = 2;
 

@@ -29,8 +29,6 @@
 #define BUILD_LINUX_OR_UNIX
 #endif
 
-#define nullptr NULL
-
 // Just an arbitrary number
 const size_t MAX_PATH_LEN = 512;
 
