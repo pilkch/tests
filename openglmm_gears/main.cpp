@@ -63,7 +63,7 @@ private:
 
   opengl::cContext* pContext;
 
-  opengl::cShader* pShader;
+  opengl::cShader shader;
 
   opengl::cStaticVertexBufferObject gearVBO1;
   opengl::cStaticVertexBufferObject gearVBO2;
@@ -74,9 +74,7 @@ cApplication::cApplication() :
   bIsDone(false),
 
   pWindow(nullptr),
-  pContext(nullptr),
-
-  pShader(nullptr)
+  pContext(nullptr)
 {
 }
 
@@ -97,7 +95,9 @@ bool cApplication::Create()
   resolution.height = 300;
   resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
 
-  pWindow = system.CreateWindow(TEXT("openglmm_gears"), resolution, false);
+  const bool bIsFullscreen = false;
+
+  pWindow = system.CreateWindow(TEXT("openglmm_gears"), resolution, bIsFullscreen);
   if (pWindow == nullptr) {
     LOGERROR("Window could not be created");
     return false;
@@ -225,8 +225,8 @@ void cApplication::CreateSphere(opengl::cStaticVertexBufferObject& staticVertexB
 
 bool cApplication::LoadResources()
 {
-  pShader = pContext->CreateShader(TEXT("shaders/gear.vert"), TEXT("shaders/gear.frag"));
-  if (pShader == nullptr) {
+  pContext->CreateShader(shader, TEXT("shaders/gear.vert"), TEXT("shaders/gear.frag"));
+  if (!shader.IsCompiledProgram()) {
     LOGERROR("cApplication::LoadResources Shader could not be created");
     return false;
   }
@@ -241,7 +241,7 @@ bool cApplication::LoadResources()
   CreateGear(gearVBO3, 1.3f, 2.0f, 0.5f, 10, 0.7f);
   //CreateSphere(gearVBO3, 1.3f, 32);
 
-  
+
   // Light
   const spitfire::math::cVec3 lightPosition(5.0f, 5.0f, 10.0f);
   const spitfire::math::cColour lightAmbientColour(0.2f, 0.2f, 0.2f);
@@ -252,10 +252,10 @@ bool cApplication::LoadResources()
   const spitfire::math::cColour materialAmbientColour(0.0f, 0.0f, 0.0f);
   const spitfire::math::cColour materialSpecularColour(1.0f, 1.0f, 1.0f);
   const float fMaterialShininess = 50.0f;
-  
+
   LOG("Setting shader constants ", opengl::cSystem::GetErrorString());
   // Set our shader constants
-  pContext->BindShader(*pShader);
+  pContext->BindShader(shader);
 
     // Setup lighting
     pContext->SetShaderConstant("light.position", lightPosition);
@@ -268,7 +268,7 @@ bool cApplication::LoadResources()
     pContext->SetShaderConstant("material.specularColour", materialSpecularColour);
     pContext->SetShaderConstant("material.fShininess", fMaterialShininess);
 
-  pContext->UnBindShader(*pShader);
+  pContext->UnBindShader(shader);
 
   return true;
 }
@@ -281,10 +281,7 @@ void cApplication::DestroyResources()
   pContext->DestroyStaticVertexBufferObject(gearVBO2);
   pContext->DestroyStaticVertexBufferObject(gearVBO1);
 
-  if (pShader != nullptr) {
-    pContext->DestroyShader(pShader);
-    pShader = nullptr;
-  }
+  if (shader.IsCompiledProgram()) pContext->DestroyShader(shader);
 }
 
 void cApplication::Run()
@@ -312,7 +309,7 @@ void cApplication::Run()
   uint32_t Frames = 0;
 
   uint32_t currentTime = 0;
-  
+
   LOG("Entering main loop ", opengl::cSystem::GetErrorString());
   while (!bIsDone) {
     // Update window events
@@ -356,7 +353,7 @@ void cApplication::Run()
       spitfire::math::cMat4 matLocalRotationZ;
       matLocalRotationZ.SetRotationZ(spitfire::math::DegreesToRadians(angle));
 
-      pContext->BindShader(*pShader);
+      pContext->BindShader(shader);
 
 
       pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
@@ -370,7 +367,7 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(gearVBO1);
 
-      pContext->UnBindShader(*pShader);
+      pContext->UnBindShader(shader);
     }
 
     {
@@ -380,7 +377,7 @@ void cApplication::Run()
       spitfire::math::cMat4 matLocalRotationZ;
       matLocalRotationZ.SetRotationZ(spitfire::math::DegreesToRadians(-2.0f * angle - 9.0f));
 
-      pContext->BindShader(*pShader);
+      pContext->BindShader(shader);
 
       pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
 
@@ -393,7 +390,7 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(gearVBO2);
 
-      pContext->UnBindShader(*pShader);
+      pContext->UnBindShader(shader);
     }
 
     {
@@ -403,7 +400,7 @@ void cApplication::Run()
       spitfire::math::cMat4 matLocalRotationZ;
       matLocalRotationZ.SetRotationZ(spitfire::math::DegreesToRadians(-2.0f * angle - 25.0f));
 
-      pContext->BindShader(*pShader);
+      pContext->BindShader(shader);
 
       pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matBase * matLocalTranslation * matLocalRotationZ);
 
@@ -416,7 +413,7 @@ void cApplication::Run()
 
       pContext->UnBindStaticVertexBufferObject(gearVBO3);
 
-      pContext->UnBindShader(*pShader);
+      pContext->UnBindShader(shader);
     }
 
     pContext->EndRenderToScreen(*pWindow);

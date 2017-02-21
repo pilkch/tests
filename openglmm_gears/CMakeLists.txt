@@ -13,7 +13,7 @@ SET(LIBRARY_INCLUDE "${CMAKE_SOURCE_DIR}/include/")
 SET(LIBRARY_SRC "${CMAKE_SOURCE_DIR}/src/")
 
 # Add definitions, compiler switches, etc.
-ADD_DEFINITIONS("-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wmissing-include-dirs -Wuninitialized -Wc++0x-compat -std=c++0x -ffor-scope -O2")
+ADD_DEFINITIONS("-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wmissing-include-dirs -Wuninitialized -std=c++11 -ffor-scope -O2")
 
 
 IF("${CMAKE_SYSTEM}" MATCHES "Linux")
@@ -52,7 +52,8 @@ ENDMACRO(PREFIX_PATHS)
 
 SET(LIBRARY_LIBVOODOOMM_SOURCE_DIRECTORY libvoodoomm/)
 SET(LIBRARY_LIBVOODOOMM_SOURCE_FILES
-libvoodoomm.cpp cImage.cpp)
+libvoodoomm.cpp cImage.cpp
+)
 
 IF(WIN32)
   SET(LIBRARY_LIBVOODOOMM_SOURCE_FILES ${LIBRARY_LIBVOODOOMM_SOURCE_FILES})
@@ -65,7 +66,8 @@ SET(OUTPUT_LIBRARY_LIBVOODOOMM_SOURCE_FILES ${OUTPUT_FILES})
 
 SET(LIBRARY_LIBOPENGLMM_SOURCE_DIRECTORY libopenglmm/)
 SET(LIBRARY_LIBOPENGLMM_SOURCE_FILES
-libopenglmm.cpp cContext.cpp cGeometry.cpp cShader.cpp cSystem.cpp cTexture.cpp cVertexBufferObject.cpp cWindow.cpp)
+libopenglmm.cpp cContext.cpp cGeometry.cpp cShader.cpp cSystem.cpp cTexture.cpp cVertexBufferObject.cpp cWindow.cpp
+)
 
 IF(WIN32)
   SET(LIBRARY_LIBOPENGLMM_SOURCE_FILES ${LIBRARY_LIBOPENGLMM_SOURCE_FILES})
@@ -76,10 +78,33 @@ SET(OUTPUT_LIBRARY_LIBOPENGLMM_SOURCE_FILES ${OUTPUT_FILES})
 
 
 
+
+SET(LIBRARY_LIBTRASHMM_SOURCE_DIRECTORY libtrashmm/)
+SET(LIBRARY_LIBTRASHMM_SOURCE_FILES
+libtrashmm.cpp
+)
+
+PREFIX_PATHS(${LIBRARY_LIBTRASHMM_SOURCE_DIRECTORY} ${LIBRARY_LIBTRASHMM_SOURCE_FILES})
+SET(OUTPUT_LIBRARY_LIBTRASHMM_SOURCE_FILES ${OUTPUT_FILES})
+
+
+
+SET(LIBRARY_LIBXDGMM_SOURCE_DIRECTORY libxdgmm/)
+SET(LIBRARY_LIBXDGMM_SOURCE_FILES
+libxdgmm.cpp
+)
+
+PREFIX_PATHS(${LIBRARY_LIBXDGMM_SOURCE_DIRECTORY} ${LIBRARY_LIBXDGMM_SOURCE_FILES})
+SET(OUTPUT_LIBRARY_LIBXDGMM_SOURCE_FILES ${OUTPUT_FILES})
+
+
+
 SET(LIBRARY_SPITFIRE_SOURCE_DIRECTORY spitfire/)
 SET(LIBRARY_SPITFIRE_SOURCE_FILES
 spitfire.cpp
-math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat3.cpp math/cMat4.cpp math/cQuaternion.cpp math/math.cpp math/cColour.cpp)
+math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat3.cpp math/cMat4.cpp math/cQuaternion.cpp math/math.cpp math/cColour.cpp
+storage/file.cpp storage/filesystem.cpp
+util/datetime.cpp util/log.cpp util/string.cpp util/thread.cpp)
 
 IF(WIN32)
   SET(LIBRARY_SPITFIRE_SOURCE_FILES ${LIBRARY_SPITFIRE_SOURCE_FILES})
@@ -90,35 +115,46 @@ SET(OUTPUT_LIBRARY_SPITFIRE_SOURCE_FILES ${OUTPUT_FILES})
 
 
 
-SET(LIBRARY_SOURCE_FILES ${OUTPUT_LIBRARY_SPITFIRE_SOURCE_FILES} ${OUTPUT_LIBRARY_BREATHE_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBVOODOOMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBOPENGLMM_SOURCE_FILES}
+SET(LIBRARY_SOURCE_FILES ${OUTPUT_LIBRARY_SPITFIRE_SOURCE_FILES} ${OUTPUT_LIBRARY_BREATHE_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBTRASHMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBVOODOOMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBXDGMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBOPENGLMM_SOURCE_FILES}
 GL/GLee.cpp
 )
 PREFIX_PATHS(${LIBRARY_SRC} ${LIBRARY_SOURCE_FILES})
 SET(OUTPUT_LIBRARY_SOURCE_FILES ${OUTPUT_FILES})
-#MESSAGE(final=${OUTPUT_LIBRARY_SOURCE_FILES})
+MESSAGE(final=${OUTPUT_LIBRARY_SOURCE_FILES})
 
 #list all source files here
 ADD_EXECUTABLE(${PROJECT_NAME} main.cpp ${OUTPUT_LIBRARY_SOURCE_FILES} ${PROJECT_SOURCE_FILES})
 
 
+INCLUDE(FindPkgConfig)
+
+PKG_SEARCH_MODULE(SDL2 REQUIRED sdl2)
+PKG_SEARCH_MODULE(SDL2IMAGE REQUIRED SDL2_image>=2.0.0)
+PKG_SEARCH_MODULE(SDL2TTF REQUIRED SDL2_ttf>=2.0.0)
 
 SET(LIBRARIES
+  Threads
   OpenGL
-  SDL
-  SDL_image
-  SDL_ttf
+  #SDL
+  #SDL_image
+  #SDL_ttf
 )
 
 
 # Some of the libraries have different names than their Find*.cmake name
 SET(LIBRARIES_LINKED
+  stdc++fs
+  boost_iostreams
+  boost_filesystem
+  boost_system
+  pthread
   GL
   GLU
-  SDL
-  SDL_image
-  SDL_ttf
+  SDL2
+  SDL2_image
+  SDL2_ttf
+  xdg-basedir
 )
-
 
 FOREACH(LIBRARY_FILE ${LIBRARIES})
   Find_Package(${LIBRARY_FILE} REQUIRED)
