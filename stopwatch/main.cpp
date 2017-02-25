@@ -39,7 +39,7 @@ public:
   void Stop();
   void Reset();
 
-  durationms_t GetTotalDuration() const;
+  durationms_t GetTotalDurationMS() const;
 
 private:
   durationms_t started;
@@ -78,7 +78,7 @@ void cStopWatch::Reset()
   totalDuration = 0;
 }
 
-durationms_t cStopWatch::GetTotalDuration() const
+durationms_t cStopWatch::GetTotalDurationMS() const
 {
   // Get the time now
   const durationms_t now = GetTimeMS();
@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
     while (!timeout.IsExpired()) {
       // Print out some debug information about the stop watch and time out
       std::cout<<"Stop watch time: ";
-      DurationToString(std::cout, stopWatch.GetTotalDuration());
+      DurationToString(std::cout, stopWatch.GetTotalDurationMS());
       std::cout<<", Timeout: "<<(timeout.IsExpired() ? "expired" : "not expired")<<", remaining: ";
       DurationToString(std::cout, timeout.GetRemainingMS());
       std::cout<<std::endl;
