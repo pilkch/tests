@@ -128,8 +128,13 @@ bool cTimeOut::IsExpired() const
 
 durationms_t cTimeOut::GetRemainingMS() const
 {
+  // Get the total time this timeout uhas been running for so far
   const int64_t duration = int64_t(GetTimeMS()) - int64_t(startTime);
+
+  // Calculate the remaining time
   const int64_t remaining = (int64_t(timeout) - duration);
+
+  // Return the remaining time if there is any left
   return (remaining >= 0) ? remaining : 0;
 }
 
@@ -137,26 +142,35 @@ durationms_t cTimeOut::GetRemainingMS() const
 int main(int argc, char* argv[])
 {
   // Just a little test of the stop watch and timeout
+
   cStopWatch stopWatch;
 
+  // Create a 5 second time out
   cTimeOut timeout(5000);
 
+  // Run through 3 5 second time outs
   for (size_t i = 0; i < 3; i++) {
+    // Start a new time out
     timeout.Reset();
 
+    // Start the stop watch
     stopWatch.Start();
 
+    // Wait until the time out is expired
     while (!timeout.IsExpired()) {
+      // Print out some debug information about the stop watch and time out
       std::cout<<"Stop watch time: ";
       DurationToString(std::cout, stopWatch.GetTotalDuration());
       std::cout<<", Timeout: "<<(timeout.IsExpired() ? "expired" : "not expired")<<", remaining: ";
       DurationToString(std::cout, timeout.GetRemainingMS());
       std::cout<<std::endl;
 
+      // Sleep for 100 milliseconds (Avoids hogging the CPU and we don't have to update that frequently
       const uint64_t timeout_ms = 100;
       ::usleep(1000 * timeout_ms);
     }
 
+    // Stop the stop watch
     stopWatch.Stop();
   }
 
