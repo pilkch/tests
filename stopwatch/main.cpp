@@ -42,11 +42,13 @@ public:
   durationms_t GetTotalDurationMS() const;
 
 private:
+  bool running;
   durationms_t started;
   durationms_t totalDuration;
 };
 
 cStopWatch::cStopWatch() :
+  running(false),
   started(0),
   totalDuration(0)
 {
@@ -54,14 +56,18 @@ cStopWatch::cStopWatch() :
 
 void cStopWatch::Start()
 {
-  assert(started == 0);
+  assert(!running);
 
   // Started our stop watch
   started = GetTimeMS();
+
+  running = true;
 }
 
 void cStopWatch::Stop()
 {
+  assert(running);
+
   // Get the time now
   const durationms_t now = GetTimeMS();
 
@@ -70,21 +76,29 @@ void cStopWatch::Stop()
 
   // Reset our start time
   started = 0;
+
+  running = false;
 }
 
 void cStopWatch::Reset()
 {
   started = 0;
   totalDuration = 0;
+
+  running = false;
 }
 
 durationms_t cStopWatch::GetTotalDurationMS() const
 {
-  // Get the time now
-  const durationms_t now = GetTimeMS();
+  if (running) {
+    // Get the time now
+    const durationms_t now = GetTimeMS();
 
-  // Return the previous duration plus the duration of the current period
-  return totalDuration + (now - started);
+    // Return the previous duration plus the duration of the current period
+    return totalDuration + (now - started);
+  }
+
+  return totalDuration;
 }
 
 
