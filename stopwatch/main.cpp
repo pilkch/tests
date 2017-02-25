@@ -188,5 +188,12 @@ int main(int argc, char* argv[])
     stopWatch.Stop();
   }
 
+  // Print out some debug information about the stop watch and time out
+  std::cout<<"Stop watch time: ";
+  DurationToString(std::cout, stopWatch.GetTotalDurationMS());
+  std::cout<<", Timeout: "<<(timeout.IsExpired() ? "expired" : "not expired")<<", remaining: ";
+  DurationToString(std::cout, timeout.GetRemainingMS());
+  std::cout<<std::endl;
+
   return EXIT_SUCCESS;
 }
