@@ -133,6 +133,11 @@ void cHeatHaze::EndRender(cApplication& application, opengl::cContext& context, 
   context.EndRenderToTexture(output);
 
 
+  ClearObjects();
+}
+
+void cHeatHaze::ClearObjects()
+{
   // Clear the list of black objects
   lColdObjects.clear();
 }

@@ -33,6 +33,8 @@ public:
   void BeginRender(cApplication& application, opengl::cContext& context, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView, opengl::cTextureFrameBufferObject& temp0);
   void EndRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& temp0, opengl::cTextureFrameBufferObject& temp1, opengl::cTextureFrameBufferObject& output);
 
+  void ClearObjects();
+
 private:
   void RenderSceneWithTronGlow(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& glow, opengl::cTextureFrameBufferObject& brightPixels, opengl::cTextureFrameBufferObject& output);
 

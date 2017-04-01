@@ -34,6 +34,8 @@ public:
   void BeginRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& temp0, spitfire::durationms_t time, const spitfire::math::cMat4& matProjection, const spitfire::math::cMat4& matView);
   void EndRender(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& temp0, opengl::cTextureFrameBufferObject& temp1, opengl::cTextureFrameBufferObject& output);
 
+  void ClearObjects();
+
 private:
   std::list<std::pair<spitfire::math::cMat4, opengl::cStaticVertexBufferObject*>> lColdObjects;
 

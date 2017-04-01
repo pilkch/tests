@@ -3730,7 +3730,7 @@ void cApplication::Run()
 
       tronGlow.EndRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO2], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
-    }
+    } else tronGlow.ClearObjects();
 
     // Apply heat haze
     if (bIsHeatHaze) {
@@ -3758,7 +3758,7 @@ void cApplication::Run()
 
       heatHaze.EndRender(*this, *pContext, textureFrameBufferObjectScreenColourAndDepth[inputFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO], textureFrameBufferObjectScreenColourAndDepth[tempFBO2], textureFrameBufferObjectScreenColourAndDepth[outputFBO]);
       std::swap(outputFBO, inputFBO);
-    }
+    } else heatHaze.ClearObjects();
 
     // Process HDR bloom
     if (bIsHDR) {
@@ -3822,7 +3822,7 @@ void cApplication::Run()
       }
 
       if (bIsHeatHaze) {
-        // Draw the glow texture for debugging purposes
+        // Draw the heat haze for debugging purposes
         RenderDebugScreenRectangleVariableSize(position.x, position.y, heatHaze.GetNoiseAndHeatMapTexture()); position.x += 0.25f;
       }
 

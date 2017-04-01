@@ -129,6 +129,11 @@ void cTronGlow::EndRender(cApplication& application, opengl::cContext& context, 
   RenderSceneWithTronGlow(application, context, input, fboGlow, temp0, output);
 
 
+  ClearObjects();
+}
+
+void cTronGlow::ClearObjects()
+{
   // Clear the list of black objects
   lNotGlowingObjects.clear();
 }
