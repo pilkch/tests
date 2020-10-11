@@ -1,5 +1,21 @@
 # Set the minimum cmake version
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
+
+SET(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS ON)
+
+
+IF(UNIX)
+SET(CMAKE_CXX_STANDARD 17)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a")
+ELSE()
+# Set the C++ standard
+#SET(CMAKE_CXX_STANDARD 14)
+#SET(CMAKE_CXX_STANDARD 17)
+#SET(CMAKE_CXX_STANDARD 20)
+ENDIF()
+
 
 # Set the project name
 PROJECT(openglmm_gears)
@@ -12,11 +28,14 @@ SET(PROJECT_DIRECTORY "./")
 SET(LIBRARY_INCLUDE "${CMAKE_SOURCE_DIR}/include/")
 SET(LIBRARY_SRC "${CMAKE_SOURCE_DIR}/src/")
 
+IF(UNIX)
 # Add definitions, compiler switches, etc.
-ADD_DEFINITIONS("-Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wmissing-include-dirs -Wuninitialized -std=c++11 -ffor-scope -O2")
+ADD_DEFINITIONS("-std=c++17 -Wall -W -Wextra -Werror -Wformat -Wformat-y2k -Winit-self -Wstack-protector -Wunknown-pragmas -Wundef -Wwrite-strings -Wno-unused-parameter -Wpointer-arith -Wno-switch -Woverloaded-virtual -Wno-stack-protector -Wmissing-include-dirs -Wuninitialized -O2")
+ENDIF()
 
+IF(UNIX)
+  SET(OpenGL_GL_PREFERENCE GLVND)
 
-IF("${CMAKE_SYSTEM}" MATCHES "Linux")
   ADD_DEFINITIONS("-D__LINUX__")
 ENDIF()
 
@@ -36,16 +55,13 @@ INCLUDE_DIRECTORIES(${LIBRARY_INCLUDE})
 
 MACRO(PREFIX_PATHS SOURCE_DIRECTORY SOURCE_FILES)
 MESSAGE(STATUS "PREFIX_PATHS dir=${SOURCE_DIRECTORY}, files=${SOURCE_FILES}, ${ARGN}")
-MESSAGE(a=${SOURCE_FILES})
   SET(OUTPUT_FILES "")
   SET(a ${OUTPUT_FILES})
   SET(OUTPUT_FILES ${a} "${SOURCE_DIRECTORY}${SOURCE_FILES}")
   FOREACH(SOURCE_FILE ${ARGN})
-    MESSAGE(b=${SOURCE_FILE})
     SET(a ${OUTPUT_FILES})
     SET(OUTPUT_FILES ${a} "${SOURCE_DIRECTORY}${SOURCE_FILE}")
   ENDFOREACH()
-MESSAGE(d=${OUTPUT_FILES})
 ENDMACRO(PREFIX_PATHS)
 
 
@@ -104,7 +120,7 @@ SET(LIBRARY_SPITFIRE_SOURCE_FILES
 spitfire.cpp
 math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat3.cpp math/cMat4.cpp math/cQuaternion.cpp math/math.cpp math/cColour.cpp
 storage/file.cpp storage/filesystem.cpp
-util/datetime.cpp util/log.cpp util/string.cpp util/thread.cpp)
+util/datetime.cpp util/log.cpp util/string.cpp util/timer.cpp util/thread.cpp)
 
 IF(WIN32)
   SET(LIBRARY_SPITFIRE_SOURCE_FILES ${LIBRARY_SPITFIRE_SOURCE_FILES})
@@ -114,9 +130,14 @@ PREFIX_PATHS(${LIBRARY_SPITFIRE_SOURCE_DIRECTORY} ${LIBRARY_SPITFIRE_SOURCE_FILE
 SET(OUTPUT_LIBRARY_SPITFIRE_SOURCE_FILES ${OUTPUT_FILES})
 
 
+IF(WIN32)
+  SET(EXTRA_SOURCE_FILES GL/GLee.cpp)
+ENDIF()
+
+
 
 SET(LIBRARY_SOURCE_FILES ${OUTPUT_LIBRARY_SPITFIRE_SOURCE_FILES} ${OUTPUT_LIBRARY_BREATHE_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBTRASHMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBVOODOOMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBXDGMM_SOURCE_FILES} ${OUTPUT_LIBRARY_LIBOPENGLMM_SOURCE_FILES}
-GL/GLee.cpp
+${EXTRA_SOURCE_FILES}
 )
 PREFIX_PATHS(${LIBRARY_SRC} ${LIBRARY_SOURCE_FILES})
 SET(OUTPUT_LIBRARY_SOURCE_FILES ${OUTPUT_FILES})
@@ -135,18 +156,12 @@ PKG_SEARCH_MODULE(SDL2TTF REQUIRED SDL2_ttf>=2.0.0)
 SET(LIBRARIES
   Threads
   OpenGL
-  #SDL
-  #SDL_image
-  #SDL_ttf
 )
 
 
 # Some of the libraries have different names than their Find*.cmake name
 SET(LIBRARIES_LINKED
   stdc++fs
-  boost_iostreams
-  boost_filesystem
-  boost_system
   pthread
   GL
   GLU
