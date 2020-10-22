@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 vec3 desaturate(vec3 color, float amount)
 {

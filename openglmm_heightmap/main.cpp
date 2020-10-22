@@ -11,12 +11,14 @@
 #include <vector>
 #include <list>
 
+#ifdef __WIN__
 // OpenGL headers
 #include <GL/GLee.h>
 #include <GL/glu.h>
+#endif
 
 // SDL headers
-#include <SDL/SDL_image.h>
+#include <SDL2/SDL_image.h>
 
 // Spitfire headers
 #include <spitfire/spitfire.h>
@@ -315,10 +317,11 @@ const uint8_t* cHeightmapData::GetLightmapBuffer() const
   return &lightmap[0];
 }
 
-int round(float n)
+int round_float_to_int(float n)
 {
   return (n - ((int)n) >= 0.5) ? (int)n + 1 : (int)n;
 }
+
 
 // http://www.cyberhead.de/download/articles/shadowmap/
 
@@ -355,8 +358,8 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
       ) {
         CurrentPos += LightDir;
 
-        LerpX = round(CurrentPos.x);
-        LerpZ = round(CurrentPos.z);
+        LerpX = round_float_to_int(CurrentPos.x);
+        LerpZ = round_float_to_int(CurrentPos.z);
 
         // Hit?
         if (CurrentPos.y <= (heightmap[(LerpZ * size) + LerpX] * fScaleZ)) {
@@ -484,7 +487,7 @@ void cApplication::CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStat
 
   pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObject->Compile(system);
+  pStaticVertexBufferObject->Compile();
 }
 
 void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale)
@@ -527,7 +530,7 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
 
   pStaticVertexBufferObject->SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObject->Compile(system);
+  pStaticVertexBufferObject->Compile();
 }
 
 //void cApplication::CreateHeightmapTriangleStrips();

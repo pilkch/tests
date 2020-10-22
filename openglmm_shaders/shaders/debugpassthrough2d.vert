@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 // This is the same as the normal passthrough2d.vert but it has a variable texture size
 // It is really just for drawing textures to the screen for debugging purposes

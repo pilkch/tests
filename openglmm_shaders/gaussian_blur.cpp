@@ -1,9 +1,11 @@
 // Standard headers
 #include <cassert>
 
+#ifdef __WIN__
 // OpenGL headers
 #include <GL/GLee.h>
 #include <GL/glu.h>
+#endif
 
 // Spitfire headers
 #include <spitfire/spitfire.h>

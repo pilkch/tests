@@ -10,9 +10,11 @@
 #include <vector>
 #include <list>
 
+#ifdef __WIN__
 // OpenGL headers
 #include <GL/GLee.h>
 #include <GL/glu.h>
+#endif
 
 // SDL headers
 #include <SDL2/SDL_image.h>
@@ -286,7 +288,8 @@ void cApplication::CreateTeapot(opengl::cStaticVertexBufferObject& vbo, size_t n
   const size_t nSegments = 20;
 
   opengl::cGeometryBuilder builder;
-  builder.CreateTeapot(fRadius, nSegments, *pGeometryDataPtr, nTextureCoordinates);
+  builder.CreateSphere(fRadius, nSegments, *pGeometryDataPtr, nTextureCoordinates);
+  //builder.CreateTeapot(fRadius, nSegments, *pGeometryDataPtr, nTextureCoordinates);
 
   vbo.SetData(pGeometryDataPtr);
 
@@ -578,7 +581,8 @@ void cApplication::CreateTeapotVBO()
 
   const float fRadius = 0.3f;
   const size_t nSegments = 20;
-  builder.CreateTeapot(fRadius, nSegments, *pGeometryDataPtr, 1);
+  builder.CreateSphere(fRadius, nSegments, *pGeometryDataPtr, 1);
+  //builder.CreateTeapot(fRadius, nSegments, *pGeometryDataPtr, 1);
 
   staticVertexBufferObjectLargeTeapot.SetData(pGeometryDataPtr);
 
@@ -774,10 +778,12 @@ void cApplication::CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo)
   const spitfire::math::cVec3 normalBottomLeft(-0.57735f, -0.57735f, 0.57735f);
   const spitfire::math::cVec3 normalBottomRight(0.57735f, -0.57735f, 0.57735f);
 
-  for (size_t i = 0; i < 100; i++) {
-    const spitfire::math::cVec3 position(positionVariation * spitfire::math::cVec3(spitfire::math::randomMinusOneToPlusOnef(), spitfire::math::randomZeroToOnef(), spitfire::math::randomMinusOneToPlusOnef()));
+  spitfire::math::cRand rng;
 
-    const float fWidth = fBaseSize + (fSizeVariation * spitfire::math::randomMinusOneToPlusOnef());
+  for (size_t i = 0; i < 100; i++) {
+    const spitfire::math::cVec3 position(positionVariation * spitfire::math::cVec3(rng.randomMinusOneToPlusOnef(), rng.randomZeroToOnef(), rng.randomMinusOneToPlusOnef()));
+
+    const float fWidth = fBaseSize + (fSizeVariation * rng.randomMinusOneToPlusOnef());
     const float fHeight = fWidth;
 
     const float_t fHalfWidth = fWidth * 0.5f;
@@ -946,11 +952,11 @@ bool cApplication::Create()
   pContext->CreateTextureCubeMap(
     textureCarCubeMap,
     TEXT("textures/car_background_right.png"),
-    TEXT("textures/car_background_left.jpg"),
-    TEXT("textures/car_background_front.jpg"),
-    TEXT("textures/car_background_back.jpg"),
-    TEXT("textures/car_background_up.jpg"),
-    TEXT("textures/car_background_down.jpg")
+    TEXT("textures/car_background_left.png"),
+    TEXT("textures/car_background_front.png"),
+    TEXT("textures/car_background_back.png"),
+    TEXT("textures/car_background_up.png"),
+    TEXT("textures/car_background_down.png")
   );
   assert(textureCarCubeMap.IsValid());
 
@@ -969,6 +975,8 @@ bool cApplication::Create()
   pContext->CreateTexture(textureNormalMapHeight, TEXT("textures/floor_tile_height_map.png"));
   assert(textureNormalMapHeight.IsValid());
 
+  LOG("a");
+
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
   CreateTeapotVBO();
 
@@ -977,6 +985,7 @@ bool cApplication::Create()
   CreateStatueVBO();
   #endif
 
+  LOG("b");
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
   CreateScreenRectVBO(staticVertexBufferObjectScreenRectScreen, 1.0f, 1.0f);
 
@@ -996,6 +1005,7 @@ bool cApplication::Create()
   CreateScreenRectVariableTextureSizeVBO(staticVertexBufferObjectScreenRectDebugVariableTextureSize, 0.25f, 0.25f);
 
   pContext->CreateStaticVertexBufferObject(light.vbo);
+  LOG("c");
   CreateLightBillboard();
   pContext->CreateTexture(light.texture, TEXT("textures/light.png"));
   assert(light.texture.IsValid());
@@ -1912,7 +1922,11 @@ void cApplication::Run()
   lensFlareAnamorphic.Init(*this, *pContext);
   lensFlareAnamorphic.Resize(*pContext);
 
+  opengl::cSystem::GetErrorString();
+
   shadowMapping.Init(*pContext);
+
+  opengl::cSystem::GetErrorString();
 
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
@@ -1945,6 +1959,9 @@ void cApplication::Run()
       i++;
     }
   }
+
+  std::cout<<"1"<<std::endl;
+  opengl::cSystem::GetErrorString();
 
   spitfire::math::cMat4 matTranslationArray[columns * rows];
   for (size_t i = 0; i < columns * rows; i++) matTranslationArray[i].SetTranslation(positions[i]);
@@ -2034,6 +2051,9 @@ void cApplication::Run()
   spitfire::math::cMat4 matTranslationParallaxNormalMap;
   matTranslationParallaxNormalMap.SetTranslation(parallaxNormalMapPosition);
 
+  std::cout<<"2"<<std::endl;
+  opengl::cSystem::GetErrorString();
+
   #ifdef BUILD_LARGE_STATUE_MODEL
   spitfire::math::cMat4 matTranslationStatue[9];
   i = 0;
@@ -2080,6 +2100,9 @@ void cApplication::Run()
   const float lightPointLinearAttenuation = 0.007f;
   const float lightPointExpAttenuation = 0.00008f;
 
+  std::cout<<"3"<<std::endl;
+  opengl::cSystem::GetErrorString();
+
   // Blue spot light
   const spitfire::math::cVec3 lightSpotPosition(0.0f, 5.0f, 4.0f);
   const spitfire::math::cVec3 lightSpotDirection(0.0f, 1.0f, 0.0f);
@@ -2112,6 +2135,9 @@ void cApplication::Run()
   const uint32_t uiUpdateDelta = uint32_t(1000.0f / 60.0f);
 
   spitfire::durationms_t currentSimulationTime = 0;
+
+  std::cout<<"4"<<std::endl;
+  opengl::cSystem::GetErrorString();
 
   while (!bIsDone) {
     // Update state
@@ -2169,6 +2195,8 @@ void cApplication::Run()
       previousUpdateTime = currentTime;
     }
 
+    opengl::cSystem::GetErrorString();
+
     if (bReloadShaders) {
       LOG("Reloading shaders");
 
@@ -2182,6 +2210,8 @@ void cApplication::Run()
 
       bReloadShaders = false;
     }
+
+    opengl::cSystem::GetErrorString();
 
     if (bUpdateShaderConstants) {
       // Set our shader constants
@@ -2243,6 +2273,7 @@ void cApplication::Run()
       bUpdateShaderConstants = false;
     }
 
+    opengl::cSystem::GetErrorString();
 
     // Update our text
     CreateText();
@@ -2271,6 +2302,8 @@ void cApplication::Run()
       pContext->SetShaderConstant("lightSpotLight.direction", matView * lightSpotDirection);
     pContext->UnBindShader(shaderLights);
 
+    opengl::cSystem::GetErrorString();
+
     // Set up the cube map shader
     pContext->BindShader(shaderCubeMap);
       //pContext->SetShaderConstant("matView", matView);
@@ -2290,7 +2323,7 @@ void cApplication::Run()
 
         // Create our fragment shader
         std::string sFragmentShaderText =
-          "#version 330\n"
+          "#version 330 core\n"
           "\n"
         ;
 
@@ -2363,6 +2396,8 @@ void cApplication::Run()
       bSimplePostRenderDirty = false;
     }
 
+    opengl::cSystem::GetErrorString();
+
     {
       // Render a few items from the scene into the frame buffer object for use later
       const spitfire::math::cColour clearColour(0.0f, 1.0f, 0.0f);
@@ -2395,34 +2430,46 @@ void cApplication::Run()
       pContext->EndRenderToTexture(textureFrameBufferObjectTeapot);
     }
 
+    opengl::cSystem::GetErrorString();
+
     {
       // Render our shadow map
       shadowMapping.BeginRenderToShadowMap(*pContext, lightPointPosition, lightDirection);
 
+    opengl::cSystem::GetErrorString();
       // Render occluding objects
       const int half = 6;
       const int interval = 5;
       for (int z = -(half); z < half; z += interval) {
         for (int y = 1; y < half; y += interval) {
           for (int x = -(half); x < half; x += interval) {
+    opengl::cSystem::GetErrorString();
             const spitfire::math::cVec3 position = spitfire::math::cVec3(float(x), float(y), float(z));
             spitfire::math::cMat4 matTranslation;
             matTranslation.SetTranslation(position);
+    opengl::cSystem::GetErrorString();
             spitfire::math::cMat4 matRotation;
             matRotation.SetRotation(-rotation);
+    opengl::cSystem::GetErrorString();
             const spitfire::math::cMat4 matModel = matTranslation * matRotation;
             shadowMapping.RenderObjectToShadowMapSetMatrices(*pContext, matModel);
 
+    opengl::cSystem::GetErrorString();
             opengl::cStaticVertexBufferObject& vbo = staticVertexBufferObjectLargeTeapot;
             pContext->BindStaticVertexBufferObject(vbo);
+    opengl::cSystem::GetErrorString();
             pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+    opengl::cSystem::GetErrorString();
             pContext->UnBindStaticVertexBufferObject(vbo);
+    opengl::cSystem::GetErrorString();
           }
         }
       }
 
       shadowMapping.EndRenderToShadowMap(*pContext);
     }
+
+    opengl::cSystem::GetErrorString();
 
     size_t outputFBO = 0;
     size_t inputFBO = 1;
@@ -2494,6 +2541,8 @@ void cApplication::Run()
         tronGlow.AddNonGlowingObject(matTranslationCarPaintTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
         heatHaze.AddColdObject(matTranslationCarPaintTeapot * matObjectRotation, &staticVertexBufferObjectLargeTeapot);
       }
+
+      opengl::cSystem::GetErrorString();
 
       {
         pContext->BindShader(shaderGlass);
@@ -2692,6 +2741,8 @@ void cApplication::Run()
 
         pContext->UnBindShader(shaderPassThroughNonRect);
       }
+
+      opengl::cSystem::GetErrorString();
 
       {
         // Render the cel shaded teapot which consists of a black silhouette pass and a cel shaded pass
@@ -2958,6 +3009,7 @@ void cApplication::Run()
         pContext->UnBindShader(shadowMapping.GetShadowMapShader());
       }
 
+      opengl::cSystem::GetErrorString();
 
       // Render the textured objects
       pContext->BindShader(shaderCrate);
@@ -3059,6 +3111,7 @@ void cApplication::Run()
       pContext->UnBindShader(shaderFog);
 
 
+      opengl::cSystem::GetErrorString();
       // Render the cube mapped objects
       pContext->BindShader(shaderCubeMap);
 
@@ -3211,6 +3264,7 @@ void cApplication::Run()
         pContext->UnBindShader(shaderHemisphereLighting);
       }
 
+      opengl::cSystem::GetErrorString();
 
       // Render the rim lit objects
       pContext->BindShader(shaderRimLit);

@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 #if __VERSION__ >= 400
 // In GLSL 4 we can use fma

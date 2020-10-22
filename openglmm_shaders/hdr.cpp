@@ -10,9 +10,11 @@
 #include <vector>
 #include <list>
 
+#ifdef __WIN__
 // OpenGL headers
 #include <GL/GLee.h>
 #include <GL/glu.h>
+#endif
 
 // SDL headers
 #include <SDL2/SDL_image.h>
@@ -203,6 +205,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
   const size_t Width = context.GetWidth();
   const size_t Height = context.GetHeight();
   static spitfire::durationms_t lastDurationTime = currentTime;
+  (void)lastDurationTime;
   const float FrameTime = 0.0000001f; //(currentTime - lastDurationTime) * 0.001f;
 
   opengl::cTextureFrameBufferObject& HDRColorBuffer = input;
@@ -213,7 +216,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
   static spitfire::durationms_t LastTime = 0;
   static spitfire::durationms_t LastAdjustmentTime = 0;
 
-  spitfire::durationms_t Time = GetTickCount();
+  spitfire::durationms_t Time = spitfire::util::GetTimeMS();
 
   if (Time - LastTime > 125) { // 8 times per second only ----------------------------------------------------------------------
     LastTime = Time;
