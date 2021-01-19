@@ -179,21 +179,22 @@ int main(int argc, char* argv[])
       DurationToString(std::cout, timeout.GetRemainingMS());
       std::cout<<std::endl;
 
-      // Sleep for 100 milliseconds (Avoids hogging the CPU and we don't have to update that frequently
-      const uint64_t timeout_ms = 100;
-      ::usleep(1000 * timeout_ms);
+      // Sleep for 200 milliseconds (Avoids hogging the CPU and we don't have to update that frequently
+      const uint64_t timeout_ms = 200;
+      ::usleep(timeout_ms * 1000);
     }
 
     // Stop the stop watch
     stopWatch.Stop();
-  }
 
-  // Print out some debug information about the stop watch and time out
-  std::cout<<"Stop watch time: ";
-  DurationToString(std::cout, stopWatch.GetTotalDurationMS());
-  std::cout<<", Timeout: "<<(timeout.IsExpired() ? "expired" : "not expired")<<", remaining: ";
-  DurationToString(std::cout, timeout.GetRemainingMS());
-  std::cout<<std::endl;
+    // Print out some debug information about the stop watch and time out
+    std::cout<<"Stop watch time: ";
+    DurationToString(std::cout, stopWatch.GetTotalDurationMS());
+    std::cout<<", Timeout: "<<(timeout.IsExpired() ? "expired" : "not expired")<<", remaining: ";
+    DurationToString(std::cout, timeout.GetRemainingMS());
+    std::cout<<std::endl;
+    std::cout<<std::endl;
+  }
 
   return EXIT_SUCCESS;
 }
