@@ -7,6 +7,7 @@
 #include <iostream>
 #include <locale>
 #include <map>
+#include <random>
 #include <string>
 #include <sstream>
 
@@ -343,6 +344,8 @@ size_t TranslateToBase64(const std::string& sInput, std::string& sOutput)
 
   // Pad out equals characters to make the text a multiple of 4 bytes
   while (sOutput.length() % 4) sOutput += '=';
+
+  return sInput.length();
 }
 
 size_t TranslateFromBase64(const std::string& sInput, std::string& sOutput)
@@ -367,6 +370,8 @@ size_t TranslateFromBase64(const std::string& sInput, std::string& sOutput)
       valb -= 8;
     }
   }
+
+  return sInput.length();
 }
 
 
@@ -386,8 +391,8 @@ const cMode modes[] = {
   { "shufflemiddleletters", "Shuffle the middle letters in each word", "the qciuk bwron fox jmpus oevr the lzay dog.", &TranslateShuffleMiddleLettersOfEachWord },
   { "tomorsecode", "Convert a string to morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "- .... .   --.- ..- .. -.-. -.-   -... .-. --- .-- -.   ..-. --- -..-   .--- ..- -- .--. ...   --- ...- . .-.   - .... .   .-.. .- --.. -.--   -.. --- --.", &TranslateToMorseCode },
   { "frommorsecode", "Convert a string from morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "the quick brown fox jumps over the lazy dog", &TranslateFromMorseCode },
-  { "tobase64", "Convert a string to morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "- .... .   --.- ..- .. -.-. -.-   -... .-. --- .-- -.   ..-. --- -..-   .--- ..- -- .--. ...   --- ...- . .-.   - .... .   .-.. .- --.. -.--   -.. --- --.", &TranslateToMorseCode },
-  { "frombase64", "Convert a string from morse code (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "the quick brown fox jumps over the lazy dog", &TranslateFromMorseCode },
+  { "tobase64", "Convert a string to base64 (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXogQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVogMDEyMzQ1Njc4OQ==", &TranslateToBase64 },
+  { "frombase64", "Convert a string from base64 (Very basic implementation, a-z, A-Z, 0-9, some punctuation", "the quick brown fox jumps over the lazy dog", &TranslateFromBase64 },
 };
 
 
@@ -430,7 +435,7 @@ void TranslateCommandLineArguments(TranslateFunctionPtr pTranslateFunction, cons
 
   std::string sOutput;
   (*pTranslateFunction)(sInput, sOutput);
-  std::cout<<sOutput;
+  std::cout<<sOutput<<std::endl;
 }
 
 void TranslateFromStandardInput(TranslateFunctionPtr pTranslateFunction)
@@ -546,6 +551,7 @@ void UnitTest()
 
 int main(int argc, char* argv[])
 {
+  // TODO: Split this off into a second target and use Googletest
   UnitTest();
 
   if (argc < 3) {

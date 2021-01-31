@@ -4,14 +4,12 @@
 // Standard headers
 #include <cassert>
 #include <ctime>
+#include <algorithm>
 #include <string>
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
-// Boost headers
-#include <boost/algorithm/string.hpp>
-#include <boost/locale.hpp>
 
 #if defined(__LINUX__) || defined(__APPLE__)
 #define BUILD_LINUX_OR_UNIX
@@ -22,24 +20,20 @@ const size_t nSpacesInEachTab = 2;
 
 namespace string
 {
-  bool bIsInitCalled = false;
-
-  void Init()
+  std::string ToLower(const std::string& text)
   {
-    std::locale::global(boost::locale::generator().generate(""));
-    bIsInitCalled = true;
+    std::string output = text;
+    std::transform(output.begin(), output.end(), output.begin(),
+      [](unsigned char c) { return std::tolower(c); } );
+    return output;
   }
 
-  std::string ToLower(const std::string& sText)
+  std::string ToUpper(const std::string& text)
   {
-    assert(bIsInitCalled);
-    return boost::locale::to_lower(sText);
-  }
-
-  std::string ToUpper(const std::string& sText)
-  {
-    assert(bIsInitCalled);
-    return boost::locale::to_upper(sText);
+    std::string output = text;
+    std::transform(output.begin(), output.end(), output.begin(),
+      [](unsigned char c) { return std::toupper(c); } );
+    return output;
   }
 }
 
@@ -118,8 +112,6 @@ void PrintUsage(const std::string& sExecutableName)
 
 int main(int argc, char** argv)
 {
-  string::Init();
-
   std::string sName;
   std::string sSecret;
 

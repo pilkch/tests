@@ -8,12 +8,9 @@ IF("${CMAKE_SYSTEM}" MATCHES "Linux")
   ADD_DEFINITIONS("-D__LINUX__")
 ENDIF()
 
-FIND_PACKAGE(Boost REQUIRED)
-INCLUDE_DIRECTORIES(${BOOST_INCLUDE_DIR})
-
 # Some of the libraries have different names than their Find*.cmake name
 SET(LIBRARIES_LINKED
-  boost_locale
+  #boost_locale
 )
 
 # Create this executable from these source files
