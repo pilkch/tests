@@ -9,5 +9,5 @@ void main(void)
   vec4 lightmap = texture2D(texUnit1, gl_TexCoord[1].st);
   vec4 detail = texture2D(texUnit2, gl_TexCoord[2].st);
 
-  gl_FragColor = vec4((diffuse * lightmap * detail).rgb, 1.0);
+  gl_FragColor = vec4(vec3(1.0, 0.0, 0.0) + (diffuse * lightmap * detail).rgb, 1.0);
 }

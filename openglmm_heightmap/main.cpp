@@ -11,12 +11,14 @@
 #include <vector>
 #include <list>
 
+#ifdef __WIN__
 // OpenGL headers
 #include <GL/GLee.h>
 #include <GL/glu.h>
+#endif
 
 // SDL headers
-#include <SDL/SDL_image.h>
+#include <SDL2/SDL_image.h>
 
 // Spitfire headers
 #include <spitfire/spitfire.h>
@@ -315,10 +317,11 @@ const uint8_t* cHeightmapData::GetLightmapBuffer() const
   return &lightmap[0];
 }
 
-int round(float n)
+int round_float_to_int(float n)
 {
   return (n - ((int)n) >= 0.5) ? (int)n + 1 : (int)n;
 }
+
 
 // http://www.cyberhead.de/download/articles/shadowmap/
 
@@ -355,8 +358,8 @@ void cHeightmapData::GenerateLightmap(const std::vector<float>& heightmap, std::
       ) {
         CurrentPos += LightDir;
 
-        LerpX = round(CurrentPos.x);
-        LerpZ = round(CurrentPos.z);
+        LerpX = round_float_to_int(CurrentPos.x);
+        LerpZ = round_float_to_int(CurrentPos.z);
 
         // Hit?
         if (CurrentPos.y <= (heightmap[(LerpZ * size) + LerpX] * fScaleZ)) {
@@ -381,8 +384,11 @@ public:
   void Run();
 
 private:
-  void CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
-  void CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
+  void CreateResources();
+  void DestroyResources();
+
+  void CreateHeightmapTriangles(opengl::cStaticVertexBufferObject& staticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
+  void CreateHeightmapTrianglesIndexed(opengl::cStaticVertexBufferObject& staticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
   void _OnMouseEvent(const opengl::cMouseEvent& event);
@@ -391,7 +397,7 @@ private:
   std::vector<std::string> GetInputDescription() const;
 
   bool bIsWireframe;
-  bool bUseQuadsIndexed;
+  bool bUseTrianglesIndexed;
   bool bIsDone;
 
   size_t width;
@@ -409,19 +415,19 @@ private:
 
   opengl::cContext* pContext;
 
-  opengl::cTexture* pTextureDiffuse;
-  opengl::cTexture* pTextureLightMap;
-  opengl::cTexture* pTextureDetail;
+  opengl::cTexture textureDiffuse;
+  opengl::cTexture textureLightMap;
+  opengl::cTexture textureDetail;
 
-  opengl::cShader* pShaderHeightmap;
+  opengl::cShader shaderHeightmap;
 
-  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuads;
-  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectHeightmapQuadsIndexed;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectHeightmapTriangles;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectHeightmapTrianglesIndexed;
 };
 
 cApplication::cApplication() :
   bIsWireframe(false),
-  bUseQuadsIndexed(true),
+  bUseTrianglesIndexed(true),
   bIsDone(false),
 
   width(0),
@@ -430,16 +436,7 @@ cApplication::cApplication() :
   fZoom(0.0f),
 
   pWindow(nullptr),
-  pContext(nullptr),
-
-  pTextureDiffuse(nullptr),
-  pTextureLightMap(nullptr),
-  pTextureDetail(nullptr),
-
-  pShaderHeightmap(nullptr),
-
-  pStaticVertexBufferObjectHeightmapQuads(nullptr),
-  pStaticVertexBufferObjectHeightmapQuadsIndexed(nullptr)
+  pContext(nullptr)
 {
 }
 
@@ -448,9 +445,9 @@ cApplication::~cApplication()
   Destroy();
 }
 
-void cApplication::CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale)
+void cApplication::CreateHeightmapTriangles(opengl::cStaticVertexBufferObject& staticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale)
 {
-  assert(pStaticVertexBufferObject != nullptr);
+  assert(!staticVertexBufferObject.IsCompiled());
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -482,14 +479,14 @@ void cApplication::CreateHeightmapQuads(opengl::cStaticVertexBufferObject* pStat
     }
   }
 
-  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
+  staticVertexBufferObject.SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObject->Compile(system);
+  staticVertexBufferObject.Compile();
 }
 
-void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject* pStaticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale)
+void cApplication::CreateHeightmapTrianglesIndexed(opengl::cStaticVertexBufferObject& staticVertexBufferObject, const cHeightmapData& data, const spitfire::math::cVec3& scale)
 {
-  assert(pStaticVertexBufferObject != nullptr);
+  assert(!staticVertexBufferObject.IsCompiled());
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -525,9 +522,9 @@ void cApplication::CreateHeightmapQuadsIndexed(opengl::cStaticVertexBufferObject
     }
   }
 
-  pStaticVertexBufferObject->SetData(pGeometryDataPtr);
+  staticVertexBufferObject.SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObject->Compile(system);
+  staticVertexBufferObject.Compile();
 }
 
 //void cApplication::CreateHeightmapTriangleStrips();
@@ -537,13 +534,15 @@ bool cApplication::Create()
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
 
   opengl::cResolution resolution = capabilities.GetCurrentResolution();
-  if ((resolution.width < 1024) || (resolution.height < 768) || (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8)) {
-    std::cout<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
-    return false;
-  }
+  //if ((resolution.width < 1024) || (resolution.height < 768) || (resolution.pixelFormat != opengl::PIXELFORMAT::R8G8B8A8)) {
+  //  std::cout<<"Current screen resolution is not adequate "<<resolution.width<<"x"<<resolution.height<<std::endl;
+  //  return false;
+  //}
 
   // Override the resolution
-  opengl::cSystem::GetWindowedTestResolution16By9(resolution.width, resolution.height);
+  //opengl::cSystem::GetWindowedTestResolution16By9(resolution.width, resolution.height);
+  resolution.width = 7 * 160;
+  resolution.height = 7 * 90;
   resolution.pixelFormat = opengl::PIXELFORMAT::R8G8B8A8;
 
   pWindow = system.CreateWindow(TEXT("openglmm_heightmap"), resolution, false);
@@ -558,29 +557,7 @@ bool cApplication::Create()
     return false;
   }
 
-  pTextureDiffuse = pContext->CreateTexture(TEXT("textures/diffuse.png"));
-  pTextureDetail = pContext->CreateTexture(TEXT("textures/detail.png"));
-
-  pShaderHeightmap = pContext->CreateShader(TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
-
-  cHeightmapData data(TEXT("textures/heightmap.png"));
-
-  width = data.GetWidth();
-  depth = data.GetDepth();
-
-  scale.Set(0.2f, 0.2f, 10.0f);
-
-  const uint8_t* pBuffer = data.GetLightmapBuffer();
-  const size_t widthLightmap = data.GetLightmapWidth();
-  const size_t depthLightmap = data.GetLightmapDepth();
-  pTextureLightMap = pContext->CreateTextureFromBuffer(pBuffer, widthLightmap, depthLightmap, opengl::PIXELFORMAT::R8G8B8A8);
-
-
-  pStaticVertexBufferObjectHeightmapQuads = pContext->CreateStaticVertexBufferObject();
-  CreateHeightmapQuads(pStaticVertexBufferObjectHeightmapQuads, data, scale);
-
-  pStaticVertexBufferObjectHeightmapQuadsIndexed = pContext->CreateStaticVertexBufferObject();
-  CreateHeightmapQuadsIndexed(pStaticVertexBufferObjectHeightmapQuadsIndexed, data, scale);
+  CreateResources();
 
   // Setup our event listeners
   pWindow->SetWindowEventListener(*this);
@@ -591,32 +568,7 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
-  if (pStaticVertexBufferObjectHeightmapQuadsIndexed != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectHeightmapQuadsIndexed);
-    pStaticVertexBufferObjectHeightmapQuadsIndexed = nullptr;
-  }
-  if (pStaticVertexBufferObjectHeightmapQuads != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectHeightmapQuads);
-    pStaticVertexBufferObjectHeightmapQuads = nullptr;
-  }
-
-  if (pShaderHeightmap != nullptr) {
-    pContext->DestroyShader(pShaderHeightmap);
-    pShaderHeightmap = nullptr;
-  }
-
-  if (pTextureDetail != nullptr) {
-    pContext->DestroyTexture(pTextureDetail);
-    pTextureDetail = nullptr;
-  }
-  if (pTextureLightMap != nullptr) {
-    pContext->DestroyTexture(pTextureLightMap);
-    pTextureLightMap = nullptr;
-  }
-  if (pTextureDiffuse != nullptr) {
-    pContext->DestroyTexture(pTextureDiffuse);
-    pTextureDiffuse = nullptr;
-  }
+  DestroyResources();
 
   pContext = nullptr;
 
@@ -626,11 +578,72 @@ void cApplication::Destroy()
   }
 }
 
+void cApplication::CreateResources()
+{
+  pContext->CreateTexture(textureDiffuse, TEXT("textures/diffuse.png"));
+  pContext->CreateTexture(textureDetail, TEXT("textures/detail.png"));
+
+  pContext->CreateShader(shaderHeightmap, TEXT("shaders/heightmap.vert"), TEXT("shaders/heightmap.frag"));
+  assert(shaderHeightmap.IsCompiledProgram());
+
+  std::cout<<"1"<<std::endl;
+  cHeightmapData data(TEXT("textures/heightmap.png"));
+
+  std::cout<<"2"<<std::endl;
+  width = data.GetWidth();
+  depth = data.GetDepth();
+
+  scale.Set(0.2f, 0.2f, 10.0f);
+
+  const uint8_t* pBuffer = data.GetLightmapBuffer();
+  const size_t widthLightmap = data.GetLightmapWidth();
+  const size_t depthLightmap = data.GetLightmapDepth();
+  pContext->CreateTextureFromBuffer(textureLightMap, pBuffer, widthLightmap, depthLightmap, opengl::PIXELFORMAT::R8G8B8A8);
+
+  std::cout<<"3"<<std::endl;
+
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectHeightmapTriangles);
+  CreateHeightmapTriangles(staticVertexBufferObjectHeightmapTriangles, data, scale);
+
+  std::cout<<"4"<<std::endl;
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectHeightmapTrianglesIndexed);
+  CreateHeightmapTrianglesIndexed(staticVertexBufferObjectHeightmapTrianglesIndexed, data, scale);
+
+  std::cout<<"5"<<std::endl;
+}
+
+void cApplication::DestroyResources()
+{
+  if (staticVertexBufferObjectHeightmapTrianglesIndexed.IsCompiled()) {
+    pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectHeightmapTrianglesIndexed);
+  }
+  if (staticVertexBufferObjectHeightmapTriangles.IsCompiled()) {
+    pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectHeightmapTriangles);
+  }
+
+  if (shaderHeightmap.IsCompiledProgram()) {
+    pContext->DestroyShader(shaderHeightmap);
+  }
+
+  if (textureDetail.IsValid()) {
+    pContext->DestroyTexture(textureDetail);
+  }
+  if (textureLightMap.IsValid()) {
+    pContext->DestroyTexture(textureLightMap);
+  }
+  if (textureDiffuse.IsValid()) {
+    pContext->DestroyTexture(textureDiffuse);
+  }
+}
+
 void cApplication::_OnWindowEvent(const opengl::cWindowEvent& event)
 {
   std::cout<<"cApplication::_OnWindowEvent"<<std::endl;
 
-  if (event.IsQuit()) {
+  if (event.IsResized()) {
+    DestroyResources();
+    CreateResources();
+  } else if (event.IsQuit()) {
     std::cout<<"cApplication::_OnWindowEvent Quiting"<<std::endl;
     bIsDone = true;
   }
@@ -665,21 +678,15 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
     newAxis = rotationX.GetAxis();
     //fNewAngleDegrees = rotationX.GetAngleDegrees();
     //std::cout<<"cApplication::_OnMouseEvent x newAxis={ "<<newAxis.x<<", "<<newAxis.y<<", "<<newAxis.z<<" } angle="<<fNewAngleDegrees<<std::endl;
-  } else if (event.IsButtonDown()) {
+  } else {
     const float fZoomIncrement = 5.0f;
-
-    switch (event.GetButton()) {
-      case SDL_BUTTON_WHEELUP: {
-        std::cout<<"cApplication::_OnMouseEvent Wheel up"<<std::endl;
-        fZoom -= fZoomIncrement;
-        break;
-      }
-      case SDL_BUTTON_WHEELDOWN: {
-        std::cout<<"cApplication::_OnMouseEvent Wheel down"<<std::endl;
-        fZoom += fZoomIncrement;
-        break;
-      }
-    };
+    if (event.IsScrollUp()) {
+      std::cout<<"cApplication::_OnMouseEvent Wheel up"<<std::endl;
+      fZoom -= fZoomIncrement;
+    } else if (event.IsScrollDown()) {
+      std::cout<<"cApplication::_OnMouseEvent Wheel down"<<std::endl;
+      fZoom += fZoomIncrement;
+    }
   }
 }
 
@@ -697,13 +704,13 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
   } else if (event.IsKeyUp()) {
     switch (event.GetKeyCode()) {
       case SDLK_1: {
-        std::cout<<"cApplication::_OnKeyboardEvent Switching to non-indexed quads"<<std::endl;
-        bUseQuadsIndexed = false;
+        std::cout<<"cApplication::_OnKeyboardEvent Switching to non-indexed triangles"<<std::endl;
+        bUseTrianglesIndexed = false;
         break;
       }
       case SDLK_2: {
-        std::cout<<"cApplication::_OnKeyboardEvent Switching to indexed quads"<<std::endl;
-        bUseQuadsIndexed = true;
+        std::cout<<"cApplication::_OnKeyboardEvent Switching to indexed triangles"<<std::endl;
+        bUseTrianglesIndexed = true;
         break;
       }
       case SDLK_w: {
@@ -726,21 +733,15 @@ std::vector<std::string> cApplication::GetInputDescription() const
 
 void cApplication::Run()
 {
-  assert(pContext != nullptr);
   assert(pContext->IsValid());
-  assert(pTextureDiffuse != nullptr);
-  assert(pTextureDiffuse->IsValid());
-  assert(pTextureLightMap != nullptr);
-  assert(pTextureLightMap->IsValid());
-  assert(pTextureDetail != nullptr);
-  assert(pTextureDetail->IsValid());
-  assert(pShaderHeightmap != nullptr);
-  assert(pShaderHeightmap->IsCompiledProgram());
 
-  assert(pStaticVertexBufferObjectHeightmapQuads != nullptr);
-  assert(pStaticVertexBufferObjectHeightmapQuads->IsCompiled());
-  assert(pStaticVertexBufferObjectHeightmapQuadsIndexed != nullptr);
-  assert(pStaticVertexBufferObjectHeightmapQuadsIndexed->IsCompiled());
+  assert(textureDiffuse.IsValid());
+  assert(textureLightMap.IsValid());
+  assert(textureDetail.IsValid());
+  assert(shaderHeightmap.IsCompiledProgram());
+
+  assert(staticVertexBufferObjectHeightmapTriangles.IsCompiled());
+  assert(staticVertexBufferObjectHeightmapTrianglesIndexed.IsCompiled());
 
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
@@ -786,7 +787,7 @@ void cApplication::Run()
     const spitfire::math::cVec3 axisX(1.0f, 0.0f, 0.0f);
     rotationX.SetFromAxisAngleDegrees(axisX, -20.0f);
   }
-  fZoom = 60.0f;
+  fZoom = 160.0f;
 
 
   spitfire::math::cMat4 matRotation;
@@ -801,9 +802,15 @@ void cApplication::Run()
   pWindow->ShowCursor(false);
   pWindow->WarpCursorToMiddleOfScreen();
 
+  assert(shaderHeightmap.IsCompiledProgram());
+
   while (!bIsDone) {
-    // Update window events
-    pWindow->UpdateEvents();
+    std::cout<<"In while loop"<<std::endl;
+
+    assert(shaderHeightmap.IsCompiledProgram());
+
+    // Process window events
+    pWindow->ProcessEvents();
 
     // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
     pWindow->WarpCursorToMiddleOfScreen();
@@ -833,31 +840,32 @@ void cApplication::Run()
     spitfire::math::cMat4 matModelView;
     matModelView.LookAt(eye, target, up);
 
-    pContext->BindTexture(0, *pTextureDiffuse);
-    pContext->BindTexture(1, *pTextureLightMap);
-    pContext->BindTexture(2, *pTextureDetail);
+    pContext->BindTexture(0, textureDiffuse);
+    pContext->BindTexture(1, textureLightMap);
+    pContext->BindTexture(2, textureDetail);
 
-    pContext->BindShader(*pShaderHeightmap);
+    assert(shaderHeightmap.IsCompiledProgram());
+    pContext->BindShader(shaderHeightmap);
 
-    if (!bUseQuadsIndexed) {
-      pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
+    if (!bUseTrianglesIndexed) {
+      pContext->BindStaticVertexBufferObject(staticVertexBufferObjectHeightmapTriangles);
         pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
-        pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuads);
-      pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuads);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectHeightmapTriangles);
+      pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectHeightmapTriangles);
     } else {
-      pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
+      pContext->BindStaticVertexBufferObject(staticVertexBufferObjectHeightmapTrianglesIndexed);
         pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation);
-        pContext->DrawStaticVertexBufferObjectQuads(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
-      pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectHeightmapQuadsIndexed);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectHeightmapTrianglesIndexed);
+      pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectHeightmapTrianglesIndexed);
     }
 
-    pContext->UnBindShader(*pShaderHeightmap);
+    pContext->UnBindShader(shaderHeightmap);
 
-    pContext->UnBindTexture(2, *pTextureDetail);
-    pContext->UnBindTexture(1, *pTextureLightMap);
-    pContext->UnBindTexture(0, *pTextureDiffuse);
+    pContext->UnBindTexture(2, textureDetail);
+    pContext->UnBindTexture(1, textureLightMap);
+    pContext->UnBindTexture(0, textureDiffuse);
 
-    pContext->EndRenderToScreen();
+    pContext->EndRenderToScreen(*pWindow);
 
     // Gather our frames per second
     Frames++;

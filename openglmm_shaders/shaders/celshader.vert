@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 // http://prideout.net/blog/?p=22
 

@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 // DOF with bokeh shader
 // Shamelessly stolen from here:

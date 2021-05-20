@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 vec4 ApplyFilter(vec4 inputColour)
 {
