@@ -48,7 +48,7 @@ vec4 incrementalGauss1D(
   gaussInc.z = gaussInc.y * gaussInc.y;
 
   // NOTE: We use rectangular textures but this shader was designed for square textures, so we need to adjust the coordinates and then change them back when we actually sample the texture
-  vec2 texCoord0To1 = origin / textureSize(srcTex, 0);
+  vec2 texCoord0To1 = origin / textureSize(srcTex);
 
   //  accumulate results:
   vec4 result = texture(srcTex, origin) * gaussInc.x;
@@ -56,8 +56,8 @@ vec4 incrementalGauss1D(
     gaussInc.xy *= gaussInc.yz;
 
     vec2 offset = float(i) * direction * srcTexelSize;
-    result += texture(srcTex, textureSize(srcTex, 0) * (texCoord0To1 - offset)) * gaussInc.x;
-    result += texture(srcTex, textureSize(srcTex, 0) * (texCoord0To1 + offset)) * gaussInc.x;
+    result += texture(srcTex, textureSize(srcTex) * (texCoord0To1 - offset)) * gaussInc.x;
+    result += texture(srcTex, textureSize(srcTex) * (texCoord0To1 + offset)) * gaussInc.x;
   }
 
   return result;
@@ -66,6 +66,6 @@ vec4 incrementalGauss1D(
 /*----------------------------------------------------------------------------*/
 void main()
 {
-  vec2 texelSize = 1.0 / vec2(textureSize(texSceneRTT, 0));
+  vec2 texelSize = 1.0 / vec2(textureSize(texSceneRTT));
   outFragmentColour = incrementalGauss1D(texSceneRTT, texelSize, vertOutTexCoord, uBlurRadius, uBlurDirection);
 }

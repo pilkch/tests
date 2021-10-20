@@ -32,7 +32,7 @@ vec4 textureDistorted(
 	in vec3 distortion 
 )
 {
-  vec2 texCoordRect = textureSize(texSceneRTT, 0);
+  vec2 texCoordRect = textureSize(texSceneRTT);
 
 	return vec4(
 		texture(tex, texCoordRect * (texcoord + direction * distortion.r)).r,
@@ -46,7 +46,7 @@ vec4 textureDistorted(
 void main()
 {
   // NOTE: We use rectangular textures but this shader was designed for square textures, so we need to adjust the coordinates and then change them back inside textureDistorted()
-  vec2 texCoord0To1 = vertOutTexCoord / textureSize(texSceneRTT, 0);
+  vec2 texCoord0To1 = vertOutTexCoord / textureSize(texSceneRTT);
   
 	vec2 texcoord = -texCoord0To1 + vec2(1.0); // flip texture coordinates
 	
