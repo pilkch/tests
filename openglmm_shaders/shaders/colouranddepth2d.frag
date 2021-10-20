@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 uniform sampler2DRect texUnit0; // Diffuse texture
 uniform sampler2DRect texUnit1; // Depth texture

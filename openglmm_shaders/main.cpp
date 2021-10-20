@@ -10,9 +10,11 @@
 #include <vector>
 #include <list>
 
+#ifdef __WIN__
 // OpenGL headers
 #include <GL/GLee.h>
 #include <GL/glu.h>
+#endif
 
 // SDL headers
 #include <SDL2/SDL_image.h>
@@ -774,10 +776,12 @@ void cApplication::CreateParticleSystem(opengl::cStaticVertexBufferObject& vbo)
   const spitfire::math::cVec3 normalBottomLeft(-0.57735f, -0.57735f, 0.57735f);
   const spitfire::math::cVec3 normalBottomRight(0.57735f, -0.57735f, 0.57735f);
 
-  for (size_t i = 0; i < 100; i++) {
-    const spitfire::math::cVec3 position(positionVariation * spitfire::math::cVec3(spitfire::math::randomMinusOneToPlusOnef(), spitfire::math::randomZeroToOnef(), spitfire::math::randomMinusOneToPlusOnef()));
+  spitfire::math::cRand rng;
 
-    const float fWidth = fBaseSize + (fSizeVariation * spitfire::math::randomMinusOneToPlusOnef());
+  for (size_t i = 0; i < 100; i++) {
+    const spitfire::math::cVec3 position(positionVariation * spitfire::math::cVec3(rng.randomMinusOneToPlusOnef(), rng.randomZeroToOnef(), rng.randomMinusOneToPlusOnef()));
+
+    const float fWidth = fBaseSize + (fSizeVariation * rng.randomMinusOneToPlusOnef());
     const float fHeight = fWidth;
 
     const float_t fHalfWidth = fWidth * 0.5f;
@@ -946,11 +950,11 @@ bool cApplication::Create()
   pContext->CreateTextureCubeMap(
     textureCarCubeMap,
     TEXT("textures/car_background_right.png"),
-    TEXT("textures/car_background_left.jpg"),
-    TEXT("textures/car_background_front.jpg"),
-    TEXT("textures/car_background_back.jpg"),
-    TEXT("textures/car_background_up.jpg"),
-    TEXT("textures/car_background_down.jpg")
+    TEXT("textures/car_background_left.png"),
+    TEXT("textures/car_background_front.png"),
+    TEXT("textures/car_background_back.png"),
+    TEXT("textures/car_background_up.png"),
+    TEXT("textures/car_background_down.png")
   );
   assert(textureCarCubeMap.IsValid());
 
@@ -2290,7 +2294,7 @@ void cApplication::Run()
 
         // Create our fragment shader
         std::string sFragmentShaderText =
-          "#version 330\n"
+          "#version 330 core\n"
           "\n"
         ;
 

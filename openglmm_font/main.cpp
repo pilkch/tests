@@ -15,7 +15,7 @@
 #include <GL/glu.h>
 
 // SDL headers
-#include <SDL/SDL_image.h>
+#include <SDL2/SDL_image.h>
 
 // Spitfire headers
 #include <spitfire/spitfire.h>
@@ -39,8 +39,8 @@
 #include <libopenglmm/cVertexBufferObject.h>
 #include <libopenglmm/cWindow.h>
 
-#ifndef BUILD_OPENGLMM_FONT
-#error "BUILD_OPENGLMM_FONT has not been defined"
+#ifndef BUILD_LIBOPENGLMM_FONT
+#error "BUILD_LIBOPENGLMM_FONT has not been defined"
 #endif
 
 class cApplication : public opengl::cWindowEventListener, public opengl::cInputEventListener
@@ -75,13 +75,13 @@ private:
   opengl::cContext* pContext;
 
   // Text
-  opengl::cFont* pFont;
-  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectText;
+  opengl::cFont font;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectText;
 
   // Crate
-  opengl::cTexture* pTextureCrate;
-  opengl::cShader* pShaderCrate;
-  opengl::cStaticVertexBufferObject* pStaticVertexBufferObjectCrate;
+  opengl::cTexture textureCrate;
+  opengl::cShader shaderCrate;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectCrate;
 };
 
 cApplication::cApplication() :
@@ -90,15 +90,7 @@ cApplication::cApplication() :
   bIsDone(false),
 
   pWindow(nullptr),
-  pContext(nullptr),
-
-  pFont(nullptr),
-
-  pStaticVertexBufferObjectText(nullptr),
-
-  pTextureCrate(nullptr),
-  pShaderCrate(nullptr),
-  pStaticVertexBufferObjectCrate(nullptr)
+  pContext(nullptr)
 {
 }
 
@@ -109,8 +101,8 @@ cApplication::~cApplication()
 
 void cApplication::CreateText()
 {
-  assert(pFont != nullptr);
-  assert(pStaticVertexBufferObjectText != nullptr);
+  assert(font.IsValid());
+  assert(staticVertexBufferObjectText.IsCompiled());
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -118,18 +110,18 @@ void cApplication::CreateText()
 
   // Front facing quad
   const spitfire::math::cColour red(1.0f, 0.0f, 0.0f);
-  pFont->PushBack(builder, TEXT("1234567890 abcdefghijklmnopqrstuvwxyz"), red, spitfire::math::cVec2(0.0f, 0.3f));
+  font.PushBack(builder, TEXT("1234567890 abcdefghijklmnopqrstuvwxyz"), red, spitfire::math::cVec2(0.0f, 0.3f));
   const spitfire::math::cColour green(0.0f, 1.0f, 0.0f);
-  pFont->PushBack(builder, TEXT("abcdefghijklmnopqrstuvwxyz 1234567890"), green, spitfire::math::cVec2(0.0f, 0.5f));
+  font.PushBack(builder, TEXT("abcdefghijklmnopqrstuvwxyz 1234567890"), green, spitfire::math::cVec2(0.0f, 0.5f));
 
-  pStaticVertexBufferObjectText->SetData(pGeometryDataPtr);
+  staticVertexBufferObjectText.SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObjectText->Compile2D(system);
+  staticVertexBufferObjectText.Compile2D();
 }
 
 void cApplication::CreateBox()
 {
-  assert(pStaticVertexBufferObjectCrate != nullptr);
+  assert(staticVertexBufferObjectCrate.IsCompiled());
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -142,9 +134,9 @@ void cApplication::CreateBox()
 
   builder.CreateBox(fWidth, fDepth, fHeight, *pGeometryDataPtr, nTextureCoordinates);
 
-  pStaticVertexBufferObjectCrate->SetData(pGeometryDataPtr);
+  staticVertexBufferObjectCrate.SetData(pGeometryDataPtr);
 
-  pStaticVertexBufferObjectCrate->Compile(system);
+  staticVertexBufferObjectCrate.Compile();
 }
 
 bool cApplication::Create()
@@ -176,16 +168,16 @@ bool cApplication::Create()
     return false;
   }
 
-  pFont = pContext->CreateFont(TEXT("fonts/pricedown.ttf"), 32, TEXT("shaders/font.vert"), TEXT("shaders/font.frag"));
+  pContext->CreateFont(font, TEXT("fonts/pricedown.ttf"), 32, TEXT("shaders/font.vert"), TEXT("shaders/font.frag"));
 
-  pStaticVertexBufferObjectText = pContext->CreateStaticVertexBufferObject();
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectText);
   CreateText();
 
-  pTextureCrate = pContext->CreateTexture(TEXT("textures/crate.png"));
+  pContext->CreateTexture(textureCrate, TEXT("textures/crate.png"));
 
-  pShaderCrate = pContext->CreateShader(TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
+  pContext->CreateShader(shaderCrate, TEXT("shaders/crate.vert"), TEXT("shaders/crate.frag"));
 
-  pStaticVertexBufferObjectCrate = pContext->CreateStaticVertexBufferObject();
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectCrate);
   CreateBox();
 
   // Setup our event listeners
@@ -197,30 +189,15 @@ bool cApplication::Create()
 
 void cApplication::Destroy()
 {
-  if (pStaticVertexBufferObjectCrate != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectCrate);
-    pStaticVertexBufferObjectCrate = nullptr;
-  }
+  if (staticVertexBufferObjectCrate.IsCompiled()) pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCrate);
 
-  if (pShaderCrate != nullptr) {
-    pContext->DestroyShader(pShaderCrate);
-    pShaderCrate = nullptr;
-  }
+  if (shaderCrate.IsCompiledProgram()) pContext->DestroyShader(shaderCrate);
 
-  if (pTextureCrate != nullptr) {
-    pContext->DestroyTexture(pTextureCrate);
-    pTextureCrate = nullptr;
-  }
+  if (textureCrate.IsValid()) pContext->DestroyTexture(textureCrate);
 
-  if (pStaticVertexBufferObjectText != nullptr) {
-    pContext->DestroyStaticVertexBufferObject(pStaticVertexBufferObjectText);
-    pStaticVertexBufferObjectText = nullptr;
-  }
+  if (staticVertexBufferObjectText.IsCompiled()) pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectText);
 
-  if (pFont != nullptr) {
-    pContext->DestroyFont(pFont);
-    pFont = nullptr;
-  }
+  if (font.IsValid()) pContext->DestroyFont(font);
 
   pContext = nullptr;
 
@@ -289,18 +266,13 @@ void cApplication::Run()
   assert(pContext->IsValid());
 
   // Text
-  assert(pFont != nullptr);
-  assert(pFont->IsValid());
-  assert(pStaticVertexBufferObjectText != nullptr);
-  assert(pStaticVertexBufferObjectText->IsCompiled());
+  assert(font.IsValid());
+  assert(staticVertexBufferObjectText.IsCompiled());
 
   // Crate
-  assert(pTextureCrate != nullptr);
-  assert(pTextureCrate->IsValid());
-  assert(pShaderCrate != nullptr);
-  assert(pShaderCrate->IsCompiledProgram());
-  assert(pStaticVertexBufferObjectCrate != nullptr);
-  assert(pStaticVertexBufferObjectCrate->IsCompiled());
+  assert(textureCrate.IsValid());
+  assert(shaderCrate.IsCompiledProgram());
+  assert(staticVertexBufferObjectCrate.IsCompiled());
 
   // Print the input instructions
   const std::vector<std::string> inputDescription = GetInputDescription();
@@ -328,7 +300,7 @@ void cApplication::Run()
 
   while (!bIsDone) {
     // Update window events
-    pWindow->UpdateEvents();
+    pWindow->ProcessEvents();
 
 
     // Update state
@@ -361,23 +333,23 @@ void cApplication::Run()
 
         matRotation.SetRotation(rotation);
 
-        pContext->BindTexture(0, *pTextureCrate);
+        pContext->BindTexture(0, textureCrate);
 
-        pContext->BindShader(*pShaderCrate);
+        pContext->BindShader(shaderCrate);
 
-        pContext->BindStaticVertexBufferObject(*pStaticVertexBufferObjectCrate);
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectCrate);
 
         {
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matModelView * matTranslation * matRotation);
 
-          pContext->DrawStaticVertexBufferObjectTriangles(*pStaticVertexBufferObjectCrate);
+          pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectCrate);
         }
 
-        pContext->UnBindStaticVertexBufferObject(*pStaticVertexBufferObjectCrate);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectCrate);
 
-        pContext->UnBindShader(*pShaderCrate);
+        pContext->UnBindShader(shaderCrate);
 
-        pContext->UnBindTexture(0, *pTextureCrate);
+        pContext->UnBindTexture(0, textureCrate);
       }
 
 
@@ -385,7 +357,7 @@ void cApplication::Run()
       {
         pContext->BeginRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN);
 
-        pContext->BindFont(*pFont);
+        pContext->BindFont(font);
 
         // Rendering the font in the middle of the screen
         spitfire::math::cMat4 matModelView;
@@ -393,20 +365,20 @@ void cApplication::Run()
 
         pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView);
 
-        pContext->BindStaticVertexBufferObject2D(*pStaticVertexBufferObjectText);
+        pContext->BindStaticVertexBufferObject2D(staticVertexBufferObjectText);
 
         {
-          pContext->DrawStaticVertexBufferObjectTriangles2D(*pStaticVertexBufferObjectText);
+          pContext->DrawStaticVertexBufferObjectTriangles2D(staticVertexBufferObjectText);
         }
 
-        pContext->UnBindStaticVertexBufferObject2D(*pStaticVertexBufferObjectText);
+        pContext->UnBindStaticVertexBufferObject2D(staticVertexBufferObjectText);
 
-        pContext->UnBindFont(*pFont);
+        pContext->UnBindFont(font);
 
         pContext->EndRenderMode2D();
       }
 
-      pContext->EndRenderToScreen();
+      pContext->EndRenderToScreen(*pWindow);
     }
 
     // Gather our frames per second

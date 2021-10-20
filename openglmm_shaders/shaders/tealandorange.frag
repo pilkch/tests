@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 // http://theabyssgazes.blogspot.com/2010/03/teal-and-orange-hollywood-please-stop.html
 // http://theabyssgazes.blogspot.com.au/2010/03/teal-and-orange-part-2.html
