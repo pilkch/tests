@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 /*******************************************************************************
 	Copyright (C) 2013 John Chapman
@@ -27,11 +27,11 @@ layout(location = 0) out vec4 outFragmentColour;
 
 void main()
 {
-  vec2 vertOutTexCoord0To1 = vertOutTexCoord / textureSize(uInputTex, 0);
+  vec2 vertOutTexCoord0To1 = vertOutTexCoord / textureSize(uInputTex);
 
   vec2 vertOutTexCoord0 = vertOutTexCoord;
-  vec2 vertOutTexCoord1 = vertOutTexCoord0To1 * textureSize(uLensFlareTex, 0);
-  vec2 vertOutTexCoord2 = vertOutTexCoord0To1 * textureSize(uLensDirtTex, 0);
+  vec2 vertOutTexCoord1 = vertOutTexCoord0To1 * textureSize(uLensFlareTex);
+  vec2 vertOutTexCoord2 = vertOutTexCoord0To1 * textureSize(uLensDirtTex);
 
   vec2 lensStarTexcoord = (matCameraLensStarBurst * vec4(vertOutTexCoord0To1, 1.0, 1.0)).xy;
 

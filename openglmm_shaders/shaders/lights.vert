@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 precision highp float;
 
@@ -72,7 +72,7 @@ smooth out vec2 vertOutTexCoord0;
 smooth out vec3 vertOutNormal;
 smooth out vec3 vertOutPointLightDirection;
 smooth out float vertOutPointLightDistance;
-out vec3 vertOutSpotLightDirection;
+smooth out vec3 vertOutSpotLightDirection;
 smooth out vec3 vertOutSpotLightDirectionFromVertex;
 smooth out float vertOutSpotLightDistance;
 

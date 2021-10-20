@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 // http://www.geeks3d.com/20101008/shader-library-chromatic-aberration-demo-glsl/
 

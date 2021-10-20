@@ -10,9 +10,11 @@
 #include <vector>
 #include <list>
 
+#ifdef __WIN__
 // OpenGL headers
 #include <GL/GLee.h>
 #include <GL/glu.h>
+#endif
 
 // SDL headers
 #include <SDL2/SDL_image.h>
@@ -56,7 +58,7 @@
 // ** cShadowMapping
 
 cShadowMapping::cShadowMapping() :
-  uShadowMapTextureSize(2048)
+  uShadowMapTextureSize(256)
 {
 }
 
@@ -66,7 +68,7 @@ void cShadowMapping::Init(opengl::cContext& context)
   assert(shaderRenderToDepthTexture.IsCompiledProgram());
   context.CreateShader(shaderShadowMap, TEXT("shaders/shadowmapping.vert"), TEXT("shaders/shadowmapping.frag"));
   assert(shaderShadowMap.IsCompiledProgram());
-  context.CreateTextureFrameBufferObjectDepthShadowOnly(textureDepthTexture, uShadowMapTextureSize, uShadowMapTextureSize);
+  context.CreateTextureFrameBufferObjectDepthShadowOnlyNoMipMaps(textureDepthTexture, uShadowMapTextureSize, uShadowMapTextureSize);
   assert(textureDepthTexture.IsValid());
 }
 

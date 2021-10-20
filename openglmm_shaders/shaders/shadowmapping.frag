@@ -7,7 +7,7 @@ uniform sampler2DShadow texUnit1; // Shadow map
 
 uniform vec3 LightPosition_worldspace;
 
-in vec2 vertOutTexCoord0;
+smooth in vec2 vertOutTexCoord0;
 in vec3 Position_worldspace;
 in vec3 Normal_cameraspace;
 in vec3 EyeDirection_cameraspace;

@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 uniform sampler1D texUnit0; // Diffuse texture
 

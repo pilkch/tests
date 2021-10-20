@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 // Based on https://github.com/SFML/SFML/wiki/Source:-HeatHazeShader
 // That version is 2D, so this version basically just applies the same 2D filter wherever there are white pixels in a mask of "hot objects"
