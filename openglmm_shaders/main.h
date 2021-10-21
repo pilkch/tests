@@ -63,6 +63,7 @@
 #include "shadowmapping.h"
 #include "tronglow.h"
 #include "util.h"
+#include "verlet_physics.h"
 
 // Test various lights, unfortunately it is a very large model which takes ages to load, so it is disabled by default
 //#define BUILD_LARGE_STATUE_MODEL
@@ -138,6 +139,9 @@ private:
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateGuiRectangle(opengl::cStaticVertexBufferObject& staticVertexBufferObject, size_t nTextureWidth, size_t nTextureHeight);
+
+  void UpdateWind();
+  void UpdateFlags();
 
   void RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader);
   void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTexture& texture, opengl::cShader& shader);
@@ -331,6 +335,12 @@ private:
   cTextureVBOPair fire;
 
   std::vector<cTextureVBOPair*> testImages;
+
+
+  verlet_physics::cWorld physicsWorld;
+  verlet_physics::cWavingFlag wavingFlagPhysics[3];
+  cTextureVBOPair wavingFlagRendering[3];
+
 
   cTronGlow tronGlow;
   cHeatHaze heatHaze;

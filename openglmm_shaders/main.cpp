@@ -56,6 +56,18 @@
 // Application headers
 #include "main.h"
 
+namespace waving_flag_properties {
+
+// Texture is approximately 1200x800, so we need to match that ratio
+const float fWidthMeters = 1.2f;
+const float fHeightMeters = 0.8f;
+const size_t segments_horizontal = 12;
+const size_t segments_vertical = 8;
+const size_t points_horizontal = segments_horizontal + 1;
+const size_t points_vertical = segments_vertical + 1;
+
+}
+
 // ** cApplication
 
 cApplication::cApplication() :
@@ -297,6 +309,55 @@ void cApplication::CreateTeapot(opengl::cStaticVertexBufferObject& vbo, size_t n
 
 void cApplication::CreateGear(opengl::cStaticVertexBufferObject& vbo)
 {
+}
+
+
+void cApplication::UpdateFlags()
+{
+  for (size_t i = 0; i < 3; i++) {
+    // Update the physics for this flag
+    wavingFlagPhysics[i].Update(physicsWorld);
+
+
+    // Discard and recreate our VBO
+    if (wavingFlagRendering[i].vbo.IsCompiled()) pContext->DestroyStaticVertexBufferObject(wavingFlagRendering[i].vbo);
+    pContext->CreateStaticVertexBufferObject(wavingFlagRendering[i].vbo);
+
+
+    opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+    opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
+
+    // Get the coordinates from the physics
+    const std::vector<verlet_physics::Particle>& particles = wavingFlagPhysics[i].GetParticles();
+
+    // TODO: Fix texture coordinates
+    const float fTextureU = wavingFlagRendering[i].texture.GetWidth() / float(waving_flag_properties::segments_horizontal);
+    const float fTextureV = wavingFlagRendering[i].texture.GetHeight() / float(waving_flag_properties::segments_vertical);
+
+    const spitfire::math::cVec3 normal(0.0f, 0.0f, -1.0f);
+
+    for (size_t y = 0; y < waving_flag_properties::segments_vertical; y++) {
+      for (size_t x = 0; x < waving_flag_properties::segments_horizontal; x++) {
+        const spitfire::math::cVec3& p0 = particles[(y * waving_flag_properties::points_horizontal) + x].pos;
+        const spitfire::math::cVec3& p1 = particles[(y * waving_flag_properties::points_horizontal) + x + 1].pos;
+        const spitfire::math::cVec3& p2 = particles[((y + 1) * waving_flag_properties::points_horizontal) + x + 1].pos;
+        const spitfire::math::cVec3& p3 = particles[((y + 1) * waving_flag_properties::points_horizontal) + x].pos;
+
+        // Add a front facing quad
+        builder.PushBack(p1, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y) * fTextureV));
+        builder.PushBack(p3, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y + 1) * fTextureV));
+        builder.PushBack(p2, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y + 1) * fTextureV));
+        builder.PushBack(p0, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y) * fTextureV));
+        builder.PushBack(p3, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y + 1) * fTextureV));
+        builder.PushBack(p1, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y) * fTextureV));
+      }
+    }
+
+    wavingFlagRendering[i].vbo.SetData(pGeometryDataPtr);
+
+    wavingFlagRendering[i].vbo.Compile();
+  }
 }
 
 
@@ -1028,6 +1089,23 @@ bool cApplication::Create()
     }
   }
 
+
+  pContext->CreateTexture(wavingFlagRendering[0].texture, TEXT("textures/flags/australian.png"));
+  assert(wavingFlagRendering[0].texture.IsValid());
+  pContext->CreateTexture(wavingFlagRendering[1].texture, TEXT("textures/flags/aboriginal.png"));
+  assert(wavingFlagRendering[1].texture.IsValid());
+  pContext->CreateTexture(wavingFlagRendering[2].texture, TEXT("textures/flags/torres_strait_islander.png"));
+  assert(wavingFlagRendering[2].texture.IsValid());
+
+  for (size_t i = 0; i < 3; i++) {
+    wavingFlagPhysics[i].Init(waving_flag_properties::fWidthMeters, waving_flag_properties::fHeightMeters, waving_flag_properties::points_horizontal, waving_flag_properties::points_vertical);
+  }
+
+  physicsWorld.Update();
+
+  UpdateFlags();
+
+
   // Create our floor
   const float fFloorSize = 100.0f;
   const float fTextureWidthWorldSpaceMeters = 1.0f;
@@ -1210,6 +1288,14 @@ void cApplication::Destroy()
   }
 
   testImages.clear();
+
+  // Destroy our flags
+  if (wavingFlagRendering[0].texture.IsValid()) pContext->DestroyTexture(wavingFlagRendering[0].texture);
+  pContext->DestroyStaticVertexBufferObject(wavingFlagRendering[0].vbo);
+  if (wavingFlagRendering[1].texture.IsValid()) pContext->DestroyTexture(wavingFlagRendering[1].texture);
+  pContext->DestroyStaticVertexBufferObject(wavingFlagRendering[1].vbo);
+  if (wavingFlagRendering[2].texture.IsValid()) pContext->DestroyTexture(wavingFlagRendering[2].texture);
+  pContext->DestroyStaticVertexBufferObject(wavingFlagRendering[2].vbo);
 
   // Destroy our smoke
   if (smoke.texture.IsValid()) pContext->DestroyTexture(smoke.texture);
@@ -1896,6 +1982,13 @@ void cApplication::Run()
   assert(fire.texture.IsValid());
   assert(fire.vbo.IsCompiled());
 
+  assert(wavingFlagRendering[0].texture.IsValid());
+  assert(wavingFlagRendering[0].vbo.IsCompiled());
+  assert(wavingFlagRendering[1].texture.IsValid());
+  assert(wavingFlagRendering[1].vbo.IsCompiled());
+  assert(wavingFlagRendering[2].texture.IsValid());
+  assert(wavingFlagRendering[2].vbo.IsCompiled());
+
   assert(parallaxNormalMap.vbo.IsCompiled());
 
   tronGlow.Init(*this, *pContext);
@@ -2033,6 +2126,15 @@ void cApplication::Run()
   spitfire::math::cMat4 matTranslationFire;
   matTranslationFire.SetTranslation(positionFire);
 
+  // Flags
+  spitfire::math::cMat4 matTranslationFlags[3];
+  const spitfire::math::cVec3 positionFlag0(-12.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+  const spitfire::math::cVec3 positionFlag1(-14.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+  const spitfire::math::cVec3 positionFlag2(-16.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+  matTranslationFlags[0].SetTranslation(positionFlag0);
+  matTranslationFlags[1].SetTranslation(positionFlag1);
+  matTranslationFlags[2].SetTranslation(positionFlag2);
+
   // Parallax normal mapping
   const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationParallaxNormalMap;
@@ -2168,6 +2270,10 @@ void cApplication::Run()
         rotation.SetFromAxisAngle(spitfire::math::v3Up, fAngleRadians);
 
         matObjectRotation.SetRotation(rotation);
+
+        physicsWorld.Update();
+
+        UpdateFlags();
       }
 
       previousUpdateTime = currentTime;
@@ -3406,6 +3512,31 @@ void cApplication::Run()
         pContext->UnBindTexture(0, textureDiffuse);
 
         pContext->UnBindShader(shaderCrate);
+      }
+
+      // Render the flags
+      {
+        pContext->DisableCulling();
+
+        for (size_t i = 0; i < 3; i++) {
+          pContext->BindShader(shaderPassThrough);
+
+          pContext->BindTexture(0, wavingFlagRendering[i].texture);
+
+          pContext->BindStaticVertexBufferObject(wavingFlagRendering[i].vbo);
+
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationFlags[i]);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(wavingFlagRendering[i].vbo);
+
+          pContext->UnBindStaticVertexBufferObject(wavingFlagRendering[i].vbo);
+
+          pContext->UnBindTexture(0, wavingFlagRendering[i].texture);
+
+          pContext->UnBindShader(shaderPassThrough);
+        }
+
+        pContext->EnableCulling();
       }
 
       // Render the test images
