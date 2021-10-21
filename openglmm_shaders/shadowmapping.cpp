@@ -53,7 +53,6 @@
 
 // Application headers
 #include "shadowmapping.h"
-#include "main.h"
 
 // ** cShadowMapping
 

@@ -1902,7 +1902,7 @@ void cApplication::Run()
   tronGlow.Resize(*this, *pContext);
 
   heatHaze.Init(*this, *pContext);
-  heatHaze.Resize(*this, *pContext);
+  heatHaze.Resize(*pContext);
 
   dofBokeh.Init(*pContext);
   dofBokeh.Resize(*this, *pContext);
@@ -1913,7 +1913,7 @@ void cApplication::Run()
   lensFlareDirt.Init(*this, *pContext);
   lensFlareDirt.Resize(*pContext);
 
-  lensFlareAnamorphic.Init(*this, *pContext);
+  lensFlareAnamorphic.Init(*pContext);
   lensFlareAnamorphic.Resize(*pContext);
 
   shadowMapping.Init(*pContext);
