@@ -312,53 +312,6 @@ void cApplication::CreateGear(opengl::cStaticVertexBufferObject& vbo)
 }
 
 
-void cApplication::UpdateFlags()
-{
-  for (size_t i = 0; i < 3; i++) {
-    // Update the physics for this flag
-    breathe::physics::verlet::Update(physicsWorld, wavingFlagPhysics[i]);
-
-
-    // Discard and recreate our VBO
-    if (wavingFlagRendering[i].vbo.IsCompiled()) pContext->DestroyStaticVertexBufferObject(wavingFlagRendering[i].vbo);
-    pContext->CreateStaticVertexBufferObject(wavingFlagRendering[i].vbo);
-
-
-    opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
-
-    opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
-
-    // Get the coordinates from the physics
-    const std::vector<breathe::physics::verlet::Particle>& particles = wavingFlagPhysics[i].particles;
-
-    const float fTextureU = wavingFlagRendering[i].texture.GetWidth() / float(waving_flag_properties::segments_horizontal);
-    const float fTextureV = wavingFlagRendering[i].texture.GetHeight() / float(waving_flag_properties::segments_vertical);
-
-    const spitfire::math::cVec3 normal(0.0f, 0.0f, -1.0f);
-
-    for (size_t y = 0; y < waving_flag_properties::segments_vertical; y++) {
-      for (size_t x = 0; x < waving_flag_properties::segments_horizontal; x++) {
-        const spitfire::math::cVec3& p0 = particles[(y * waving_flag_properties::points_horizontal) + x].pos;
-        const spitfire::math::cVec3& p1 = particles[(y * waving_flag_properties::points_horizontal) + x + 1].pos;
-        const spitfire::math::cVec3& p2 = particles[((y + 1) * waving_flag_properties::points_horizontal) + x + 1].pos;
-        const spitfire::math::cVec3& p3 = particles[((y + 1) * waving_flag_properties::points_horizontal) + x].pos;
-
-        // Add a front facing quad
-        builder.PushBack(p1, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y) * fTextureV));
-        builder.PushBack(p3, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y + 1) * fTextureV));
-        builder.PushBack(p2, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y + 1) * fTextureV));
-        builder.PushBack(p0, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y) * fTextureV));
-        builder.PushBack(p3, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y + 1) * fTextureV));
-        builder.PushBack(p1, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y) * fTextureV));
-      }
-    }
-
-    wavingFlagRendering[i].vbo.SetData(pGeometryDataPtr);
-
-    wavingFlagRendering[i].vbo.Compile();
-  }
-}
-
 
 class cGeometryBuilder_v3_n3_t2_tangent4
 {
@@ -971,6 +924,54 @@ void cApplication::InitWavingFlags()
   }
 }
 
+void cApplication::UpdateFlags()
+{
+  for (size_t i = 0; i < 3; i++) {
+    // Update the physics for this flag
+    breathe::physics::verlet::Update(physicsWorld, wavingFlagPhysics[i]);
+
+
+    // Discard and recreate our VBO
+    if (wavingFlagRenderable[i].vbo.IsCompiled()) pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[i].vbo);
+    pContext->CreateStaticVertexBufferObject(wavingFlagRenderable[i].vbo);
+
+
+    opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+    opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
+
+    // Get the coordinates from the physics
+    const std::vector<breathe::physics::verlet::Particle>& particles = wavingFlagPhysics[i].particles;
+
+    const float fTextureU = wavingFlagRenderable[i].texture.GetWidth() / float(waving_flag_properties::segments_horizontal);
+    const float fTextureV = wavingFlagRenderable[i].texture.GetHeight() / float(waving_flag_properties::segments_vertical);
+
+    const spitfire::math::cVec3 normal(0.0f, 0.0f, -1.0f);
+
+    for (size_t y = 0; y < waving_flag_properties::segments_vertical; y++) {
+      for (size_t x = 0; x < waving_flag_properties::segments_horizontal; x++) {
+        const spitfire::math::cVec3& p0 = particles[(y * waving_flag_properties::points_horizontal) + x].pos;
+        const spitfire::math::cVec3& p1 = particles[(y * waving_flag_properties::points_horizontal) + x + 1].pos;
+        const spitfire::math::cVec3& p2 = particles[((y + 1) * waving_flag_properties::points_horizontal) + x + 1].pos;
+        const spitfire::math::cVec3& p3 = particles[((y + 1) * waving_flag_properties::points_horizontal) + x].pos;
+
+        // Add a front facing quad
+        builder.PushBack(p1, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y) * fTextureV));
+        builder.PushBack(p3, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y + 1) * fTextureV));
+        builder.PushBack(p2, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y + 1) * fTextureV));
+        builder.PushBack(p0, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y) * fTextureV));
+        builder.PushBack(p3, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y + 1) * fTextureV));
+        builder.PushBack(p1, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y) * fTextureV));
+      }
+    }
+
+    wavingFlagRenderable[i].vbo.SetData(pGeometryDataPtr);
+
+    wavingFlagRenderable[i].vbo.Compile();
+  }
+}
+
+
 bool cApplication::Create()
 {
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
@@ -1164,12 +1165,12 @@ bool cApplication::Create()
   }
 
 
-  pContext->CreateTexture(wavingFlagRendering[0].texture, TEXT("textures/flags/australian.png"));
-  assert(wavingFlagRendering[0].texture.IsValid());
-  pContext->CreateTexture(wavingFlagRendering[1].texture, TEXT("textures/flags/aboriginal.png"));
-  assert(wavingFlagRendering[1].texture.IsValid());
-  pContext->CreateTexture(wavingFlagRendering[2].texture, TEXT("textures/flags/torres_strait_islander.png"));
-  assert(wavingFlagRendering[2].texture.IsValid());
+  pContext->CreateTexture(wavingFlagRenderable[0].texture, TEXT("textures/flags/australian.png"));
+  assert(wavingFlagRenderable[0].texture.IsValid());
+  pContext->CreateTexture(wavingFlagRenderable[1].texture, TEXT("textures/flags/aboriginal.png"));
+  assert(wavingFlagRenderable[1].texture.IsValid());
+  pContext->CreateTexture(wavingFlagRenderable[2].texture, TEXT("textures/flags/torres_strait_islander.png"));
+  assert(wavingFlagRenderable[2].texture.IsValid());
 
   InitWavingFlags();
 
@@ -1362,12 +1363,12 @@ void cApplication::Destroy()
   testImages.clear();
 
   // Destroy our flags
-  if (wavingFlagRendering[0].texture.IsValid()) pContext->DestroyTexture(wavingFlagRendering[0].texture);
-  pContext->DestroyStaticVertexBufferObject(wavingFlagRendering[0].vbo);
-  if (wavingFlagRendering[1].texture.IsValid()) pContext->DestroyTexture(wavingFlagRendering[1].texture);
-  pContext->DestroyStaticVertexBufferObject(wavingFlagRendering[1].vbo);
-  if (wavingFlagRendering[2].texture.IsValid()) pContext->DestroyTexture(wavingFlagRendering[2].texture);
-  pContext->DestroyStaticVertexBufferObject(wavingFlagRendering[2].vbo);
+  if (wavingFlagRenderable[0].texture.IsValid()) pContext->DestroyTexture(wavingFlagRenderable[0].texture);
+  pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[0].vbo);
+  if (wavingFlagRenderable[1].texture.IsValid()) pContext->DestroyTexture(wavingFlagRenderable[1].texture);
+  pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[1].vbo);
+  if (wavingFlagRenderable[2].texture.IsValid()) pContext->DestroyTexture(wavingFlagRenderable[2].texture);
+  pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[2].vbo);
 
   // Destroy our smoke
   if (smoke.texture.IsValid()) pContext->DestroyTexture(smoke.texture);
@@ -2054,12 +2055,12 @@ void cApplication::Run()
   assert(fire.texture.IsValid());
   assert(fire.vbo.IsCompiled());
 
-  assert(wavingFlagRendering[0].texture.IsValid());
-  assert(wavingFlagRendering[0].vbo.IsCompiled());
-  assert(wavingFlagRendering[1].texture.IsValid());
-  assert(wavingFlagRendering[1].vbo.IsCompiled());
-  assert(wavingFlagRendering[2].texture.IsValid());
-  assert(wavingFlagRendering[2].vbo.IsCompiled());
+  assert(wavingFlagRenderable[0].texture.IsValid());
+  assert(wavingFlagRenderable[0].vbo.IsCompiled());
+  assert(wavingFlagRenderable[1].texture.IsValid());
+  assert(wavingFlagRenderable[1].vbo.IsCompiled());
+  assert(wavingFlagRenderable[2].texture.IsValid());
+  assert(wavingFlagRenderable[2].vbo.IsCompiled());
 
   assert(parallaxNormalMap.vbo.IsCompiled());
 
@@ -3593,17 +3594,17 @@ void cApplication::Run()
         for (size_t i = 0; i < 3; i++) {
           pContext->BindShader(shaderPassThrough);
 
-          pContext->BindTexture(0, wavingFlagRendering[i].texture);
+          pContext->BindTexture(0, wavingFlagRenderable[i].texture);
 
-          pContext->BindStaticVertexBufferObject(wavingFlagRendering[i].vbo);
+          pContext->BindStaticVertexBufferObject(wavingFlagRenderable[i].vbo);
 
           pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationFlags[i]);
 
-          pContext->DrawStaticVertexBufferObjectTriangles(wavingFlagRendering[i].vbo);
+          pContext->DrawStaticVertexBufferObjectTriangles(wavingFlagRenderable[i].vbo);
 
-          pContext->UnBindStaticVertexBufferObject(wavingFlagRendering[i].vbo);
+          pContext->UnBindStaticVertexBufferObject(wavingFlagRenderable[i].vbo);
 
-          pContext->UnBindTexture(0, wavingFlagRendering[i].texture);
+          pContext->UnBindTexture(0, wavingFlagRenderable[i].texture);
 
           pContext->UnBindShader(shaderPassThrough);
         }

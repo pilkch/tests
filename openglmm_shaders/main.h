@@ -342,7 +342,7 @@ private:
 
   breathe::physics::verlet::cWorld physicsWorld;
   breathe::physics::verlet::cGroup wavingFlagPhysics[3];
-  cTextureVBOPair wavingFlagRendering[3];
+  cTextureVBOPair wavingFlagRenderable[3];
 
 
   cTronGlow tronGlow;
