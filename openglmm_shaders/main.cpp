@@ -316,7 +316,7 @@ void cApplication::UpdateFlags()
 {
   for (size_t i = 0; i < 3; i++) {
     // Update the physics for this flag
-    wavingFlagPhysics[i].Update(physicsWorld);
+    breathe::physics::verlet::Update(physicsWorld, wavingFlagPhysics[i]);
 
 
     // Discard and recreate our VBO
@@ -329,9 +329,8 @@ void cApplication::UpdateFlags()
     opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
 
     // Get the coordinates from the physics
-    const std::vector<verlet_physics::Particle>& particles = wavingFlagPhysics[i].GetParticles();
+    const std::vector<breathe::physics::verlet::Particle>& particles = wavingFlagPhysics[i].particles;
 
-    // TODO: Fix texture coordinates
     const float fTextureU = wavingFlagRendering[i].texture.GetWidth() / float(waving_flag_properties::segments_horizontal);
     const float fTextureV = wavingFlagRendering[i].texture.GetHeight() / float(waving_flag_properties::segments_vertical);
 
@@ -897,6 +896,81 @@ void cApplication::CreateTestImage(opengl::cStaticVertexBufferObject& vbo, size_
   vbo.Compile();
 }
 
+void cApplication::InitWavingFlag(breathe::physics::verlet::cGroup& group, float fWidthMeters, float fHeightMeters, size_t points_horizontal, size_t points_vertical)
+{
+  const float fSegmentWidth = fWidthMeters / float(points_horizontal);
+  const float fSegmentHeight = fHeightMeters / float(points_vertical);
+
+  // Add points from the top left to the bottom right
+  for (size_t y = 0; y < points_vertical; y++) {
+    for (size_t x = 0; x < points_horizontal; x++) {
+      breathe::physics::verlet::Particle p(spitfire::math::cVec3(float(x) * fSegmentWidth, fHeightMeters - (float(y) * fSegmentHeight), 0.0f));
+      group.particles.push_back(p);
+    }
+  }
+
+  // Pin the left hand particles to their current positions
+  for (size_t y = 0; y < points_vertical; y++) {
+    group.pins.push_back(&group.particles[(y * points_horizontal)]);
+  }
+
+
+  const float fStiffness = 0.8f;
+
+  // Link each particle together with springs
+  for (size_t y = 0; y < points_vertical - 1; y++) {
+    for (size_t x = 0; x < points_horizontal - 1; x++) {
+      // Create a spring from this particle to the particle on the right
+      {
+        breathe::physics::verlet::Particle* a = &group.particles[(y * points_horizontal) + x];
+        breathe::physics::verlet::Particle* b = &group.particles[(y * points_horizontal) + x + 1];
+        const float fDistance = (a->pos - b->pos).GetLength();
+        group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+      }
+
+      // Create a spring from this particle to the particle below us
+      {
+        breathe::physics::verlet::Particle* a = &group.particles[(y * points_horizontal) + x];
+        breathe::physics::verlet::Particle* b = &group.particles[((y + 1) * points_horizontal) + x];
+        const float fDistance = (a->pos - b->pos).GetLength();
+        group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+      }
+    }
+  }
+
+  // Link the last row
+  for (size_t x = 0; x < points_horizontal - 1; x++) {
+    // Create a spring from this particle to the particle on the right
+    const size_t y = points_vertical - 1;
+    breathe::physics::verlet::Particle* a = &group.particles[(y * points_horizontal) + x];
+    breathe::physics::verlet::Particle* b = &group.particles[(y * points_horizontal) + x + 1];
+    const float fDistance = (a->pos - b->pos).GetLength();
+    group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+  }
+
+  // Link the last column
+  for (size_t y = 0; y < points_vertical - 1; y++) {
+    // Create a spring from this particle to the particle below us
+    const size_t x = points_horizontal - 1;
+    breathe::physics::verlet::Particle* a = &group.particles[(y * points_horizontal) + x];
+    breathe::physics::verlet::Particle* b = &group.particles[((y + 1) * points_horizontal) + x];
+    const float fDistance = (a->pos - b->pos).GetLength();
+    group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+  }
+}
+
+void cApplication::InitWavingFlags()
+{
+  const float fWidthMeters = waving_flag_properties::fWidthMeters;
+  const float fHeightMeters = waving_flag_properties::fHeightMeters;
+  const size_t points_horizontal = waving_flag_properties::points_horizontal;
+  const size_t points_vertical = waving_flag_properties::points_vertical;
+
+  for (size_t i = 0; i < 3; i++) {
+    InitWavingFlag(wavingFlagPhysics[i], fWidthMeters, fHeightMeters, points_horizontal, points_vertical);
+  }
+}
+
 bool cApplication::Create()
 {
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
@@ -1097,9 +1171,7 @@ bool cApplication::Create()
   pContext->CreateTexture(wavingFlagRendering[2].texture, TEXT("textures/flags/torres_strait_islander.png"));
   assert(wavingFlagRendering[2].texture.IsValid());
 
-  for (size_t i = 0; i < 3; i++) {
-    wavingFlagPhysics[i].Init(waving_flag_properties::fWidthMeters, waving_flag_properties::fHeightMeters, waving_flag_properties::points_horizontal, waving_flag_properties::points_vertical);
-  }
+  InitWavingFlags();
 
   physicsWorld.Update();
 

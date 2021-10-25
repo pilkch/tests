@@ -40,6 +40,7 @@
 #include <spitfire/util/log.h>
 
 // Breathe headers
+#include <breathe/physics/verlet.h>
 #include <breathe/render/model/cFileFormatOBJ.h>
 #include <breathe/render/model/cStatic.h>
 
@@ -63,7 +64,6 @@
 #include "shadowmapping.h"
 #include "tronglow.h"
 #include "util.h"
-#include "verlet_physics.h"
 
 // Test various lights, unfortunately it is a very large model which takes ages to load, so it is disabled by default
 //#define BUILD_LARGE_STATUE_MODEL
@@ -139,6 +139,9 @@ private:
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateGuiRectangle(opengl::cStaticVertexBufferObject& staticVertexBufferObject, size_t nTextureWidth, size_t nTextureHeight);
+
+  void InitWavingFlags();
+  void InitWavingFlag(breathe::physics::verlet::cGroup& group, float fWidthMeters, float fHeightMeters, size_t points_horizontal, size_t points_vertical);
 
   void UpdateWind();
   void UpdateFlags();
@@ -337,8 +340,8 @@ private:
   std::vector<cTextureVBOPair*> testImages;
 
 
-  verlet_physics::cWorld physicsWorld;
-  verlet_physics::cWavingFlag wavingFlagPhysics[3];
+  breathe::physics::verlet::cWorld physicsWorld;
+  breathe::physics::verlet::cGroup wavingFlagPhysics[3];
   cTextureVBOPair wavingFlagRendering[3];
 
 
