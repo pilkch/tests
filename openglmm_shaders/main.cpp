@@ -68,6 +68,17 @@ const size_t points_vertical = segments_vertical + 1;
 
 }
 
+namespace bobble_head_properties {
+
+const float fWidthMeters = 1.5f;
+const float fHeightMeters = 0.4f;
+const size_t segments_horizontal = 12;
+const size_t segments_vertical = 8;
+const size_t points_horizontal = segments_horizontal + 1;
+const size_t points_vertical = segments_vertical + 1;
+
+}
+
 // ** cApplication
 
 cApplication::cApplication() :
@@ -600,44 +611,39 @@ void cApplication::CreateTeapotVBO()
   staticVertexBufferObjectLargeTeapot.Compile();
 }
 
-#ifdef BUILD_LARGE_STATUE_MODEL
-void cApplication::CreateStatueVBO()
+bool cApplication::CreateVBOFromObjFile(opengl::cStaticVertexBufferObject& vbo, const std::string& file_path, float fScale)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   breathe::render::model::cStaticModel model;
 
   breathe::render::model::cFileFormatOBJ loader;
-  if (!loader.Load(TEXT("models/venus.obj"), model)) {
-    LOG("Failed to load obj file");
-    return;
+  if (!loader.Load(TEXT(file_path), model)) {
+    LOG("Failed to load obj file \"" + file_path + "\"");
+    return false;
   }
 
   opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
 
-  // The obj file is giant so scale it down as well
-  spitfire::math::cMat4 matScale;
-  matScale.SetScale(spitfire::math::cVec3(0.1f, 0.1f, 0.1f));
-
-  const spitfire::math::cMat4 matTransform = matScale;
-
+  // Generate triangles from the points in the models in the the .obj file
   const size_t nMeshes = model.mesh.size();
   for (size_t iMesh = 0; iMesh < nMeshes; iMesh++) {
     const size_t nVertices = model.mesh[iMesh]->vertices.size() / 3;
     for (size_t iVertex = 0; iVertex < nVertices; iVertex++) {
       builder.PushBack(
-        matTransform * spitfire::math::cVec3(model.mesh[iMesh]->vertices[(3 * iVertex)], model.mesh[iMesh]->vertices[(3 * iVertex) + 1], model.mesh[iMesh]->vertices[(3 * iVertex) + 2]),
+        fScale * spitfire::math::cVec3(model.mesh[iMesh]->vertices[(3 * iVertex)], model.mesh[iMesh]->vertices[(3 * iVertex) + 1], model.mesh[iMesh]->vertices[(3 * iVertex) + 2]),
         spitfire::math::cVec3(model.mesh[iMesh]->normals[(3 * iVertex)], model.mesh[iMesh]->normals[(3 * iVertex) + 1], model.mesh[iMesh]->normals[(3 * iVertex) + 2]),
         spitfire::math::cVec2(model.mesh[iMesh]->textureCoordinates[(2 * iVertex)], model.mesh[iMesh]->textureCoordinates[(2 * iVertex) + 1])
       );
     }
   }
 
-  staticVertexBufferObjectStatue.SetData(pGeometryDataPtr);
+  vbo.SetData(pGeometryDataPtr);
 
-  staticVertexBufferObjectStatue.Compile();
+  vbo.Compile();
+
+  return true;
 }
-#endif
 
 void cApplication::CreateScreenRectVariableTextureSizeVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight)
 {
@@ -972,6 +978,142 @@ void cApplication::UpdateFlags()
 }
 
 
+void cApplication::InitBobbleHead()
+{
+  breathe::physics::verlet::cGroup& group = bobbleHead.physics;
+
+  const float fTowerWidthMeters = 0.3f;
+  const float fTowerDepthMeters = 0.3f;
+  const float fTowerHeightMeters = 0.3f; // How "long"/"tall" the tower is
+  const size_t tower_segments = 4; // How many segments along the the "length"/"height" is this tower?
+
+  const float fSegmentHeightMeters = fTowerHeightMeters / float(tower_segments);
+
+  // TODO: Rotate the head forward at 45 degrees or so with a quaternion
+
+  // Add 4 points in each tower segment
+  for (size_t s = 0; s < tower_segments; s++) {
+    const spitfire::math::cVec3 v0(-0.5f * fTowerWidthMeters, -0.5f * fTowerDepthMeters, fSegmentHeightMeters * s);
+    const spitfire::math::cVec3 v1(-0.5f * fTowerWidthMeters, 0.5f * fTowerDepthMeters, fSegmentHeightMeters * s);
+    const spitfire::math::cVec3 v2(0.5f * fTowerWidthMeters, 0.5f * fTowerDepthMeters, fSegmentHeightMeters * s);
+    const spitfire::math::cVec3 v3(0.5f * fTowerWidthMeters, -0.5f * fTowerDepthMeters, fSegmentHeightMeters * s);
+
+    breathe::physics::verlet::Particle p0(v0);
+    group.particles.push_back(p0);
+    breathe::physics::verlet::Particle p1(v1);
+    group.particles.push_back(p1);
+    breathe::physics::verlet::Particle p2(v2);
+    group.particles.push_back(p2);
+    breathe::physics::verlet::Particle p3(v3);
+    group.particles.push_back(p3);
+  }
+
+  // Pin the particles on the bottom of the stack to their current positions
+  for (size_t i = 0; i < 4; i++) {
+    group.pins.push_back(&group.particles[i]);
+  }
+
+
+  const float fStiffness = 0.8f;
+
+  // Link the particles within each layer together with springs
+  for (size_t s = 0; s < tower_segments; s++) {
+    const size_t i = s * 4;
+
+    // Links along the 4 edges
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 1];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 1];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 2];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 2];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 3];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 3];
+      breathe::physics::verlet::Particle* b = &group.particles[i];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+
+    // And create two diagonal springs across the middle for strength
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 2];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 1];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 3];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+  }
+
+
+  // Link the segments together with springs
+  for (size_t s = 0; s < tower_segments - 1; s++) {
+    const size_t i = s * 4;
+
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 4];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 1];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 5];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 2];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 6];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 3];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 7];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+  }
+}
+
+void cApplication::UpdateBobbleHead()
+{
+  // Update the physics for the bobble head
+  breathe::physics::verlet::Update(physicsWorld, bobbleHead.physics);
+
+
+  // Get the coordinates from the physics
+  const std::vector<breathe::physics::verlet::Particle>& particles = bobbleHead.physics.particles;
+
+  const size_t i = 8;//particles.size() - (1 + 4);
+
+  const spitfire::math::cVec3& p0 = particles[i].pos;
+  //const spitfire::math::cVec3& p1 = particles[i + 1].pos;
+  //const spitfire::math::cVec3& p2 = particles[i + 2].pos;
+  //const spitfire::math::cVec3& p3 = particles[i + 3].pos;
+
+  bobbleHead.topOfSpringPosition = p0;
+  //bobbleHead.topOfSpringRotation = ;
+}
+
+
 bool cApplication::Create()
 {
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
@@ -1114,7 +1256,9 @@ bool cApplication::Create()
 
   #ifdef BUILD_LARGE_STATUE_MODEL
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectStatue);
-  CreateStatueVBO();
+
+  const float fStatueScale = 0.1f;
+  CreateVBOFromObjFile(staticVertexBufferObjectStatue, TEXT("models/venus.obj"), fScale);
   #endif
 
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
@@ -1179,6 +1323,61 @@ bool cApplication::Create()
   UpdateFlags();
 
 
+  const float fBullScale = 1.0f;
+
+  CreateVBOFromObjFile(bobbleHead.bodyVBO, TEXT("models/bull_body.obj"), fBullScale);
+  CreateVBOFromObjFile(bobbleHead.headVBO, TEXT("models/bull_head.obj"), fBullScale);
+
+  InitBobbleHead();
+
+  UpdateBobbleHead();
+
+
+  pContext->CreateTexture(pbrGold.textureAlbedo, TEXT("textures/pbr/gold/albedo.png"));
+  assert(pbrGold.textureAlbedo.IsValid());
+  pContext->CreateTexture(pbrGold.textureMetallic, TEXT("textures/pbr/gold/metallic.png"));
+  assert(pbrGold.textureMetallic.IsValid());
+  pContext->CreateTexture(pbrGold.textureRoughness, TEXT("textures/pbr/gold/roughness.png"));
+  assert(pbrGold.textureRoughness.IsValid());
+  pContext->CreateTexture(pbrGold.textureNormal, TEXT("textures/pbr/gold/normal.png"));
+  assert(pbrGold.textureNormal.IsValid());
+  pContext->CreateTexture(pbrGold.textureAO, TEXT("textures/pbr/gold/ao.png"));
+  assert(pbrGold.textureAO.IsValid());
+
+  pContext->CreateTexture(pbrPlastic.textureAlbedo, TEXT("textures/pbr/plastic/albedo.png"));
+  assert(pbrPlastic.textureAlbedo.IsValid());
+  pContext->CreateTexture(pbrPlastic.textureMetallic, TEXT("textures/pbr/plastic/metallic.png"));
+  assert(pbrPlastic.textureMetallic.IsValid());
+  pContext->CreateTexture(pbrPlastic.textureRoughness, TEXT("textures/pbr/plastic/roughness.png"));
+  assert(pbrPlastic.textureRoughness.IsValid());
+  pContext->CreateTexture(pbrPlastic.textureNormal, TEXT("textures/pbr/plastic/normal.png"));
+  assert(pbrPlastic.textureNormal.IsValid());
+  pContext->CreateTexture(pbrPlastic.textureAO, TEXT("textures/pbr/plastic/ao.png"));
+  assert(pbrPlastic.textureAO.IsValid());
+
+  pContext->CreateTexture(pbrWall.textureAlbedo, TEXT("textures/pbr/wall/albedo.png"));
+  assert(pbrWall.textureAlbedo.IsValid());
+  pContext->CreateTexture(pbrWall.textureMetallic, TEXT("textures/pbr/wall/metallic.png"));
+  assert(pbrWall.textureMetallic.IsValid());
+  pContext->CreateTexture(pbrWall.textureRoughness, TEXT("textures/pbr/wall/roughness.png"));
+  assert(pbrWall.textureRoughness.IsValid());
+  pContext->CreateTexture(pbrWall.textureNormal, TEXT("textures/pbr/wall/normal.png"));
+  assert(pbrWall.textureNormal.IsValid());
+  pContext->CreateTexture(pbrWall.textureAO, TEXT("textures/pbr/wall/ao.png"));
+  assert(pbrWall.textureAO.IsValid());
+
+  pContext->CreateTexture(pbrRustedIron.textureAlbedo, TEXT("textures/pbr/rusted_iron/albedo.png"));
+  assert(pbrRustedIron.textureAlbedo.IsValid());
+  pContext->CreateTexture(pbrRustedIron.textureMetallic, TEXT("textures/pbr/rusted_iron/metallic.png"));
+  assert(pbrRustedIron.textureMetallic.IsValid());
+  pContext->CreateTexture(pbrRustedIron.textureRoughness, TEXT("textures/pbr/rusted_iron/roughness.png"));
+  assert(pbrRustedIron.textureRoughness.IsValid());
+  pContext->CreateTexture(pbrRustedIron.textureNormal, TEXT("textures/pbr/rusted_iron/normal.png"));
+  assert(pbrRustedIron.textureNormal.IsValid());
+  pContext->CreateTexture(pbrRustedIron.textureAO, TEXT("textures/pbr/rusted_iron/ao.png"));
+  assert(pbrRustedIron.textureAO.IsValid());
+
+
   // Create our floor
   const float fFloorSize = 100.0f;
   const float fTextureWidthWorldSpaceMeters = 1.0f;
@@ -1209,6 +1408,8 @@ bool cApplication::Create()
   CreateSquare(staticVertexBufferObjectSquare1, 1);
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectCube1);
   CreateCube(staticVertexBufferObjectCube1, 1);
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+  CreateSphere(staticVertexBufferObjectSphere1, 1, 0.5f * fRadius);
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
   CreateTeapot(staticVertexBufferObjectTeapot1, 1);
 
@@ -1277,6 +1478,7 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube2);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPlane2);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSphere1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSquare1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCylinder1WithColours);
@@ -1369,6 +1571,36 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[1].vbo);
   if (wavingFlagRenderable[2].texture.IsValid()) pContext->DestroyTexture(wavingFlagRenderable[2].texture);
   pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[2].vbo);
+
+  // Destroy the bobble head parts
+  pContext->DestroyStaticVertexBufferObject(bobbleHead.bodyVBO);
+  pContext->DestroyStaticVertexBufferObject(bobbleHead.headVBO);
+
+  if (pbrGold.textureAlbedo.IsValid()) pContext->DestroyTexture(pbrGold.textureAlbedo);
+  if (pbrGold.textureMetallic.IsValid()) pContext->DestroyTexture(pbrGold.textureMetallic);
+  if (pbrGold.textureRoughness.IsValid()) pContext->DestroyTexture(pbrGold.textureRoughness);
+  if (pbrGold.textureNormal.IsValid()) pContext->DestroyTexture(pbrGold.textureNormal);
+  if (pbrGold.textureAO.IsValid()) pContext->DestroyTexture(pbrGold.textureAO);
+
+  if (pbrPlastic.textureAlbedo.IsValid()) pContext->DestroyTexture(pbrPlastic.textureAlbedo);
+  if (pbrPlastic.textureMetallic.IsValid()) pContext->DestroyTexture(pbrPlastic.textureMetallic);
+  if (pbrPlastic.textureRoughness.IsValid()) pContext->DestroyTexture(pbrPlastic.textureRoughness);
+  if (pbrPlastic.textureNormal.IsValid()) pContext->DestroyTexture(pbrPlastic.textureNormal);
+  if (pbrPlastic.textureAO.IsValid()) pContext->DestroyTexture(pbrPlastic.textureAO);
+
+  if (pbrWall.textureAlbedo.IsValid()) pContext->DestroyTexture(pbrWall.textureAlbedo);
+  if (pbrWall.textureMetallic.IsValid()) pContext->DestroyTexture(pbrWall.textureMetallic);
+  if (pbrWall.textureRoughness.IsValid()) pContext->DestroyTexture(pbrWall.textureRoughness);
+  if (pbrWall.textureNormal.IsValid()) pContext->DestroyTexture(pbrWall.textureNormal);
+  if (pbrWall.textureAO.IsValid()) pContext->DestroyTexture(pbrWall.textureAO);
+
+  if (pbrRustedIron.textureAlbedo.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureAlbedo);
+  if (pbrRustedIron.textureMetallic.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureMetallic);
+  if (pbrRustedIron.textureRoughness.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureRoughness);
+  if (pbrRustedIron.textureNormal.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureNormal);
+  if (pbrRustedIron.textureAO.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureAO);
+
+  if (shaderPBR.IsCompiledProgram()) pContext->DestroyShader(shaderPBR);
 
   // Destroy our smoke
   if (smoke.texture.IsValid()) pContext->DestroyTexture(smoke.texture);
@@ -1488,6 +1720,9 @@ void cApplication::CreateShaders()
 
   pContext->CreateShader(shaderMetal, TEXT("shaders/metal.vert"), TEXT("shaders/metal.frag"));
   assert(shaderMetal.IsCompiledProgram());
+
+  pContext->CreateShader(shaderPBR, TEXT("shaders/pbr3.vert"), TEXT("shaders/pbr3.frag"));
+  assert(shaderPBR.IsCompiledProgram());
 }
 
 void cApplication::DestroyShaders()
@@ -1524,6 +1759,8 @@ void cApplication::DestroyShaders()
   if (shaderMetal.IsCompiledProgram()) pContext->DestroyShader(shaderMetal);
   if (shaderFog.IsCompiledProgram()) pContext->DestroyShader(shaderFog);
   if (shaderCrate.IsCompiledProgram()) pContext->DestroyShader(shaderCrate);
+
+  if (shaderPBR.IsCompiledProgram()) pContext->DestroyShader(shaderPBR);
 }
 
 void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, const opengl::cTexture& texture)
@@ -2026,6 +2263,7 @@ void cApplication::Run()
 
   assert(staticVertexBufferObjectSquare1.IsCompiled());
   assert(staticVertexBufferObjectCube1.IsCompiled());
+  assert(staticVertexBufferObjectSphere1.IsCompiled());
   assert(staticVertexBufferObjectTeapot1.IsCompiled());
 
   assert(staticVertexBufferObjectBox1WithColours.IsCompiled());
@@ -2061,6 +2299,9 @@ void cApplication::Run()
   assert(wavingFlagRenderable[1].vbo.IsCompiled());
   assert(wavingFlagRenderable[2].texture.IsValid());
   assert(wavingFlagRenderable[2].vbo.IsCompiled());
+
+  assert(bobbleHead.bodyVBO.IsCompiled());
+  assert(bobbleHead.headVBO.IsCompiled());
 
   assert(parallaxNormalMap.vbo.IsCompiled());
 
@@ -2208,6 +2449,15 @@ void cApplication::Run()
   matTranslationFlags[1].SetTranslation(positionFlag1);
   matTranslationFlags[2].SetTranslation(positionFlag2);
 
+  // Bull
+  spitfire::math::cMat4 matTranslationBullBody;
+  const spitfire::math::cVec3 positionBullBody(-20.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+  matTranslationBullBody.SetTranslation(positionBullBody);
+  spitfire::math::cMat4 matTranslationBullHeadOffset;
+  const spitfire::math::cVec3 positionBullHeadAttachment(positionBullBody);
+  matTranslationBullHeadOffset.SetTranslation(positionBullHeadAttachment);
+  spitfire::math::cMat4 matTranslationBullHeadSpringOffset;
+
   // Parallax normal mapping
   const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationParallaxNormalMap;
@@ -2347,6 +2597,10 @@ void cApplication::Run()
         physicsWorld.Update();
 
         UpdateFlags();
+
+        UpdateBobbleHead();
+
+        matTranslationBullHeadSpringOffset.SetTranslation(bobbleHead.topOfSpringPosition);
       }
 
       previousUpdateTime = currentTime;
@@ -3608,6 +3862,289 @@ void cApplication::Run()
 
           pContext->UnBindShader(shaderPassThrough);
         }
+
+        pContext->EnableCulling();
+      }
+
+      // Render the bobble head parts
+      {
+        pContext->DisableCulling();
+
+        pContext->BindShader(shaderPBR);
+
+#if 0
+        pContext->SetShaderConstant("uLightPosition", positionBullBody + spitfire::math::cVec3(3.0f, 4.0f, 0.0f));
+        pContext->SetShaderConstant("uLightColor", spitfire::math::cVec3(0.8f, 0.8f, 0.8f));
+        pContext->SetShaderConstant("uLightRadius", 10.0f);
+
+        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(1.0f, 0.766f, 0.336f));
+        const float fRoughness = 0.1f;
+        pContext->SetShaderConstant("uRoughness", fRoughness);
+        pContext->SetShaderConstant("uMetallic", 1.0f);
+
+        pContext->SetShaderConstant("uExposure", 1.2f);
+        pContext->SetShaderConstant("uGamma", 2.2f);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.bodyVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullBody);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.bodyVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.bodyVBO);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.headVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullHeadOffset * matTranslationBullHeadSpringOffset);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.headVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.headVBO);
+
+
+        // Chrome
+        spitfire::math::cMat4 matTranslationChrome;
+        const spitfire::math::cVec3 positionChrome(-23.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslationChrome.SetTranslation(positionChrome);
+
+        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(196.0f / 255.0f, 197.0f / 255.0f, 197.0f / 255.0f));
+        pContext->SetShaderConstant("uRoughness", fRoughness);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationChrome);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+
+        // Sand
+        spitfire::math::cMat4 matTranslation2;
+        const spitfire::math::cVec3 position2(-26.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position2);
+
+        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(180.0f / 255.0f, 160.0f / 255.0f, 129.0f / 255.0f));
+        const float fRoughness2 = 0.5f;
+        pContext->SetShaderConstant("uRoughness", pow(fRoughness2 * fRoughness2, 4.0f));
+        pContext->SetShaderConstant("uMetallic", 0.0f);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+#elif 0
+        pContext->SetShaderConstant("camPos", camera.GetPosition());
+
+        pContext->SetShaderConstant("lightPositions[0]", positionBullBody + spitfire::math::cVec3(3.0f, 4.0f, 0.0f));
+        pContext->SetShaderConstant("lightColors[0]", spitfire::math::cVec3(0.8f, 0.8f, 0.8f));
+
+        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(1.0f, 0.766f, 0.336f));
+        const float fRoughness = 0.1f;
+        pContext->SetShaderConstant("roughness", fRoughness);
+        pContext->SetShaderConstant("metallic", 1.0f);
+
+        pContext->SetShaderConstant("ao", 1.0f);
+
+        pContext->SetShaderConstant("uExposure", 1.2f);
+        pContext->SetShaderConstant("uGamma", 2.2f);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.bodyVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullBody);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.bodyVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.bodyVBO);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.headVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullHeadOffset * matTranslationBullHeadSpringOffset);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.headVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.headVBO);
+
+
+        // Chrome
+        spitfire::math::cMat4 matTranslationChrome;
+        const spitfire::math::cVec3 positionChrome(-23.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslationChrome.SetTranslation(positionChrome);
+
+        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(196.0f / 255.0f, 197.0f / 255.0f, 197.0f / 255.0f));
+        pContext->SetShaderConstant("roughness", fRoughness);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationChrome);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+
+        // Sand
+        spitfire::math::cMat4 matTranslation2;
+        const spitfire::math::cVec3 position2(-26.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position2);
+
+        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(180.0f / 255.0f, 160.0f / 255.0f, 129.0f / 255.0f));
+        const float fRoughness2 = 0.5f;
+        pContext->SetShaderConstant("roughness", pow(fRoughness2 * fRoughness2, 4.0f));
+        pContext->SetShaderConstant("metallic", 0.0f);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
+#elif 1
+        pContext->BindTexture(0, pbrGold.textureAlbedo);
+        pContext->BindTexture(1, pbrGold.textureMetallic);
+        pContext->BindTexture(2, pbrGold.textureRoughness);
+        pContext->BindTexture(4, pbrGold.textureAO);
+
+        pContext->SetShaderConstant("camPos", camera.GetPosition());
+
+        pContext->SetShaderConstant("lightPositions[0]", positionBullBody + spitfire::math::cVec3(3.0f, 4.0f, 0.0f));
+        pContext->SetShaderConstant("lightColors[0]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+        pContext->SetShaderConstant("lightPositions[1]", positionBullBody + spitfire::math::cVec3(-15.0f, 3.0f, 0.0f));
+        pContext->SetShaderConstant("lightColors[1]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+        pContext->SetShaderConstant("lightPositions[2]", positionBullBody + spitfire::math::cVec3(-20.0f, 5.0f, 0.0f));
+        pContext->SetShaderConstant("lightColors[2]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+        pContext->SetShaderConstant("lightPositions[3]", positionBullBody + spitfire::math::cVec3(-47.0f, 5.0f, 0.0f));
+        pContext->SetShaderConstant("lightColors[3]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+
+        pContext->SetShaderConstant("uExposure", 1.2f);
+        pContext->SetShaderConstant("uGamma", 2.2f);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.bodyVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullBody);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.bodyVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.bodyVBO);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.headVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullHeadOffset * matTranslationBullHeadSpringOffset);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.headVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.headVBO);
+
+        // Gold
+        spitfire::math::cMat4 matTranslation2;
+        const spitfire::math::cVec3 position2(-23.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position2);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position3(-26.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position3);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position4(-29.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position4);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrGold.textureAO);
+        pContext->UnBindTexture(2, pbrGold.textureRoughness);
+        pContext->UnBindTexture(1, pbrGold.textureMetallic);
+        pContext->UnBindTexture(0, pbrGold.textureAlbedo);
+
+        // Plastic
+        pContext->BindTexture(0, pbrPlastic.textureAlbedo);
+        pContext->BindTexture(1, pbrPlastic.textureMetallic);
+        pContext->BindTexture(2, pbrPlastic.textureRoughness);
+        pContext->BindTexture(4, pbrPlastic.textureAO);
+
+        const spitfire::math::cVec3 position5(-32.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position5);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position6(-35.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position6);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position7(-38.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position7);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrPlastic.textureAO);
+        pContext->UnBindTexture(2, pbrPlastic.textureRoughness);
+        pContext->UnBindTexture(1, pbrPlastic.textureMetallic);
+        pContext->UnBindTexture(0, pbrPlastic.textureAlbedo);
+
+        // Wall
+        pContext->BindTexture(0, pbrWall.textureAlbedo);
+        pContext->BindTexture(1, pbrWall.textureMetallic);
+        pContext->BindTexture(2, pbrWall.textureRoughness);
+        pContext->BindTexture(4, pbrWall.textureAO);
+
+        const spitfire::math::cVec3 position8(-41.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position8);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position9(-44.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position9);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position10(-47.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position10);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrWall.textureAO);
+        pContext->UnBindTexture(2, pbrWall.textureRoughness);
+        pContext->UnBindTexture(1, pbrWall.textureMetallic);
+        pContext->UnBindTexture(0, pbrWall.textureAlbedo);
+
+        // Rusted Iron
+        pContext->BindTexture(0, pbrRustedIron.textureAlbedo);
+        pContext->BindTexture(1, pbrRustedIron.textureMetallic);
+        pContext->BindTexture(2, pbrRustedIron.textureRoughness);
+        pContext->BindTexture(4, pbrRustedIron.textureAO);
+
+        const spitfire::math::cVec3 position11(-50.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position11);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position12(-53.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position12);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position13(-57.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+        matTranslation2.SetTranslation(position13);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrRustedIron.textureAO);
+        pContext->UnBindTexture(2, pbrRustedIron.textureRoughness);
+        pContext->UnBindTexture(1, pbrRustedIron.textureMetallic);
+        pContext->UnBindTexture(0, pbrRustedIron.textureAlbedo);
+#endif
+
+        pContext->UnBindShader(shaderPBR);
 
         pContext->EnableCulling();
       }
