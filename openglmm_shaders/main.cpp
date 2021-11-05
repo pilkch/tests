@@ -1721,7 +1721,7 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderMetal, TEXT("shaders/metal.vert"), TEXT("shaders/metal.frag"));
   assert(shaderMetal.IsCompiledProgram());
 
-  pContext->CreateShader(shaderPBR, TEXT("shaders/pbr3.vert"), TEXT("shaders/pbr3.frag"));
+  pContext->CreateShader(shaderPBR, TEXT("shaders/pbr4.vert"), TEXT("shaders/pbr4.frag"));
   assert(shaderPBR.IsCompiledProgram());
 }
 
@@ -3981,17 +3981,18 @@ void cApplication::Run()
         pContext->BindTexture(0, pbrGold.textureAlbedo);
         pContext->BindTexture(1, pbrGold.textureMetallic);
         pContext->BindTexture(2, pbrGold.textureRoughness);
+        pContext->BindTexture(3, pbrGold.textureNormal);
         pContext->BindTexture(4, pbrGold.textureAO);
 
         pContext->SetShaderConstant("camPos", camera.GetPosition());
 
-        pContext->SetShaderConstant("lightPositions[0]", positionBullBody + spitfire::math::cVec3(3.0f, 4.0f, 0.0f));
+        pContext->SetShaderConstant("lightPositions[0]", positionBullBody + spitfire::math::cVec3(3.0f, 0.5f, 0.0f));
         pContext->SetShaderConstant("lightColors[0]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
-        pContext->SetShaderConstant("lightPositions[1]", positionBullBody + spitfire::math::cVec3(-15.0f, 3.0f, 0.0f));
+        pContext->SetShaderConstant("lightPositions[1]", positionBullBody + spitfire::math::cVec3(-15.0f, 0.5f, 0.0f));
         pContext->SetShaderConstant("lightColors[1]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
-        pContext->SetShaderConstant("lightPositions[2]", positionBullBody + spitfire::math::cVec3(-20.0f, 5.0f, 0.0f));
+        pContext->SetShaderConstant("lightPositions[2]", positionBullBody + spitfire::math::cVec3(-20.0f, 0.5f, 0.0f));
         pContext->SetShaderConstant("lightColors[2]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
-        pContext->SetShaderConstant("lightPositions[3]", positionBullBody + spitfire::math::cVec3(-47.0f, 5.0f, 0.0f));
+        pContext->SetShaderConstant("lightPositions[3]", positionBullBody + spitfire::math::cVec3(-47.0f, 0.5f, 0.0f));
         pContext->SetShaderConstant("lightColors[3]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
 
         pContext->SetShaderConstant("uExposure", 1.2f);
@@ -4034,6 +4035,7 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
 
         pContext->UnBindTexture(4, pbrGold.textureAO);
+        pContext->UnBindTexture(3, pbrGold.textureNormal);
         pContext->UnBindTexture(2, pbrGold.textureRoughness);
         pContext->UnBindTexture(1, pbrGold.textureMetallic);
         pContext->UnBindTexture(0, pbrGold.textureAlbedo);
@@ -4042,6 +4044,7 @@ void cApplication::Run()
         pContext->BindTexture(0, pbrPlastic.textureAlbedo);
         pContext->BindTexture(1, pbrPlastic.textureMetallic);
         pContext->BindTexture(2, pbrPlastic.textureRoughness);
+        pContext->BindTexture(3, pbrPlastic.textureNormal);
         pContext->BindTexture(4, pbrPlastic.textureAO);
 
         const spitfire::math::cVec3 position5(-32.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
@@ -4069,6 +4072,7 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
 
         pContext->UnBindTexture(4, pbrPlastic.textureAO);
+        pContext->UnBindTexture(3, pbrPlastic.textureNormal);
         pContext->UnBindTexture(2, pbrPlastic.textureRoughness);
         pContext->UnBindTexture(1, pbrPlastic.textureMetallic);
         pContext->UnBindTexture(0, pbrPlastic.textureAlbedo);
@@ -4077,6 +4081,7 @@ void cApplication::Run()
         pContext->BindTexture(0, pbrWall.textureAlbedo);
         pContext->BindTexture(1, pbrWall.textureMetallic);
         pContext->BindTexture(2, pbrWall.textureRoughness);
+        pContext->BindTexture(3, pbrWall.textureNormal);
         pContext->BindTexture(4, pbrWall.textureAO);
 
         const spitfire::math::cVec3 position8(-41.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
@@ -4104,6 +4109,7 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
 
         pContext->UnBindTexture(4, pbrWall.textureAO);
+        pContext->UnBindTexture(3, pbrWall.textureNormal);
         pContext->UnBindTexture(2, pbrWall.textureRoughness);
         pContext->UnBindTexture(1, pbrWall.textureMetallic);
         pContext->UnBindTexture(0, pbrWall.textureAlbedo);
@@ -4112,6 +4118,7 @@ void cApplication::Run()
         pContext->BindTexture(0, pbrRustedIron.textureAlbedo);
         pContext->BindTexture(1, pbrRustedIron.textureMetallic);
         pContext->BindTexture(2, pbrRustedIron.textureRoughness);
+        pContext->BindTexture(3, pbrRustedIron.textureNormal);
         pContext->BindTexture(4, pbrRustedIron.textureAO);
 
         const spitfire::math::cVec3 position11(-50.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
@@ -4139,6 +4146,7 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
 
         pContext->UnBindTexture(4, pbrRustedIron.textureAO);
+        pContext->UnBindTexture(3, pbrRustedIron.textureNormal);
         pContext->UnBindTexture(2, pbrRustedIron.textureRoughness);
         pContext->UnBindTexture(1, pbrRustedIron.textureMetallic);
         pContext->UnBindTexture(0, pbrRustedIron.textureAlbedo);
