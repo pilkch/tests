@@ -357,6 +357,11 @@ private:
   BobbleHead bobbleHead;
 
 
+  struct PBR {
+    opengl::cShader shader;
+  };
+  PBR pbr;
+
   struct PBRMaterial {
     opengl::cTexture textureAlbedo;
     opengl::cTexture textureMetallic;
@@ -368,7 +373,6 @@ private:
   PBRMaterial pbrPlastic;
   PBRMaterial pbrWall;
   PBRMaterial pbrRustedIron;
-  opengl::cShader shaderPBR;
 
 
   cTronGlow tronGlow;

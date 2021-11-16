@@ -1600,7 +1600,7 @@ void cApplication::Destroy()
   if (pbrRustedIron.textureNormal.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureNormal);
   if (pbrRustedIron.textureAO.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureAO);
 
-  if (shaderPBR.IsCompiledProgram()) pContext->DestroyShader(shaderPBR);
+  if (pbr.shader.IsCompiledProgram()) pContext->DestroyShader(pbr.shader);
 
   // Destroy our smoke
   if (smoke.texture.IsValid()) pContext->DestroyTexture(smoke.texture);
@@ -1721,8 +1721,8 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderMetal, TEXT("shaders/metal.vert"), TEXT("shaders/metal.frag"));
   assert(shaderMetal.IsCompiledProgram());
 
-  pContext->CreateShader(shaderPBR, TEXT("shaders/pbr4.vert"), TEXT("shaders/pbr4.frag"));
-  assert(shaderPBR.IsCompiledProgram());
+  pContext->CreateShader(pbr.shader, TEXT("shaders/pbr5.vert"), TEXT("shaders/pbr5.frag"));
+  assert(pbr.shader.IsCompiledProgram());
 }
 
 void cApplication::DestroyShaders()
@@ -1760,7 +1760,7 @@ void cApplication::DestroyShaders()
   if (shaderFog.IsCompiledProgram()) pContext->DestroyShader(shaderFog);
   if (shaderCrate.IsCompiledProgram()) pContext->DestroyShader(shaderCrate);
 
-  if (shaderPBR.IsCompiledProgram()) pContext->DestroyShader(shaderPBR);
+  if (pbr.shader.IsCompiledProgram()) pContext->DestroyShader(pbr.shader);
 }
 
 void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, const opengl::cTexture& texture)
@@ -2442,16 +2442,16 @@ void cApplication::Run()
 
   // Flags
   spitfire::math::cMat4 matTranslationFlags[3];
-  const spitfire::math::cVec3 positionFlag0(-12.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-  const spitfire::math::cVec3 positionFlag1(-14.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-  const spitfire::math::cVec3 positionFlag2(-16.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+  const spitfire::math::cVec3 positionFlag0(-12.0f * fSpacingX, 1.0f, fSpacingZ);
+  const spitfire::math::cVec3 positionFlag1(-14.0f * fSpacingX, 1.0f, fSpacingZ);
+  const spitfire::math::cVec3 positionFlag2(-16.0f * fSpacingX, 1.0f, fSpacingZ);
   matTranslationFlags[0].SetTranslation(positionFlag0);
   matTranslationFlags[1].SetTranslation(positionFlag1);
   matTranslationFlags[2].SetTranslation(positionFlag2);
 
   // Bull
   spitfire::math::cMat4 matTranslationBullBody;
-  const spitfire::math::cVec3 positionBullBody(-20.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
+  const spitfire::math::cVec3 positionBullBody(-20.0f * fSpacingX, 0.0f, fSpacingZ);
   matTranslationBullBody.SetTranslation(positionBullBody);
   spitfire::math::cMat4 matTranslationBullHeadOffset;
   const spitfire::math::cVec3 positionBullHeadAttachment(positionBullBody);
@@ -3870,7 +3870,7 @@ void cApplication::Run()
       {
         pContext->DisableCulling();
 
-        pContext->BindShader(shaderPBR);
+        pContext->BindShader(pbr.shader);
 
 #if 0
         pContext->SetShaderConstant("uLightPosition", positionBullBody + spitfire::math::cVec3(3.0f, 4.0f, 0.0f));
@@ -3977,7 +3977,7 @@ void cApplication::Run()
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-#elif 1
+#elif 0
         pContext->BindTexture(0, pbrGold.textureAlbedo);
         pContext->BindTexture(1, pbrGold.textureMetallic);
         pContext->BindTexture(2, pbrGold.textureRoughness);
@@ -4150,9 +4150,194 @@ void cApplication::Run()
         pContext->UnBindTexture(2, pbrRustedIron.textureRoughness);
         pContext->UnBindTexture(1, pbrRustedIron.textureMetallic);
         pContext->UnBindTexture(0, pbrRustedIron.textureAlbedo);
+#elif 1
+        pContext->SetShaderConstant("camPos", camera.GetPosition());
+
+        pContext->SetShaderConstant("lightPositions[0]", positionBullBody + spitfire::math::cVec3(3.0f, 0.5f, 0.0f));
+        pContext->SetShaderConstant("lightColors[0]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+        pContext->SetShaderConstant("lightPositions[1]", positionBullBody + spitfire::math::cVec3(-15.0f, 0.5f, 0.0f));
+        pContext->SetShaderConstant("lightColors[1]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+        pContext->SetShaderConstant("lightPositions[2]", positionBullBody + spitfire::math::cVec3(-20.0f, 0.5f, 0.0f));
+        pContext->SetShaderConstant("lightColors[2]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+        pContext->SetShaderConstant("lightPositions[3]", positionBullBody + spitfire::math::cVec3(-47.0f, 0.5f, 0.0f));
+        pContext->SetShaderConstant("lightColors[3]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+
+        pContext->SetShaderConstant("uExposure", 1.2f);
+        pContext->SetShaderConstant("uGamma", 2.2f);
+
+
+        // NOTE: THESE WERE FLIPPED!!!!!!!!
+        pContext->SetShaderConstant("albedoMap", 0);
+        pContext->SetShaderConstant("metallicMap", 1);
+        pContext->SetShaderConstant("roughnessMap", 2);
+        pContext->SetShaderConstant("normalMap", 3);
+        pContext->SetShaderConstant("aoMap", 4);
+
+        // Gold bull
+        pContext->BindTexture(0, pbrGold.textureAlbedo);
+        pContext->BindTexture(1, pbrGold.textureMetallic);
+        pContext->BindTexture(2, pbrGold.textureRoughness);
+        pContext->BindTexture(3, pbrGold.textureNormal);
+        pContext->BindTexture(4, pbrGold.textureAO);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.bodyVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullBody);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.bodyVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.bodyVBO);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.headVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullHeadOffset * matTranslationBullHeadSpringOffset);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.headVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.headVBO);
+
+        const float fPBR_y = positionBullBody.y;
+        const float fPBR_z = positionBullBody.z;
+
+        // Gold
+        spitfire::math::cMat4 matTranslation2;
+        const spitfire::math::cVec3 position2(-23.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position2);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position3(-26.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position3);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position4(-29.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position4);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrGold.textureAO);
+        pContext->UnBindTexture(3, pbrGold.textureNormal);
+        pContext->UnBindTexture(2, pbrGold.textureRoughness);
+        pContext->UnBindTexture(1, pbrGold.textureMetallic);
+        pContext->UnBindTexture(0, pbrGold.textureAlbedo);
+
+        // Plastic
+        pContext->BindTexture(0, pbrPlastic.textureAlbedo);
+        pContext->BindTexture(1, pbrPlastic.textureMetallic);
+        pContext->BindTexture(2, pbrPlastic.textureRoughness);
+        pContext->BindTexture(3, pbrPlastic.textureNormal);
+        pContext->BindTexture(4, pbrPlastic.textureAO);
+
+        const spitfire::math::cVec3 position5(-32.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position5);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position6(-35.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position6);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position7(-38.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position7);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrPlastic.textureAO);
+        pContext->UnBindTexture(3, pbrPlastic.textureNormal);
+        pContext->UnBindTexture(2, pbrPlastic.textureRoughness);
+        pContext->UnBindTexture(1, pbrPlastic.textureMetallic);
+        pContext->UnBindTexture(0, pbrPlastic.textureAlbedo);
+
+        // Wall
+        pContext->BindTexture(0, pbrWall.textureAlbedo);
+        pContext->BindTexture(1, pbrWall.textureMetallic);
+        pContext->BindTexture(2, pbrWall.textureRoughness);
+        pContext->BindTexture(3, pbrWall.textureNormal);
+        pContext->BindTexture(4, pbrWall.textureAO);
+
+        const spitfire::math::cVec3 position8(-41.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position8);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position9(-44.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position9);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position10(-47.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position10);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrWall.textureAO);
+        pContext->UnBindTexture(3, pbrWall.textureNormal);
+        pContext->UnBindTexture(2, pbrWall.textureRoughness);
+        pContext->UnBindTexture(1, pbrWall.textureMetallic);
+        pContext->UnBindTexture(0, pbrWall.textureAlbedo);
+
+        // Rusted Iron
+        pContext->BindTexture(0, pbrRustedIron.textureAlbedo);
+        pContext->BindTexture(1, pbrRustedIron.textureMetallic);
+        pContext->BindTexture(2, pbrRustedIron.textureRoughness);
+        pContext->BindTexture(3, pbrRustedIron.textureNormal);
+        pContext->BindTexture(4, pbrRustedIron.textureAO);
+
+        const spitfire::math::cVec3 position11(-50.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position11);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position12(-53.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position12);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position13(-57.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position13);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrRustedIron.textureAO);
+        pContext->UnBindTexture(3, pbrRustedIron.textureNormal);
+        pContext->UnBindTexture(2, pbrRustedIron.textureRoughness);
+        pContext->UnBindTexture(1, pbrRustedIron.textureMetallic);
+        pContext->UnBindTexture(0, pbrRustedIron.textureAlbedo);
 #endif
 
-        pContext->UnBindShader(shaderPBR);
+        pContext->UnBindShader(pbr.shader);
 
         pContext->EnableCulling();
       }
