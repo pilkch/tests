@@ -1,59 +1,101 @@
 #version 330 core
 
-uniform vec3 uLightPosition;
-uniform vec3 uLightColor;
-uniform float uLightRadius;
+// Material Properties
+uniform sampler2D albedoMap;
+uniform sampler2D normalMap;
+uniform sampler2D metallicMap;
+uniform sampler2D roughnessMap;
+uniform sampler2D aoMap;
 
-uniform vec3 uBaseColor;
-uniform float uRoughness;
-uniform float uMetallic;
-uniform float uSpecular;
+// IBL
+uniform samplerCube irradianceMap;
+uniform samplerCube prefilterMap;
+uniform sampler2D brdfLUT;
 
-//uniform float uExposure;
-//uniform float uGamma;
+// Lights
+uniform vec3 lightPositions[4];
+uniform vec3 lightColors[4];
 
-in vec3 vNormal;
-in vec3 vLightPosition;
-in vec3 vPosition;
+uniform vec3 camPos;
+
+uniform float uExposure;
+uniform float uGamma;
+
+in vec2 TexCoords;
+in vec3 WorldPos;
+in vec3 Normal;
 
 out vec4 fragmentColour;
 
-#define saturate(x) clamp(x, 0.0, 1.0)
-#define PI 3.14159265359
 
-// OrenNayar diffuse
-vec3 getDiffuse(vec3 diffuseColor, float roughness4, float NoV, float NoL, float VoH)
+const float PI = 3.14159265359;
+
+// Easy trick to get tangent-normals to world-space to keep PBR code simplified.
+// Don't worry if you don't get what's going on; you generally want to do normal 
+// mapping the usual way for performance anways; I do plan make a note of this 
+// technique somewhere later in the normal mapping tutorial.
+vec3 HackGetNormalFromMap()
 {
-    float VoL = 2 * VoH - 1;
-    float c1 = 1 - 0.5 * roughness4 / (roughness4 + 0.33);
-    float cosri = VoL - NoV * NoL;
-    float c2 = 0.45 * roughness4 / (roughness4 + 0.09) * cosri * ( cosri >= 0 ? min( 1, NoL / NoV ) : NoL );
-    return diffuseColor / PI * ( NoL * c1 + c2 );
+    vec3 tangentNormal = texture(normalMap, TexCoords).xyz * 2.0 - 1.0;
+
+    vec3 Q1  = dFdx(WorldPos);
+    vec3 Q2  = dFdy(WorldPos);
+    vec2 st1 = dFdx(TexCoords);
+    vec2 st2 = dFdy(TexCoords);
+
+    vec3 N   = normalize(Normal);
+    vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 B  = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
 }
 
-// GGX Normal distribution
-float getNormalDistribution(float roughness4, float NoH)
+float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
-    float d = ( NoH * roughness4 - NoH ) * NoH + 1;
-    return roughness4 / ( d*d );
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float num   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return num / denom;
 }
 
-// Smith GGX geometric shadowing from "Physically-Based Shading at Disney"
-float getGeometricShadowing(float roughness4, float NoV, float NoL, float VoH, vec3 L, vec3 V)
+float GeometrySchlickGGX(float NdotV, float roughness)
 {
-    float gSmithV = NoV + sqrt( NoV * (NoV - NoV * roughness4) + roughness4 );
-    float gSmithL = NoL + sqrt( NoL * (NoL - NoL * roughness4) + roughness4 );
-    return 1.0 / ( gSmithV * gSmithL );
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return num / denom;
 }
 
-// Fresnel term
-vec3 getFresnel(vec3 specularColor, float VoH)
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 {
-    vec3 specularColorSqrt = sqrt( clamp( vec3(0, 0, 0), vec3(0.99, 0.99, 0.99), specularColor ) );
-    vec3 n = ( 1 + specularColorSqrt ) / ( 1 - specularColorSqrt );
-    vec3 g = sqrt( n * n + VoH * VoH - 1 );
-    return 0.5 * pow( (g - VoH) / (g + VoH), vec3(2.0) ) * ( 1 + pow( ((g+VoH)*VoH - 1) / ((g-VoH)*VoH + 1), vec3(2.0) ) );
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
 }
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 
 // Filmic tonemapping from
 // http://filmicgames.com/archives/75
@@ -70,87 +112,97 @@ vec3 Uncharted2Tonemap(vec3 x)
     return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
-// http://imdoingitwrong.wordpress.com/2011/01/31/light-attenuation/
-float getAttenuation(vec3 lightPosition, vec3 vertexPosition, float lightRadius)
-{
-    float r = lightRadius;
-    vec3 L = lightPosition - vertexPosition;
-    float dist = length(L);
-    float d = max( dist - r, 0 );
-    L /= dist;
-    float denom = d / r + 1.0f;
-    float attenuation = 1.0f / (denom*denom);
-    float cutoff = 0.0052f;
-    attenuation = (attenuation - cutoff) / (1 - cutoff);
-    attenuation = max(attenuation, 0);
-
-    return attenuation;
-}
-
-// https://www.shadertoy.com/view/4ssXRX
-// Uniformly distributed, normalized rand, [0..1]
-float nrand(vec2 n)
-{
-    return fract(sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453);
-}
-
-float random(vec2 n, float seed)
-{
-    float t = fract(seed);
-    float nrnd0 = nrand(n + 0.07 * t);
-    float nrnd1 = nrand(n + 0.11 * t);
-    float nrnd2 = nrand(n + 0.13 * t);
-    float nrnd3 = nrand(n + 0.17 * t);
-    return (nrnd0 + nrnd1 + nrnd2 + nrnd3) / 4.0;
-}
 
 void main()
 {
-    // get the normal, light, position and half vector normalized
-    vec3 N = normalize(vNormal);
-    vec3 L = normalize(vLightPosition - vPosition);
-    vec3 V = normalize(-vPosition);
-    vec3 H = normalize(V + L);
+    // Material properties
+    vec3 albedo = pow(texture(albedoMap, TexCoords).rgb, vec3(uGamma));
+    float metallic = texture(metallicMap, TexCoords).r;
+    float roughness = texture(roughnessMap, TexCoords).r;
+    float ao = texture(aoMap, TexCoords).r;
 
-    // get all the usefull dot products and clamp them between 0 and 1 just to be safe
-    float NoL = saturate(dot(N, L));
-    float NoV = saturate(dot(N, V));
-    float VoH = saturate(dot(V, H));
-    float NoH = saturate(dot(N, H));
+    // Input lighting data
+    vec3 N = HackGetNormalFromMap();
+    vec3 V = normalize(camPos - WorldPos);
+    vec3 R = reflect(-V, N);
 
-    //
-    vec3 diffuseColor = uBaseColor - uBaseColor * uMetallic;
+    // Calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
+    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
 
-    // deduce the specular color from the baseColor and how metallic the material is
-    vec3 specularColor = mix( vec3( 0.08 * uSpecular ), uBaseColor, uMetallic );
+    // reflectance equation
+    vec3 Lo = vec3(0.0);
+    for (int i = 0; i < 4; ++i) {
+        // calculate per-light radiance
+        vec3 L = normalize(lightPositions[i] - WorldPos);
+        vec3 H = normalize(V + L);
+        float distance = length(lightPositions[i] - WorldPos);
+        float attenuation = 1.0 / (distance * distance);
+        vec3 radiance = lightColors[i] * attenuation;
 
-    // compute the brdf terms
-    float distribution = getNormalDistribution( uRoughness, NoH );
-    vec3 fresnel = getFresnel( specularColor, VoH );
-    float geom = getGeometricShadowing( uRoughness, NoV, NoL, VoH, L, V );
+        // Cook-Torrance BRDF
+        float NDF = DistributionGGX(N, H, roughness);   
+        float G = GeometrySmith(N, V, L, roughness);    
+        vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    // get the specular and diffuse and combine them
-    vec3 diffuse = getDiffuse( diffuseColor, uRoughness, NoV, NoL, VoH );
-    vec3 specular = NoL * ( distribution * fresnel * geom );
-    vec3 color = uLightColor * ( diffuse + specular );
+        vec3 numerator    = NDF * G * F;
+        float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+        vec3 specular = numerator / denominator;
 
-    // get the light attenuation from its radius
-    float attenuation = getAttenuation(vLightPosition, vPosition, uLightRadius);
-    color *= attenuation;
+        // kS is equal to Fresnel
+        vec3 kS = F;
+        // For energy conservation, the diffuse and specular light can't
+        // be above 1.0 (unless the surface emits light); to preserve this
+        // relationship the diffuse component (kD) should equal 1.0 - kS.
+        vec3 kD = vec3(1.0) - kS;
+        // Multiply kD by the inverse metalness such that only non-metals 
+        // have diffuse lighting, or a linear blend if partly metal (pure metals
+        // have no diffuse light).
+        kD *= 1.0 - metallic;
 
-#if 0
-    // apply the tone-mapping
+        // Scale light by NdotL
+        float NdotL = max(dot(N, L), 0.0);        
+
+        // Add to outgoing radiance Lo
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL; // Note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+    }
+
+    // Ambient lighting (we now use IBL as the ambient term)
+    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+    vec3 diffuse = irradiance * albedo;
+
+    // Sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    vec3 ambient = (kD * diffuse + specular) * ao;
+
+    vec3 color = ambient + Lo;
+
+#if 1
+    // Apply tone-mapping
     color = Uncharted2Tonemap(color * uExposure);
 
-    // white balance
-    const float whiteInputLevel = 2.0f;
-    vec3 whiteScale = 1.0f / Uncharted2Tonemap( vec3( whiteInputLevel ) );
+    // White balance
+    const float whiteInputLevel = 2.0;
+    vec3 whiteScale = 1.0 / Uncharted2Tonemap(vec3(whiteInputLevel));
     color = color * whiteScale;
-
-    // gamma correction
-    color = pow( color, vec3( 1.0f / uGamma ) );
+#else
+    // HDR tonemapping
+    color = color / (color + vec3(1.0));
 #endif
 
-    // output the fragment color
+    // Gamma correction
+    color = pow(color, vec3(1.0 / uGamma));
+
+    // Output the fragment color
     fragmentColour = vec4(color, 1.0);
 }

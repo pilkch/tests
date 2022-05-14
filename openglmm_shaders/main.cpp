@@ -45,7 +45,6 @@
 // libopenglmm headers
 #include <libopenglmm/libopenglmm.h>
 #include <libopenglmm/cContext.h>
-#include <libopenglmm/cFont.h>
 #include <libopenglmm/cGeometry.h>
 #include <libopenglmm/cShader.h>
 #include <libopenglmm/cSystem.h>
@@ -259,18 +258,27 @@ void cApplication::CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nT
   vbo.Compile();
 }
 
-void cApplication::CreateCube(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates)
+// TODO: Move all of these functions to a separate namespace
+namespace util {
+
+void CreateCube(opengl::cStaticVertexBufferObject& vbo, float fSizeMeters, size_t nTextureCoordinates)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  const float fWidth = 1.0f;
-
   opengl::cGeometryBuilder builder;
-  builder.CreateCube(fWidth, *pGeometryDataPtr, nTextureCoordinates);
+  builder.CreateCube(fSizeMeters, *pGeometryDataPtr, nTextureCoordinates);
 
   vbo.SetData(pGeometryDataPtr);
 
   vbo.Compile();
+}
+
+}
+
+void cApplication::CreateCube(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates)
+{
+  const float fSizeMeters = 1.0f;
+  util::CreateCube(vbo, fSizeMeters, nTextureCoordinates);
 }
 
 void cApplication::CreateBox(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates)
@@ -1333,6 +1341,8 @@ bool cApplication::Create()
   UpdateBobbleHead();
 
 
+  assert(pbr.Init(*pContext));
+
   pContext->CreateTexture(pbrGold.textureAlbedo, TEXT("textures/pbr/gold/albedo.png"));
   assert(pbrGold.textureAlbedo.IsValid());
   pContext->CreateTexture(pbrGold.textureMetallic, TEXT("textures/pbr/gold/metallic.png"));
@@ -1441,6 +1451,9 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectSpotLight);
   CreateSphere(staticVertexBufferObjectSpotLight, 0, 0.3f);
 
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectSkybox);
+  util::CreateCube(staticVertexBufferObjectSkybox, 10.0f, 1);
+
   pContext->CreateStaticVertexBufferObject(parallaxNormalMap.vbo);
   CreateNormalMappedCube();
 
@@ -1464,6 +1477,8 @@ void cApplication::Destroy()
   ASSERT(pContext != nullptr);
 
   pContext->DestroyStaticVertexBufferObject(parallaxNormalMap.vbo);
+
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSkybox);
 
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSpotLight);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPointLight);
@@ -1576,6 +1591,8 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(bobbleHead.bodyVBO);
   pContext->DestroyStaticVertexBufferObject(bobbleHead.headVBO);
 
+  pbr.Destroy(*pContext);
+
   if (pbrGold.textureAlbedo.IsValid()) pContext->DestroyTexture(pbrGold.textureAlbedo);
   if (pbrGold.textureMetallic.IsValid()) pContext->DestroyTexture(pbrGold.textureMetallic);
   if (pbrGold.textureRoughness.IsValid()) pContext->DestroyTexture(pbrGold.textureRoughness);
@@ -1600,7 +1617,6 @@ void cApplication::Destroy()
   if (pbrRustedIron.textureNormal.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureNormal);
   if (pbrRustedIron.textureAO.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureAO);
 
-  if (pbr.shader.IsCompiledProgram()) pContext->DestroyShader(pbr.shader);
 
   // Destroy our smoke
   if (smoke.texture.IsValid()) pContext->DestroyTexture(smoke.texture);
@@ -1646,6 +1662,9 @@ void cApplication::CreateShaders()
 
   pContext->CreateShader(shaderCubeMap, TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
   assert(shaderCubeMap.IsCompiledProgram());
+
+  pContext->CreateShader(shaderSkybox, TEXT("shaders/skybox.vert"), TEXT("shaders/skybox.frag"));
+  assert(shaderSkybox.IsCompiledProgram());
 
   pContext->CreateShader(shaderBRDF, TEXT("shaders/brdf.vert"), TEXT("shaders/brdf.frag"));
   assert(shaderBRDF.IsCompiledProgram());
@@ -1720,9 +1739,6 @@ void cApplication::CreateShaders()
 
   pContext->CreateShader(shaderMetal, TEXT("shaders/metal.vert"), TEXT("shaders/metal.frag"));
   assert(shaderMetal.IsCompiledProgram());
-
-  pContext->CreateShader(pbr.shader, TEXT("shaders/pbr5.vert"), TEXT("shaders/pbr5.frag"));
-  assert(pbr.shader.IsCompiledProgram());
 }
 
 void cApplication::DestroyShaders()
@@ -1754,13 +1770,36 @@ void cApplication::DestroyShaders()
   if (shaderBRDF.IsCompiledProgram()) pContext->DestroyShader(shaderBRDF);
   if (shaderCarPaint.IsCompiledProgram()) pContext->DestroyShader(shaderCarPaint);
   if (shaderCubeMap.IsCompiledProgram()) pContext->DestroyShader(shaderCubeMap);
+  if (shaderSkybox.IsCompiledProgram()) pContext->DestroyShader(shaderSkybox);
   if (shaderColour.IsCompiledProgram()) pContext->DestroyShader(shaderColour);
 
   if (shaderMetal.IsCompiledProgram()) pContext->DestroyShader(shaderMetal);
   if (shaderFog.IsCompiledProgram()) pContext->DestroyShader(shaderFog);
   if (shaderCrate.IsCompiledProgram()) pContext->DestroyShader(shaderCrate);
+}
 
-  if (pbr.shader.IsCompiledProgram()) pContext->DestroyShader(pbr.shader);
+void cApplication::RenderDebugScreenSquare(float x, float y, const opengl::cTexture& texture)
+{
+  spitfire::math::cMat4 matModelView2D;
+  matModelView2D.SetTranslation(x, y, 0.0f);
+
+  pContext->BindShader(shaderScreen2D);
+
+  pContext->BindTexture(0, texture);
+
+  pContext->BindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+
+  {
+    pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
+
+    pContext->DrawStaticVertexBufferObjectTriangles2D(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+  }
+
+  pContext->UnBindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+
+  pContext->UnBindTexture(0, texture);
+
+  pContext->UnBindShader(shaderScreen2D);
 }
 
 void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, const opengl::cTexture& texture)
@@ -2211,6 +2250,7 @@ void cApplication::Run()
   assert(textureNormalMapHeight.IsValid());
   assert(textureNormalMapNormal.IsValid());
   assert(shaderColour.IsCompiledProgram());
+  assert(shaderSkybox.IsCompiledProgram());
   assert(shaderCubeMap.IsCompiledProgram());
   assert(shaderBRDF.IsCompiledProgram());
   assert(shaderCarPaint.IsCompiledProgram());
@@ -2283,6 +2323,8 @@ void cApplication::Run()
 
   assert(staticVertexBufferObjectPointLight.IsCompiled());
   assert(staticVertexBufferObjectSpotLight.IsCompiled());
+
+  assert(staticVertexBufferObjectSkybox.IsCompiled());
 
   assert(light.texture.IsValid());
   assert(light.vbo.IsCompiled());
@@ -2881,6 +2923,9 @@ void cApplication::Run()
 
       // Render the cube mapped teapot
       pContext->BindTextureCubeMap(0, textureCubeMap);
+      //pContext->BindTextureCubeMap(0, pbr.DebugGetEnvCubemap());
+      //pContext->BindTextureCubeMap(0, pbr.GetIrradianceMap());
+      //pContext->BindTextureCubeMap(0, pbr.GetPrefilterMap());
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
@@ -2893,6 +2938,9 @@ void cApplication::Run()
       pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       pContext->UnBindTextureCubeMap(0, textureCubeMap);
+      //pContext->UnBindTextureCubeMap(0, pbr.DebugGetEnvCubemap());
+      //pContext->UnBindTextureCubeMap(0, pbr.GetIrradianceMap());
+      //pContext->UnBindTextureCubeMap(0, pbr.GetPrefilterMap());
 
       pContext->UnBindShader(shaderCubeMap);
 
@@ -3868,289 +3916,11 @@ void cApplication::Run()
 
       // Render the bobble head parts
       {
-        pContext->DisableCulling();
+        pContext->BindShader(pbr.GetShader());
 
-        pContext->BindShader(pbr.shader);
+        // https://google.github.io/filament/Filament.html
+        // TODO: Support car paint which is simulated with a layer of base colour paint and a layer of clear coat, the above link mentions it
 
-#if 0
-        pContext->SetShaderConstant("uLightPosition", positionBullBody + spitfire::math::cVec3(3.0f, 4.0f, 0.0f));
-        pContext->SetShaderConstant("uLightColor", spitfire::math::cVec3(0.8f, 0.8f, 0.8f));
-        pContext->SetShaderConstant("uLightRadius", 10.0f);
-
-        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(1.0f, 0.766f, 0.336f));
-        const float fRoughness = 0.1f;
-        pContext->SetShaderConstant("uRoughness", fRoughness);
-        pContext->SetShaderConstant("uMetallic", 1.0f);
-
-        pContext->SetShaderConstant("uExposure", 1.2f);
-        pContext->SetShaderConstant("uGamma", 2.2f);
-
-        pContext->BindStaticVertexBufferObject(bobbleHead.bodyVBO);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullBody);
-        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.bodyVBO);
-        pContext->UnBindStaticVertexBufferObject(bobbleHead.bodyVBO);
-
-        pContext->BindStaticVertexBufferObject(bobbleHead.headVBO);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullHeadOffset * matTranslationBullHeadSpringOffset);
-        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.headVBO);
-        pContext->UnBindStaticVertexBufferObject(bobbleHead.headVBO);
-
-
-        // Chrome
-        spitfire::math::cMat4 matTranslationChrome;
-        const spitfire::math::cVec3 positionChrome(-23.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslationChrome.SetTranslation(positionChrome);
-
-        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(196.0f / 255.0f, 197.0f / 255.0f, 197.0f / 255.0f));
-        pContext->SetShaderConstant("uRoughness", fRoughness);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationChrome);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-
-        // Sand
-        spitfire::math::cMat4 matTranslation2;
-        const spitfire::math::cVec3 position2(-26.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position2);
-
-        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(180.0f / 255.0f, 160.0f / 255.0f, 129.0f / 255.0f));
-        const float fRoughness2 = 0.5f;
-        pContext->SetShaderConstant("uRoughness", pow(fRoughness2 * fRoughness2, 4.0f));
-        pContext->SetShaderConstant("uMetallic", 0.0f);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-#elif 0
-        pContext->SetShaderConstant("camPos", camera.GetPosition());
-
-        pContext->SetShaderConstant("lightPositions[0]", positionBullBody + spitfire::math::cVec3(3.0f, 4.0f, 0.0f));
-        pContext->SetShaderConstant("lightColors[0]", spitfire::math::cVec3(0.8f, 0.8f, 0.8f));
-
-        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(1.0f, 0.766f, 0.336f));
-        const float fRoughness = 0.1f;
-        pContext->SetShaderConstant("roughness", fRoughness);
-        pContext->SetShaderConstant("metallic", 1.0f);
-
-        pContext->SetShaderConstant("ao", 1.0f);
-
-        pContext->SetShaderConstant("uExposure", 1.2f);
-        pContext->SetShaderConstant("uGamma", 2.2f);
-
-        pContext->BindStaticVertexBufferObject(bobbleHead.bodyVBO);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullBody);
-        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.bodyVBO);
-        pContext->UnBindStaticVertexBufferObject(bobbleHead.bodyVBO);
-
-        pContext->BindStaticVertexBufferObject(bobbleHead.headVBO);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullHeadOffset * matTranslationBullHeadSpringOffset);
-        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.headVBO);
-        pContext->UnBindStaticVertexBufferObject(bobbleHead.headVBO);
-
-
-        // Chrome
-        spitfire::math::cMat4 matTranslationChrome;
-        const spitfire::math::cVec3 positionChrome(-23.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslationChrome.SetTranslation(positionChrome);
-
-        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(196.0f / 255.0f, 197.0f / 255.0f, 197.0f / 255.0f));
-        pContext->SetShaderConstant("roughness", fRoughness);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationChrome);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-
-        // Sand
-        spitfire::math::cMat4 matTranslation2;
-        const spitfire::math::cVec3 position2(-26.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position2);
-
-        pContext->SetShaderConstant("albedo", spitfire::math::cVec3(180.0f / 255.0f, 160.0f / 255.0f, 129.0f / 255.0f));
-        const float fRoughness2 = 0.5f;
-        pContext->SetShaderConstant("roughness", pow(fRoughness2 * fRoughness2, 4.0f));
-        pContext->SetShaderConstant("metallic", 0.0f);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere0);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere0);
-#elif 0
-        pContext->BindTexture(0, pbrGold.textureAlbedo);
-        pContext->BindTexture(1, pbrGold.textureMetallic);
-        pContext->BindTexture(2, pbrGold.textureRoughness);
-        pContext->BindTexture(3, pbrGold.textureNormal);
-        pContext->BindTexture(4, pbrGold.textureAO);
-
-        pContext->SetShaderConstant("camPos", camera.GetPosition());
-
-        pContext->SetShaderConstant("lightPositions[0]", positionBullBody + spitfire::math::cVec3(3.0f, 0.5f, 0.0f));
-        pContext->SetShaderConstant("lightColors[0]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
-        pContext->SetShaderConstant("lightPositions[1]", positionBullBody + spitfire::math::cVec3(-15.0f, 0.5f, 0.0f));
-        pContext->SetShaderConstant("lightColors[1]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
-        pContext->SetShaderConstant("lightPositions[2]", positionBullBody + spitfire::math::cVec3(-20.0f, 0.5f, 0.0f));
-        pContext->SetShaderConstant("lightColors[2]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
-        pContext->SetShaderConstant("lightPositions[3]", positionBullBody + spitfire::math::cVec3(-47.0f, 0.5f, 0.0f));
-        pContext->SetShaderConstant("lightColors[3]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
-
-        pContext->SetShaderConstant("uExposure", 1.2f);
-        pContext->SetShaderConstant("uGamma", 2.2f);
-
-        pContext->BindStaticVertexBufferObject(bobbleHead.bodyVBO);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullBody);
-        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.bodyVBO);
-        pContext->UnBindStaticVertexBufferObject(bobbleHead.bodyVBO);
-
-        pContext->BindStaticVertexBufferObject(bobbleHead.headVBO);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullHeadOffset * matTranslationBullHeadSpringOffset);
-        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.headVBO);
-        pContext->UnBindStaticVertexBufferObject(bobbleHead.headVBO);
-
-        // Gold
-        spitfire::math::cMat4 matTranslation2;
-        const spitfire::math::cVec3 position2(-23.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position2);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
-
-        const spitfire::math::cVec3 position3(-26.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position3);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
-
-        const spitfire::math::cVec3 position4(-29.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position4);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
-
-        pContext->UnBindTexture(4, pbrGold.textureAO);
-        pContext->UnBindTexture(3, pbrGold.textureNormal);
-        pContext->UnBindTexture(2, pbrGold.textureRoughness);
-        pContext->UnBindTexture(1, pbrGold.textureMetallic);
-        pContext->UnBindTexture(0, pbrGold.textureAlbedo);
-
-        // Plastic
-        pContext->BindTexture(0, pbrPlastic.textureAlbedo);
-        pContext->BindTexture(1, pbrPlastic.textureMetallic);
-        pContext->BindTexture(2, pbrPlastic.textureRoughness);
-        pContext->BindTexture(3, pbrPlastic.textureNormal);
-        pContext->BindTexture(4, pbrPlastic.textureAO);
-
-        const spitfire::math::cVec3 position5(-32.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position5);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
-
-        const spitfire::math::cVec3 position6(-35.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position6);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
-
-        const spitfire::math::cVec3 position7(-38.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position7);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
-
-        pContext->UnBindTexture(4, pbrPlastic.textureAO);
-        pContext->UnBindTexture(3, pbrPlastic.textureNormal);
-        pContext->UnBindTexture(2, pbrPlastic.textureRoughness);
-        pContext->UnBindTexture(1, pbrPlastic.textureMetallic);
-        pContext->UnBindTexture(0, pbrPlastic.textureAlbedo);
-
-        // Wall
-        pContext->BindTexture(0, pbrWall.textureAlbedo);
-        pContext->BindTexture(1, pbrWall.textureMetallic);
-        pContext->BindTexture(2, pbrWall.textureRoughness);
-        pContext->BindTexture(3, pbrWall.textureNormal);
-        pContext->BindTexture(4, pbrWall.textureAO);
-
-        const spitfire::math::cVec3 position8(-41.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position8);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
-
-        const spitfire::math::cVec3 position9(-44.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position9);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
-
-        const spitfire::math::cVec3 position10(-47.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position10);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
-
-        pContext->UnBindTexture(4, pbrWall.textureAO);
-        pContext->UnBindTexture(3, pbrWall.textureNormal);
-        pContext->UnBindTexture(2, pbrWall.textureRoughness);
-        pContext->UnBindTexture(1, pbrWall.textureMetallic);
-        pContext->UnBindTexture(0, pbrWall.textureAlbedo);
-
-        // Rusted Iron
-        pContext->BindTexture(0, pbrRustedIron.textureAlbedo);
-        pContext->BindTexture(1, pbrRustedIron.textureMetallic);
-        pContext->BindTexture(2, pbrRustedIron.textureRoughness);
-        pContext->BindTexture(3, pbrRustedIron.textureNormal);
-        pContext->BindTexture(4, pbrRustedIron.textureAO);
-
-        const spitfire::math::cVec3 position11(-50.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position11);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
-
-        const spitfire::math::cVec3 position12(-53.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position12);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
-
-        const spitfire::math::cVec3 position13(-57.0f * fSpacingX, 3.0f, (-1.0f * fSpacingZ));
-        matTranslation2.SetTranslation(position13);
-
-        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
-        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
-        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
-        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
-
-        pContext->UnBindTexture(4, pbrRustedIron.textureAO);
-        pContext->UnBindTexture(3, pbrRustedIron.textureNormal);
-        pContext->UnBindTexture(2, pbrRustedIron.textureRoughness);
-        pContext->UnBindTexture(1, pbrRustedIron.textureMetallic);
-        pContext->UnBindTexture(0, pbrRustedIron.textureAlbedo);
-#elif 1
         pContext->SetShaderConstant("camPos", camera.GetPosition());
 
         pContext->SetShaderConstant("lightPositions[0]", positionBullBody + spitfire::math::cVec3(3.0f, 0.5f, 0.0f));
@@ -4172,6 +3942,15 @@ void cApplication::Run()
         pContext->SetShaderConstant("roughnessMap", 2);
         pContext->SetShaderConstant("normalMap", 3);
         pContext->SetShaderConstant("aoMap", 4);
+        pContext->SetShaderConstant("irradianceMap", 5);
+        pContext->SetShaderConstant("prefilterMap", 6);
+        pContext->SetShaderConstant("brdfLUT", 7);
+
+        pContext->BindTextureCubeMap(5, pbr.GetIrradianceMap());
+        pContext->BindTextureCubeMap(6, pbr.GetPrefilterMap());
+        pContext->BindTexture(7, pbr.GetBRDFLUTTexture());
+
+
 
         // Gold bull
         pContext->BindTexture(0, pbrGold.textureAlbedo);
@@ -4330,16 +4109,17 @@ void cApplication::Run()
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
 
+        pContext->UnBindTexture(7, pbr.GetBRDFLUTTexture());
+        pContext->UnBindTextureCubeMap(6, pbr.GetPrefilterMap());
+        pContext->UnBindTextureCubeMap(5, pbr.GetIrradianceMap());
+
         pContext->UnBindTexture(4, pbrRustedIron.textureAO);
         pContext->UnBindTexture(3, pbrRustedIron.textureNormal);
         pContext->UnBindTexture(2, pbrRustedIron.textureRoughness);
         pContext->UnBindTexture(1, pbrRustedIron.textureMetallic);
         pContext->UnBindTexture(0, pbrRustedIron.textureAlbedo);
-#endif
 
-        pContext->UnBindShader(pbr.shader);
-
-        pContext->EnableCulling();
+        pContext->UnBindShader(pbr.GetShader());
       }
 
       // Render the test images
@@ -4366,6 +4146,35 @@ void cApplication::Run()
         }
       }
 
+
+      // Render the skybox
+      glDepthFunc(GL_LEQUAL);
+      pContext->DisableDepthMasking();
+      pContext->DisableCulling();
+
+      pContext->BindShader(shaderSkybox);
+
+      pContext->BindTextureCubeMap(0, pbr.DebugGetEnvCubemap());
+      //pContext->BindTextureCubeMap(0, textureCubeMap);
+
+      //pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, spitfire::math::cMat4());
+      pContext->SetShaderConstant("matProjection", matProjection);
+
+      // Remove the translation part of the view matrix
+      const spitfire::math::cMat4 matViewAtCamera = spitfire::math::cMat4(spitfire::math::cMat3(matView));  
+      pContext->SetShaderConstant("matView", matViewAtCamera);
+
+      pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSkybox);
+      pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSkybox);
+      pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSkybox);
+
+      pContext->UnBindTextureCubeMap(0, pbr.DebugGetEnvCubemap());
+      //pContext->UnBindTextureCubeMap(0, textureCubeMap);
+
+      pContext->UnBindShader(shaderSkybox);
+
+      pContext->EnableCulling();
+      pContext->EnableDepthMasking();
 
       // Render some gui in 3d space
       /*{
@@ -4781,6 +4590,13 @@ void cApplication::Run()
       }
       #endif
 
+      #if 1
+      // Draw the PBR textures for debugging purposes
+      //RenderDebugScreenSquare(position.x, position.y, textureHDREquirectangularSpheremap); position.x += 0.25f;
+      RenderDebugScreenRectangleVariableSize(position.x, position.y, pbr.DebugGetTextureHDREquirectangularSpheremap()); position.x += 0.25f;
+      RenderDebugScreenSquare(position.x, position.y, pbr.GetBRDFLUTTexture()); position.x += 0.25f;
+      #endif
+
       #if 0
       // Draw the scene colour and depth buffer textures for debugging purposes
       float x = 0.125f;
@@ -4819,7 +4635,9 @@ void cApplication::Run()
       // Draw the particles depth texture
       RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectScreenColourAndDepth[inputFBO], shaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);
+      #endif
 
+      #if 1
       // Draw the teapot texture
       RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectTeapot, shaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);

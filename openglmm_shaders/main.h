@@ -61,6 +61,7 @@
 #include "hdr.h"
 #include "heathaze.h"
 #include "lensflaredirt.h"
+#include "pbr.h"
 #include "shadowmapping.h"
 #include "tronglow.h"
 #include "util.h"
@@ -149,6 +150,7 @@ private:
 
   void RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader);
   void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTexture& texture, opengl::cShader& shader);
+  void RenderDebugScreenSquare(float x, float y, const opengl::cTexture& texture);
   void RenderDebugScreenRectangleVariableSize(float x, float y, const opengl::cTexture& texture);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
@@ -265,6 +267,7 @@ private:
   opengl::cTexture textureFlare;
 
   opengl::cShader shaderColour;
+  opengl::cShader shaderSkybox;
   opengl::cShader shaderCubeMap;
   opengl::cShader shaderBRDF;
   opengl::cShader shaderCarPaint;
@@ -333,6 +336,8 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPointLight;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectSpotLight;
 
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectSkybox;
+
   cShaderVBOPair parallaxNormalMap;
 
   cVBOShaderTexturePair light;
@@ -357,10 +362,7 @@ private:
   BobbleHead bobbleHead;
 
 
-  struct PBR {
-    opengl::cShader shader;
-  };
-  PBR pbr;
+  cPBR pbr;
 
   struct PBRMaterial {
     opengl::cTexture textureAlbedo;
