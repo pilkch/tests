@@ -49,170 +49,41 @@
 
 namespace {
 
-// renderCube() renders a 1x1 3D cube in NDC.
-// -------------------------------------------------
-unsigned int cubeVAO = 0;
-unsigned int cubeVBO = 0;
-/*void renderCube()
-{
-    // initialize (if necessary)
-    if (cubeVAO == 0)
-    {
-        float vertices[] = {
-            // back face
-            // positions        // texture Coords // normal
-            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-             1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
-             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-            -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
-            // front face
-            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-             1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
-             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-            -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
-            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-            // left face
-            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-            -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
-            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-            -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-            // right face
-             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-             1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
-             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-             1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
-            // bottom face
-            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-             1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
-             1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-             1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-            -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-            // top face
-            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-             1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-             1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
-             1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-            -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
-        };
-        glGenVertexArrays(1, &cubeVAO);
-        glGenBuffers(1, &cubeVBO);
-        // fill buffer
-        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        // link vertex attributes
-        glBindVertexArray(cubeVAO);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-    }
-    // render Cube
-    glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
-}*/
+// pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
+// ----------------------------------------------------------------------------------------------
+// ***************
+// HACK: There is something wrong with either these matrix calculations, or the shader, we should be using 90 degrees for full coverage of each cubemap face, 
+// ***************
+//const spitfire::math::cMat4 captureProjection = spitfire::math::cMat4::Perspective(spitfire::math::DegreesToRadians(90.0f), 1.0f, 0.1f, 10.0f);
+const spitfire::math::cMat4 captureProjection = spitfire::math::cMat4::Perspective(spitfire::math::DegreesToRadians(53.0f), 1.0f, 0.1f, 10.0f);
+const spitfire::math::cMat4 captureViews[6] = {
+  spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 1.0f,  0.0f,  0.0f), spitfire::math::cVec3(0.0f, -1.0f,  0.0f)),
+  spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3(-1.0f,  0.0f,  0.0f), spitfire::math::cVec3(0.0f, -1.0f,  0.0f)),
+  spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 0.0f,  1.0f,  0.0f), spitfire::math::cVec3(0.0f,  0.0f,  1.0f)),
+  spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 0.0f, -1.0f,  0.0f), spitfire::math::cVec3(0.0f,  0.0f, -1.0f)),
+  spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 0.0f,  0.0f,  1.0f), spitfire::math::cVec3(0.0f, -1.0f,  0.0f)),
+  spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 0.0f,  0.0f, -1.0f), spitfire::math::cVec3(0.0f, -1.0f,  0.0f))
+};
 
-#define BUFFER_OFFSET(i) ((char *)nullptr + (i))
+const opengl::CUBE_MAP_FACE faces[6] = {
+  opengl::CUBE_MAP_FACE::POSITIVE_X, // Right
+  opengl::CUBE_MAP_FACE::NEGATIVE_X, // Left
+  opengl::CUBE_MAP_FACE::POSITIVE_Y, // Top
+  opengl::CUBE_MAP_FACE::NEGATIVE_Y, // Bottom
+  opengl::CUBE_MAP_FACE::POSITIVE_Z, // Back
+  opengl::CUBE_MAP_FACE::NEGATIVE_Z, // Front
+};
 
-void renderCube()
-{
-  // initialize (if necessary)
-  if (cubeVAO == 0) {
-		float vertices[] = {
-      // positions          // normal    // texture Coords
-			// back face
-			-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-			 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-			 1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
-			 1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-			-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-			-1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
-			// front face
-			-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-			 1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
-			 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-			 1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-			-1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
-			-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-			// left face
-			-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-			-1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
-			-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-			-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-			-1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-			-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-			// right face
-			 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-			 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-			 1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
-			 1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-			 1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-			 1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
-			// bottom face
-			-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-			 1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
-			 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-			 1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-			-1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-			-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-			// top face
-			-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-			 1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-			 1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
-			 1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-			-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-			-1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left
-		};
-		glGenVertexArrays(1, &cubeVAO);
-		glGenBuffers(1, &cubeVBO);
-		// fill buffer
-		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		// link vertex attributes
-		glBindVertexArray(cubeVAO);
+// For debugging
+const spitfire::math::cColour faceColour[6] = {
+  spitfire::math::cColour(1.0f, 0.0f, 0.0f), // Red
+  spitfire::math::cColour(0.0f, 1.0f, 0.0f), // Green
+  spitfire::math::cColour(0.0f, 0.0f, 1.0f), // Blue
+  spitfire::math::cColour(1.0f, 1.0f, 0.0f), // Yellow
+  spitfire::math::cColour(0.0f, 1.0f, 1.0f), // Cyan
+  spitfire::math::cColour(1.0f, 0.0f, 1.0f), // Magenta
+};
 
-    unsigned int shaderAttribute = 0;
-    const size_t nStrideBytes = 8 * sizeof(float);
-
-    // Position
-		glEnableVertexAttribArray(shaderAttribute);
-		glVertexAttribPointer(shaderAttribute, 3, GL_FLOAT, GL_FALSE, nStrideBytes, (void*)0);
-    shaderAttribute++;
-
-    // Normal
-		glEnableVertexAttribArray(shaderAttribute);
-		glVertexAttribPointer(shaderAttribute, 3, GL_FLOAT, GL_FALSE, nStrideBytes, (void*)(3 * sizeof(float)));
-    shaderAttribute++;
-
-    // Texture coordinates
-		glEnableVertexAttribArray(shaderAttribute);
-		glVertexAttribPointer(shaderAttribute, 2, GL_FLOAT, GL_FALSE, nStrideBytes, (void*)(6 * sizeof(float)));
-    shaderAttribute++;
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-
-    assert(cubeVAO != 0);
-  }
-
-  // render Cube
-  glBindVertexArray(cubeVAO);
-  glDrawArrays(GL_TRIANGLES, 0, 36);
-  glBindVertexArray(0);
-}
 
 // renderQuad() renders a 1x1 XY quad in NDC
 // -----------------------------------------
@@ -245,31 +116,31 @@ void renderQuad()
     glBindVertexArray(0);
 }
 
-#if 0
-void renderCubeVBO()
+void CreateCube(opengl::cContext& context, opengl::cStaticVertexBufferObject& vbo)
 {
-  opengl::cStaticVertexBufferObject vbo;
   context.CreateStaticVertexBufferObject(vbo);
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  const float fWidth = 1.0f;
+  // NOTE: We create the cube inverted so that the faces are on the inside, that way we don't have to disable culling
+  // NOTE: The PBR class is expecting vertex coordinates ranging from -1 to 1, so we use a width of 2 and the cube is centered aroud the origin
+  const float fWidth = -2.0f;
   const size_t nTextureCoordinates = 1;
 
   opengl::cGeometryBuilder builder;
-  builder.CreateCube(-fWidth, *pGeometryDataPtr, nTextureCoordinates);
+  builder.CreateCube(fWidth, *pGeometryDataPtr, nTextureCoordinates);
 
   vbo.SetData(pGeometryDataPtr);
 
   vbo.Compile();
+}
 
+void RenderCube(opengl::cContext& context, opengl::cStaticVertexBufferObject& vbo)
+{
   context.BindStaticVertexBufferObject(vbo);
   context.DrawStaticVertexBufferObjectTriangles(vbo);
   context.UnBindStaticVertexBufferObject(vbo);
-
-  context.DestroyStaticVertexBufferObject(vbo);
 }
-#endif
 
 }
 
@@ -281,15 +152,44 @@ bool cPBR::Init(opengl::cContext& context)
 {
   Destroy(context);
 
+
   context.CreateShader(shader, TEXT("shaders/pbr.vert"), TEXT("shaders/pbr.frag"));
   assert(shader.IsCompiledProgram());
 
-  return LoadAndRenderEquirectangularToCubemap(context);
+
+  // Create the cube VBO
+  opengl::cStaticVertexBufferObject vboCube;
+  CreateCube(context, vboCube);
+
+
+  // enable seamless cubemap sampling for lower mip levels in the pre-filter map.
+  glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+  if (!LoadAndRenderEquirectangularToCubeMap(context, vboCube)) {
+    return false;
+  }
+
+  if (!CreateIrradianceCubeMap(context, vboCube)) {
+    return false;
+  }
+
+  if (!CreatePreFilterCubeMap(context, vboCube)) {
+    return false;
+  }
+
+  if (!CreateBRDFLUTImage(context, vboCube)) {
+    return false;
+  }
+
+  context.DestroyStaticVertexBufferObject(vboCube);
+
+  return true;
 }
 
 void cPBR::Destroy(opengl::cContext& context)
 {
-  //context.DestroyStaticVertexBufferObject(bloomToScreenVBO[i]);
+  if (textureHDREquirectangularSpheremap.IsValid()) context.DestroyTexture(textureHDREquirectangularSpheremap);
+  if (fboEnvCubemap.IsValid()) context.DestroyTextureFrameBufferObject(fboEnvCubemap);
 
   if (fboIrradianceMap.IsValid()) context.DestroyTextureFrameBufferObject(fboIrradianceMap);
   if (fboPrefilterMap.IsValid()) context.DestroyTextureFrameBufferObject(fboPrefilterMap);
@@ -298,24 +198,10 @@ void cPBR::Destroy(opengl::cContext& context)
   context.DestroyShader(shader);
 }
 
-bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
+bool cPBR::LoadAndRenderEquirectangularToCubeMap(opengl::cContext& context, opengl::cStaticVertexBufferObject& vboCube)
 {
-  // enable seamless cubemap sampling for lower mip levels in the pre-filter map.
-  glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
   opengl::cShader shaderEquirectangularToCubemap;
   context.CreateShader(shaderEquirectangularToCubemap, "shaders/pbr/cubemap.vert", "shaders/pbr/equirectangular_to_cubemap.frag");
-
-  opengl::cShader shaderIrradiance;
-  context.CreateShader(shaderIrradiance, "shaders/pbr/cubemap.vert", "shaders/pbr/irradiance_convolution.frag");
-
-  opengl::cShader shaderPrefilter;
-  context.CreateShader(shaderPrefilter, "shaders/pbr/cubemap.vert", "shaders/pbr/prefilter.frag");
-
-  opengl::cShader shaderBRDF;
-  context.CreateShader(shaderBRDF, "shaders/pbr/brdf.vert", "shaders/pbr/brdf.frag");
-
-
 
   // pbr: load the HDR environment map
   // ---------------------------------
@@ -333,7 +219,7 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
   // The image needs to be upside down
   image.FlipVertically();
 
-  context.CreateTextureFromImageNoMipMaps(fboTextureHDREquirectangularSpheremap, image);
+  context.CreateTextureFromImageNoMipMaps(textureHDREquirectangularSpheremap, image);
 
   /*glGenTextures(1, &hdrTexture);
   glBindTexture(GL_TEXTURE_2D, hdrTexture);
@@ -370,26 +256,8 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // enable pre-filter mipmap sampling (combatting visible dots artifact)
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
 
-  void RenderEquirectangularToCubemap(opengl::cContext& context);
-
 
   opengl::cSystem::GetErrorString();
-
-  // pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
-  // ----------------------------------------------------------------------------------------------
-  // ***************
-  // HACK: There is something wrong with either these matrix calculations, or the shader, we should be using 90 degrees for full coverage of each cubemap face, 
-  // ***************
-  //const spitfire::math::cMat4 captureProjection = spitfire::math::cMat4::Perspective(spitfire::math::DegreesToRadians(90.0f), 1.0f, 0.1f, 10.0f);
-  const spitfire::math::cMat4 captureProjection = spitfire::math::cMat4::Perspective(spitfire::math::DegreesToRadians(53.0f), 1.0f, 0.1f, 10.0f);
-  const spitfire::math::cMat4 captureViews[] = {
-    spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 1.0f,  0.0f,  0.0f), spitfire::math::cVec3(0.0f, -1.0f,  0.0f)),
-    spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3(-1.0f,  0.0f,  0.0f), spitfire::math::cVec3(0.0f, -1.0f,  0.0f)),
-    spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 0.0f,  1.0f,  0.0f), spitfire::math::cVec3(0.0f,  0.0f,  1.0f)),
-    spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 0.0f, -1.0f,  0.0f), spitfire::math::cVec3(0.0f,  0.0f, -1.0f)),
-    spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 0.0f,  0.0f,  1.0f), spitfire::math::cVec3(0.0f, -1.0f,  0.0f)),
-    spitfire::math::cMat4::LookAt(spitfire::math::cVec3(0.0f, 0.0f, 0.0f), spitfire::math::cVec3( 0.0f,  0.0f, -1.0f), spitfire::math::cVec3(0.0f, -1.0f,  0.0f))
-  };
 
   context.SetClearColour(spitfire::math::cColour(0.0f, 0.0f, 0.0f));
   context.BeginRenderToCubeMapTexture(fboEnvCubemap);
@@ -401,7 +269,7 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
   context.SetShaderConstant("projection", captureProjection);
 
   std::cout<<"Binding sphere map"<<std::endl;
-  context.BindTexture(0, fboTextureHDREquirectangularSpheremap);
+  context.BindTexture(0, textureHDREquirectangularSpheremap);
 
   opengl::cSystem::GetErrorString();
 
@@ -411,25 +279,6 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, hdrTexture);*/
 
-  const opengl::CUBE_MAP_FACE faces[6] = {
-    opengl::CUBE_MAP_FACE::POSITIVE_X, // Right
-    opengl::CUBE_MAP_FACE::NEGATIVE_X, // Left
-    opengl::CUBE_MAP_FACE::POSITIVE_Y, // Top
-    opengl::CUBE_MAP_FACE::NEGATIVE_Y, // Bottom
-    opengl::CUBE_MAP_FACE::POSITIVE_Z, // Back
-    opengl::CUBE_MAP_FACE::NEGATIVE_Z, // Front
-  };
-
-  // For debugging
-  const spitfire::math::cColour faceColour[6] = {
-    spitfire::math::cColour(1.0f, 0.0f, 0.0f), // Red
-    spitfire::math::cColour(0.0f, 1.0f, 0.0f), // Green
-    spitfire::math::cColour(0.0f, 0.0f, 1.0f), // Blue
-    spitfire::math::cColour(1.0f, 1.0f, 0.0f), // Yellow
-    spitfire::math::cColour(0.0f, 1.0f, 1.0f), // Cyan
-    spitfire::math::cColour(1.0f, 0.0f, 1.0f), // Magenta
-  };
-
   for (size_t i = 0; i < 6; i++) {
     context.SetShaderConstant("view", captureViews[i]);
 
@@ -438,17 +287,12 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
 
     opengl::cSystem::GetErrorString();
 
-    // TODO: We should probably invert the cube coordinates so that we don't have to disable culling?
-    context.DisableCulling();
-
-    renderCube();
-
-    context.EnableCulling();
+    RenderCube(context, vboCube);
 
     opengl::cSystem::GetErrorString();
   }
 
-  context.UnBindTexture(0, fboTextureHDREquirectangularSpheremap);
+  context.UnBindTexture(0, textureHDREquirectangularSpheremap);
 
   context.UnBindShader(shaderEquirectangularToCubemap);
 
@@ -486,7 +330,7 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      renderCube();
+    RenderCube(context, vboCube);
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -494,10 +338,17 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
   glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
   glGenerateMipmap(GL_TEXTURE_CUBE_MAP);*/
 
-
-
   opengl::cSystem::GetErrorString();
 
+  context.DestroyShader(shaderEquirectangularToCubemap);
+
+  return true;
+}
+
+bool cPBR::CreateIrradianceCubeMap(opengl::cContext& context, opengl::cStaticVertexBufferObject& vboCube)
+{
+  opengl::cShader shaderIrradiance;
+  context.CreateShader(shaderIrradiance, "shaders/pbr/cubemap.vert", "shaders/pbr/irradiance_convolution.frag");
 
 
   // pbr: create an irradiance cubemap, and re-scale capture FBO to irradiance scale.
@@ -543,11 +394,7 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
 
     context.BeginRenderToCubeMapTextureFace(fboIrradianceMap, faces[i]);
 
-    context.DisableCulling();
-
-    renderCube();
-
-    context.EnableCulling();
+    RenderCube(context, vboCube);
   }
 
   context.UnBindTextureCubeMap(0, fboEnvCubemap);
@@ -569,13 +416,23 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceMap, 0);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      renderCube();
+      RenderCube(context, vboCube);
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
 
 
   opengl::cSystem::GetErrorString();
 
+  
+  context.DestroyShader(shaderIrradiance);
+
+  return true;
+}
+
+bool cPBR::CreatePreFilterCubeMap(opengl::cContext& context, opengl::cStaticVertexBufferObject& vboCube)
+{
+  opengl::cShader shaderPrefilter;
+  context.CreateShader(shaderPrefilter, "shaders/pbr/cubemap.vert", "shaders/pbr/prefilter.frag");
 
 
 
@@ -648,11 +505,7 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
 
       context.SetShaderConstant("view", captureViews[i]);
 
-      context.DisableCulling();
-
-      renderCube();
-
-      context.EnableCulling();
+      RenderCube(context, vboCube);
     }
   }
 
@@ -689,7 +542,8 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
           glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip);
 
           glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-          renderCube();
+
+          RenderCube(context, vboCube);
       }
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
@@ -698,10 +552,20 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
 
   opengl::cSystem::GetErrorString();
 
+  context.DestroyShader(shaderPrefilter);
+
+  return true;
+}
+
+bool cPBR::CreateBRDFLUTImage(opengl::cContext& context, opengl::cStaticVertexBufferObject& vboCube)
+{
+  opengl::cShader shaderBRDF;
+  context.CreateShader(shaderBRDF, "shaders/pbr/brdf.vert", "shaders/pbr/brdf.frag");
+
+
   // pbr: generate a 2D LUT from the BRDF equations used.
   // ----------------------------------------------------
 
-  // TODO: Move this to a second function
   opengl::cTextureFrameBufferObject::FLAGS flagsBRDF;
   flagsBRDF.SetColourBuffer();
   flagsBRDF.SetDepthBuffer();
@@ -745,12 +609,6 @@ bool cPBR::LoadAndRenderEquirectangularToCubemap(opengl::cContext& context)
 
   opengl::cSystem::GetErrorString();
 
-  //context.DestroyTexture(fboTextureHDREquirectangularSpheremap);
-  //context.DestroyTextureFrameBufferObject(fboEnvCubemap);
-
-  context.DestroyShader(shaderEquirectangularToCubemap);
-  context.DestroyShader(shaderIrradiance);
-  context.DestroyShader(shaderPrefilter);
   context.DestroyShader(shaderBRDF);
 
   return true;

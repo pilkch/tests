@@ -64,7 +64,7 @@ public:
   // This is a shader that a PBR object can use for rendering in combination with the irradiance map, prefilter map and BRDF LUT texture below
   opengl::cShader& GetShader() { return shader; }
 
-  opengl::cTexture& DebugGetTextureHDREquirectangularSpheremap() { return fboTextureHDREquirectangularSpheremap; }
+  opengl::cTexture& DebugGetTextureHDREquirectangularSpheremap() { return textureHDREquirectangularSpheremap; }
   opengl::cTextureFrameBufferObject& DebugGetEnvCubemap() { return fboEnvCubemap; }
 
   opengl::cTextureFrameBufferObject& GetIrradianceMap() { return fboIrradianceMap; }
@@ -72,10 +72,13 @@ public:
   opengl::cTextureFrameBufferObject& GetBRDFLUTTexture() { return fboBRDFLUTTexture; }
 
 private:
-  bool LoadAndRenderEquirectangularToCubemap(opengl::cContext& context);
+  bool LoadAndRenderEquirectangularToCubeMap(opengl::cContext& context, opengl::cStaticVertexBufferObject& vboCube);
+  bool CreateIrradianceCubeMap(opengl::cContext& context, opengl::cStaticVertexBufferObject& vboCube);
+  bool CreatePreFilterCubeMap(opengl::cContext& context, opengl::cStaticVertexBufferObject& vboCube);
+  bool CreateBRDFLUTImage(opengl::cContext& context, opengl::cStaticVertexBufferObject& vboCube);
 
   // After the other textures below have been created we don't need these two textures, we only hold onto them for debug purposes
-  opengl::cTexture fboTextureHDREquirectangularSpheremap;
+  opengl::cTexture textureHDREquirectangularSpheremap;
   opengl::cTextureFrameBufferObject fboEnvCubemap;
 
   opengl::cTextureFrameBufferObject fboIrradianceMap;
