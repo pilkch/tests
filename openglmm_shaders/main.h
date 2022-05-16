@@ -61,6 +61,7 @@
 #include "hdr.h"
 #include "heathaze.h"
 #include "lensflaredirt.h"
+#include "piemenu.h"
 #include "pbr.h"
 #include "shadowmapping.h"
 #include "tronglow.h"
@@ -100,6 +101,8 @@ public:
   void Run();
 
   opengl::cResolution GetResolution() const;
+
+  void OnCommand(int idCommand);
 
 protected:
   // Called from cTronGlow, cHeatHaze, cHDR and cLensFlareDirt
@@ -388,6 +391,8 @@ private:
   std::vector<cSimplePostRenderShader> simplePostRenderShaders;
   bool bSimplePostRenderDirty;
   opengl::cShader shaderScreenRectSimplePostRender;
+
+  cGUI gui;
 
   enum class COLOUR_BLIND_MODE {
     PROTANOPIA,
