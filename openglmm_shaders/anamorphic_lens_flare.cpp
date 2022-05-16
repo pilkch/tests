@@ -7,6 +7,9 @@
 #include <spitfire/spitfire.h>
 #include <spitfire/util/log.h>
 
+// libopenglmm headers
+#include <libopenglmm/cVertexBufferObject.h>
+
 // Application headers
 #include "anamorphic_lens_flare.h"
 #include "main.h"
@@ -21,18 +24,18 @@ const size_t horizontalDownScale4 = 32;
 const size_t horizontalDownScale5 = 32;
 const size_t verticalDownScale = 4;
 
-void cAnamorphicLensFlare::Init(cApplication& application, opengl::cContext& context)
+void cAnamorphicLensFlare::Init(opengl::cContext& context)
 {
   context.CreateShader(shaderHorizontalBlur, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/anamorphiclensflare/horizontalblur.frag"));
   assert(shaderHorizontalBlur.IsCompiledProgram());
-  
+
   context.CreateTextureFrameBufferObject(brightPixelsStretchedHorizontally0, context.GetWidth() / horizontalDownScale0, context.GetHeight(), opengl::PIXELFORMAT::R8G8B8A8);
   context.CreateTextureFrameBufferObject(brightPixelsStretchedHorizontally1, context.GetWidth() / horizontalDownScale1, context.GetHeight(), opengl::PIXELFORMAT::R8G8B8A8);
   context.CreateTextureFrameBufferObject(brightPixelsStretchedHorizontally2, context.GetWidth() / horizontalDownScale2, context.GetHeight(), opengl::PIXELFORMAT::R8G8B8A8);
   context.CreateTextureFrameBufferObject(brightPixelsStretchedHorizontally3, context.GetWidth() / horizontalDownScale3, context.GetHeight(), opengl::PIXELFORMAT::R8G8B8A8);
   context.CreateTextureFrameBufferObject(brightPixelsStretchedHorizontally4, context.GetWidth() / horizontalDownScale4, context.GetHeight(), opengl::PIXELFORMAT::R8G8B8A8);
   context.CreateTextureFrameBufferObject(brightPixelsStretchedHorizontally5, context.GetWidth() / horizontalDownScale5, context.GetHeight() / verticalDownScale, opengl::PIXELFORMAT::R8G8B8A8);
-  
+
   context.CreateShader(shaderAnamorphicLensBlueTinge, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/anamorphiclensflare/bluetinge.frag"));
   assert(shaderAnamorphicLensBlueTinge.IsCompiledProgram());
 }

@@ -1,6 +1,6 @@
 // Application headers
-#include "main.h"
 #include "heathaze.h"
+#include "main.h"
 
 // ** cHeatHaze
 
@@ -39,7 +39,7 @@ void cHeatHaze::Destroy(opengl::cContext& context)
   context.DestroyShader(shaderHeatHazeScreen);
 }
 
-void cHeatHaze::Resize(cApplication& application, opengl::cContext& context)
+void cHeatHaze::Resize(opengl::cContext& context)
 {
   blur.Resize(context);
 }

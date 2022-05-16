@@ -45,7 +45,6 @@
 // libopenglmm headers
 #include <libopenglmm/libopenglmm.h>
 #include <libopenglmm/cContext.h>
-#include <libopenglmm/cFont.h>
 #include <libopenglmm/cGeometry.h>
 #include <libopenglmm/cShader.h>
 #include <libopenglmm/cSystem.h>
@@ -55,6 +54,29 @@
 
 // Application headers
 #include "main.h"
+
+namespace waving_flag_properties {
+
+// Texture is approximately 1200x800, so we need to match that ratio
+const float fWidthMeters = 1.2f;
+const float fHeightMeters = 0.8f;
+const size_t segments_horizontal = 12;
+const size_t segments_vertical = 8;
+const size_t points_horizontal = segments_horizontal + 1;
+const size_t points_vertical = segments_vertical + 1;
+
+}
+
+namespace bobble_head_properties {
+
+const float fWidthMeters = 1.5f;
+const float fHeightMeters = 0.4f;
+const size_t segments_horizontal = 12;
+const size_t segments_vertical = 8;
+const size_t points_horizontal = segments_horizontal + 1;
+const size_t points_vertical = segments_vertical + 1;
+
+}
 
 // ** cApplication
 
@@ -236,18 +258,27 @@ void cApplication::CreatePlane(opengl::cStaticVertexBufferObject& vbo, size_t nT
   vbo.Compile();
 }
 
-void cApplication::CreateCube(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates)
+// TODO: Move all of these functions to a separate namespace
+namespace util {
+
+void CreateCube(opengl::cStaticVertexBufferObject& vbo, float fSizeMeters, size_t nTextureCoordinates)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  const float fWidth = 1.0f;
-
   opengl::cGeometryBuilder builder;
-  builder.CreateCube(fWidth, *pGeometryDataPtr, nTextureCoordinates);
+  builder.CreateCube(fSizeMeters, *pGeometryDataPtr, nTextureCoordinates);
 
   vbo.SetData(pGeometryDataPtr);
 
   vbo.Compile();
+}
+
+}
+
+void cApplication::CreateCube(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates)
+{
+  const float fSizeMeters = 1.0f;
+  util::CreateCube(vbo, fSizeMeters, nTextureCoordinates);
 }
 
 void cApplication::CreateBox(opengl::cStaticVertexBufferObject& vbo, size_t nTextureCoordinates)
@@ -298,6 +329,7 @@ void cApplication::CreateTeapot(opengl::cStaticVertexBufferObject& vbo, size_t n
 void cApplication::CreateGear(opengl::cStaticVertexBufferObject& vbo)
 {
 }
+
 
 
 class cGeometryBuilder_v3_n3_t2_tangent4
@@ -587,44 +619,39 @@ void cApplication::CreateTeapotVBO()
   staticVertexBufferObjectLargeTeapot.Compile();
 }
 
-#ifdef BUILD_LARGE_STATUE_MODEL
-void cApplication::CreateStatueVBO()
+bool cApplication::CreateVBOFromObjFile(opengl::cStaticVertexBufferObject& vbo, const std::string& file_path, float fScale)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
   breathe::render::model::cStaticModel model;
 
   breathe::render::model::cFileFormatOBJ loader;
-  if (!loader.Load(TEXT("models/venus.obj"), model)) {
-    LOG("Failed to load obj file");
-    return;
+  if (!loader.Load(TEXT(file_path), model)) {
+    LOG("Failed to load obj file \"" + file_path + "\"");
+    return false;
   }
 
   opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
 
-  // The obj file is giant so scale it down as well
-  spitfire::math::cMat4 matScale;
-  matScale.SetScale(spitfire::math::cVec3(0.1f, 0.1f, 0.1f));
-
-  const spitfire::math::cMat4 matTransform = matScale;
-
+  // Generate triangles from the points in the models in the the .obj file
   const size_t nMeshes = model.mesh.size();
   for (size_t iMesh = 0; iMesh < nMeshes; iMesh++) {
     const size_t nVertices = model.mesh[iMesh]->vertices.size() / 3;
     for (size_t iVertex = 0; iVertex < nVertices; iVertex++) {
       builder.PushBack(
-        matTransform * spitfire::math::cVec3(model.mesh[iMesh]->vertices[(3 * iVertex)], model.mesh[iMesh]->vertices[(3 * iVertex) + 1], model.mesh[iMesh]->vertices[(3 * iVertex) + 2]),
+        fScale * spitfire::math::cVec3(model.mesh[iMesh]->vertices[(3 * iVertex)], model.mesh[iMesh]->vertices[(3 * iVertex) + 1], model.mesh[iMesh]->vertices[(3 * iVertex) + 2]),
         spitfire::math::cVec3(model.mesh[iMesh]->normals[(3 * iVertex)], model.mesh[iMesh]->normals[(3 * iVertex) + 1], model.mesh[iMesh]->normals[(3 * iVertex) + 2]),
         spitfire::math::cVec2(model.mesh[iMesh]->textureCoordinates[(2 * iVertex)], model.mesh[iMesh]->textureCoordinates[(2 * iVertex) + 1])
       );
     }
   }
 
-  staticVertexBufferObjectStatue.SetData(pGeometryDataPtr);
+  vbo.SetData(pGeometryDataPtr);
 
-  staticVertexBufferObjectStatue.Compile();
+  vbo.Compile();
+
+  return true;
 }
-#endif
 
 void cApplication::CreateScreenRectVariableTextureSizeVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight)
 {
@@ -836,6 +863,265 @@ void cApplication::CreateTestImage(opengl::cStaticVertexBufferObject& vbo, size_
   vbo.Compile();
 }
 
+void cApplication::InitWavingFlag(breathe::physics::verlet::cGroup& group, float fWidthMeters, float fHeightMeters, size_t points_horizontal, size_t points_vertical)
+{
+  const float fSegmentWidth = fWidthMeters / float(points_horizontal);
+  const float fSegmentHeight = fHeightMeters / float(points_vertical);
+
+  // Add points from the top left to the bottom right
+  for (size_t y = 0; y < points_vertical; y++) {
+    for (size_t x = 0; x < points_horizontal; x++) {
+      breathe::physics::verlet::Particle p(spitfire::math::cVec3(float(x) * fSegmentWidth, fHeightMeters - (float(y) * fSegmentHeight), 0.0f));
+      group.particles.push_back(p);
+    }
+  }
+
+  // Pin the left hand particles to their current positions
+  for (size_t y = 0; y < points_vertical; y++) {
+    group.pins.push_back(&group.particles[(y * points_horizontal)]);
+  }
+
+
+  const float fStiffness = 0.8f;
+
+  // Link each particle together with springs
+  for (size_t y = 0; y < points_vertical - 1; y++) {
+    for (size_t x = 0; x < points_horizontal - 1; x++) {
+      // Create a spring from this particle to the particle on the right
+      {
+        breathe::physics::verlet::Particle* a = &group.particles[(y * points_horizontal) + x];
+        breathe::physics::verlet::Particle* b = &group.particles[(y * points_horizontal) + x + 1];
+        const float fDistance = (a->pos - b->pos).GetLength();
+        group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+      }
+
+      // Create a spring from this particle to the particle below us
+      {
+        breathe::physics::verlet::Particle* a = &group.particles[(y * points_horizontal) + x];
+        breathe::physics::verlet::Particle* b = &group.particles[((y + 1) * points_horizontal) + x];
+        const float fDistance = (a->pos - b->pos).GetLength();
+        group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+      }
+    }
+  }
+
+  // Link the last row
+  for (size_t x = 0; x < points_horizontal - 1; x++) {
+    // Create a spring from this particle to the particle on the right
+    const size_t y = points_vertical - 1;
+    breathe::physics::verlet::Particle* a = &group.particles[(y * points_horizontal) + x];
+    breathe::physics::verlet::Particle* b = &group.particles[(y * points_horizontal) + x + 1];
+    const float fDistance = (a->pos - b->pos).GetLength();
+    group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+  }
+
+  // Link the last column
+  for (size_t y = 0; y < points_vertical - 1; y++) {
+    // Create a spring from this particle to the particle below us
+    const size_t x = points_horizontal - 1;
+    breathe::physics::verlet::Particle* a = &group.particles[(y * points_horizontal) + x];
+    breathe::physics::verlet::Particle* b = &group.particles[((y + 1) * points_horizontal) + x];
+    const float fDistance = (a->pos - b->pos).GetLength();
+    group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+  }
+}
+
+void cApplication::InitWavingFlags()
+{
+  const float fWidthMeters = waving_flag_properties::fWidthMeters;
+  const float fHeightMeters = waving_flag_properties::fHeightMeters;
+  const size_t points_horizontal = waving_flag_properties::points_horizontal;
+  const size_t points_vertical = waving_flag_properties::points_vertical;
+
+  for (size_t i = 0; i < 3; i++) {
+    InitWavingFlag(wavingFlagPhysics[i], fWidthMeters, fHeightMeters, points_horizontal, points_vertical);
+  }
+}
+
+void cApplication::UpdateFlags()
+{
+  for (size_t i = 0; i < 3; i++) {
+    // Update the physics for this flag
+    breathe::physics::verlet::Update(physicsWorld, wavingFlagPhysics[i]);
+
+
+    // Discard and recreate our VBO
+    if (wavingFlagRenderable[i].vbo.IsCompiled()) pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[i].vbo);
+    pContext->CreateStaticVertexBufferObject(wavingFlagRenderable[i].vbo);
+
+
+    opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
+
+    opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
+
+    // Get the coordinates from the physics
+    const std::vector<breathe::physics::verlet::Particle>& particles = wavingFlagPhysics[i].particles;
+
+    const float fTextureU = wavingFlagRenderable[i].texture.GetWidth() / float(waving_flag_properties::segments_horizontal);
+    const float fTextureV = wavingFlagRenderable[i].texture.GetHeight() / float(waving_flag_properties::segments_vertical);
+
+    const spitfire::math::cVec3 normal(0.0f, 0.0f, -1.0f);
+
+    for (size_t y = 0; y < waving_flag_properties::segments_vertical; y++) {
+      for (size_t x = 0; x < waving_flag_properties::segments_horizontal; x++) {
+        const spitfire::math::cVec3& p0 = particles[(y * waving_flag_properties::points_horizontal) + x].pos;
+        const spitfire::math::cVec3& p1 = particles[(y * waving_flag_properties::points_horizontal) + x + 1].pos;
+        const spitfire::math::cVec3& p2 = particles[((y + 1) * waving_flag_properties::points_horizontal) + x + 1].pos;
+        const spitfire::math::cVec3& p3 = particles[((y + 1) * waving_flag_properties::points_horizontal) + x].pos;
+
+        // Add a front facing quad
+        builder.PushBack(p1, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y) * fTextureV));
+        builder.PushBack(p3, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y + 1) * fTextureV));
+        builder.PushBack(p2, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y + 1) * fTextureV));
+        builder.PushBack(p0, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y) * fTextureV));
+        builder.PushBack(p3, normal, spitfire::math::cVec2(float(x) * fTextureU, float(y + 1) * fTextureV));
+        builder.PushBack(p1, normal, spitfire::math::cVec2(float(x + 1) * fTextureU, float(y) * fTextureV));
+      }
+    }
+
+    wavingFlagRenderable[i].vbo.SetData(pGeometryDataPtr);
+
+    wavingFlagRenderable[i].vbo.Compile();
+  }
+}
+
+
+void cApplication::InitBobbleHead()
+{
+  breathe::physics::verlet::cGroup& group = bobbleHead.physics;
+
+  const float fTowerWidthMeters = 0.3f;
+  const float fTowerDepthMeters = 0.3f;
+  const float fTowerHeightMeters = 0.3f; // How "long"/"tall" the tower is
+  const size_t tower_segments = 4; // How many segments along the the "length"/"height" is this tower?
+
+  const float fSegmentHeightMeters = fTowerHeightMeters / float(tower_segments);
+
+  // TODO: Rotate the head forward at 45 degrees or so with a quaternion
+
+  // Add 4 points in each tower segment
+  for (size_t s = 0; s < tower_segments; s++) {
+    const spitfire::math::cVec3 v0(-0.5f * fTowerWidthMeters, -0.5f * fTowerDepthMeters, fSegmentHeightMeters * s);
+    const spitfire::math::cVec3 v1(-0.5f * fTowerWidthMeters, 0.5f * fTowerDepthMeters, fSegmentHeightMeters * s);
+    const spitfire::math::cVec3 v2(0.5f * fTowerWidthMeters, 0.5f * fTowerDepthMeters, fSegmentHeightMeters * s);
+    const spitfire::math::cVec3 v3(0.5f * fTowerWidthMeters, -0.5f * fTowerDepthMeters, fSegmentHeightMeters * s);
+
+    breathe::physics::verlet::Particle p0(v0);
+    group.particles.push_back(p0);
+    breathe::physics::verlet::Particle p1(v1);
+    group.particles.push_back(p1);
+    breathe::physics::verlet::Particle p2(v2);
+    group.particles.push_back(p2);
+    breathe::physics::verlet::Particle p3(v3);
+    group.particles.push_back(p3);
+  }
+
+  // Pin the particles on the bottom of the stack to their current positions
+  for (size_t i = 0; i < 4; i++) {
+    group.pins.push_back(&group.particles[i]);
+  }
+
+
+  const float fStiffness = 0.8f;
+
+  // Link the particles within each layer together with springs
+  for (size_t s = 0; s < tower_segments; s++) {
+    const size_t i = s * 4;
+
+    // Links along the 4 edges
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 1];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 1];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 2];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 2];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 3];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 3];
+      breathe::physics::verlet::Particle* b = &group.particles[i];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+
+    // And create two diagonal springs across the middle for strength
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 2];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 1];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 3];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+  }
+
+
+  // Link the segments together with springs
+  for (size_t s = 0; s < tower_segments - 1; s++) {
+    const size_t i = s * 4;
+
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 4];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 1];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 5];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 2];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 6];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+    {
+      breathe::physics::verlet::Particle* a = &group.particles[i + 3];
+      breathe::physics::verlet::Particle* b = &group.particles[i + 7];
+      const float fDistance = (a->pos - b->pos).GetLength();
+      group.springs.push_back(breathe::physics::verlet::Spring(a, b, fDistance, fStiffness));
+    }
+  }
+}
+
+void cApplication::UpdateBobbleHead()
+{
+  // Update the physics for the bobble head
+  breathe::physics::verlet::Update(physicsWorld, bobbleHead.physics);
+
+
+  // Get the coordinates from the physics
+  const std::vector<breathe::physics::verlet::Particle>& particles = bobbleHead.physics.particles;
+
+  const size_t i = 8;//particles.size() - (1 + 4);
+
+  const spitfire::math::cVec3& p0 = particles[i].pos;
+  //const spitfire::math::cVec3& p1 = particles[i + 1].pos;
+  //const spitfire::math::cVec3& p2 = particles[i + 2].pos;
+  //const spitfire::math::cVec3& p3 = particles[i + 3].pos;
+
+  bobbleHead.topOfSpringPosition = p0;
+  //bobbleHead.topOfSpringRotation = ;
+}
+
+
 bool cApplication::Create()
 {
   const opengl::cCapabilities& capabilities = system.GetCapabilities();
@@ -978,7 +1264,9 @@ bool cApplication::Create()
 
   #ifdef BUILD_LARGE_STATUE_MODEL
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectStatue);
-  CreateStatueVBO();
+
+  const float fStatueScale = 0.1f;
+  CreateVBOFromObjFile(staticVertexBufferObjectStatue, TEXT("models/venus.obj"), fScale);
   #endif
 
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectScreenRectScreen);
@@ -1028,6 +1316,78 @@ bool cApplication::Create()
     }
   }
 
+
+  pContext->CreateTexture(wavingFlagRenderable[0].texture, TEXT("textures/flags/australian.png"));
+  assert(wavingFlagRenderable[0].texture.IsValid());
+  pContext->CreateTexture(wavingFlagRenderable[1].texture, TEXT("textures/flags/aboriginal.png"));
+  assert(wavingFlagRenderable[1].texture.IsValid());
+  pContext->CreateTexture(wavingFlagRenderable[2].texture, TEXT("textures/flags/torres_strait_islander.png"));
+  assert(wavingFlagRenderable[2].texture.IsValid());
+
+  InitWavingFlags();
+
+  physicsWorld.Update();
+
+  UpdateFlags();
+
+
+  const float fBullScale = 1.0f;
+
+  CreateVBOFromObjFile(bobbleHead.bodyVBO, TEXT("models/bull_body.obj"), fBullScale);
+  CreateVBOFromObjFile(bobbleHead.headVBO, TEXT("models/bull_head.obj"), fBullScale);
+
+  InitBobbleHead();
+
+  UpdateBobbleHead();
+
+
+  assert(pbr.Init(*pContext));
+
+  pContext->CreateTexture(pbrGold.textureAlbedo, TEXT("textures/pbr/gold/albedo.png"));
+  assert(pbrGold.textureAlbedo.IsValid());
+  pContext->CreateTexture(pbrGold.textureMetallic, TEXT("textures/pbr/gold/metallic.png"));
+  assert(pbrGold.textureMetallic.IsValid());
+  pContext->CreateTexture(pbrGold.textureRoughness, TEXT("textures/pbr/gold/roughness.png"));
+  assert(pbrGold.textureRoughness.IsValid());
+  pContext->CreateTexture(pbrGold.textureNormal, TEXT("textures/pbr/gold/normal.png"));
+  assert(pbrGold.textureNormal.IsValid());
+  pContext->CreateTexture(pbrGold.textureAO, TEXT("textures/pbr/gold/ao.png"));
+  assert(pbrGold.textureAO.IsValid());
+
+  pContext->CreateTexture(pbrPlastic.textureAlbedo, TEXT("textures/pbr/plastic/albedo.png"));
+  assert(pbrPlastic.textureAlbedo.IsValid());
+  pContext->CreateTexture(pbrPlastic.textureMetallic, TEXT("textures/pbr/plastic/metallic.png"));
+  assert(pbrPlastic.textureMetallic.IsValid());
+  pContext->CreateTexture(pbrPlastic.textureRoughness, TEXT("textures/pbr/plastic/roughness.png"));
+  assert(pbrPlastic.textureRoughness.IsValid());
+  pContext->CreateTexture(pbrPlastic.textureNormal, TEXT("textures/pbr/plastic/normal.png"));
+  assert(pbrPlastic.textureNormal.IsValid());
+  pContext->CreateTexture(pbrPlastic.textureAO, TEXT("textures/pbr/plastic/ao.png"));
+  assert(pbrPlastic.textureAO.IsValid());
+
+  pContext->CreateTexture(pbrWall.textureAlbedo, TEXT("textures/pbr/wall/albedo.png"));
+  assert(pbrWall.textureAlbedo.IsValid());
+  pContext->CreateTexture(pbrWall.textureMetallic, TEXT("textures/pbr/wall/metallic.png"));
+  assert(pbrWall.textureMetallic.IsValid());
+  pContext->CreateTexture(pbrWall.textureRoughness, TEXT("textures/pbr/wall/roughness.png"));
+  assert(pbrWall.textureRoughness.IsValid());
+  pContext->CreateTexture(pbrWall.textureNormal, TEXT("textures/pbr/wall/normal.png"));
+  assert(pbrWall.textureNormal.IsValid());
+  pContext->CreateTexture(pbrWall.textureAO, TEXT("textures/pbr/wall/ao.png"));
+  assert(pbrWall.textureAO.IsValid());
+
+  pContext->CreateTexture(pbrRustedIron.textureAlbedo, TEXT("textures/pbr/rusted_iron/albedo.png"));
+  assert(pbrRustedIron.textureAlbedo.IsValid());
+  pContext->CreateTexture(pbrRustedIron.textureMetallic, TEXT("textures/pbr/rusted_iron/metallic.png"));
+  assert(pbrRustedIron.textureMetallic.IsValid());
+  pContext->CreateTexture(pbrRustedIron.textureRoughness, TEXT("textures/pbr/rusted_iron/roughness.png"));
+  assert(pbrRustedIron.textureRoughness.IsValid());
+  pContext->CreateTexture(pbrRustedIron.textureNormal, TEXT("textures/pbr/rusted_iron/normal.png"));
+  assert(pbrRustedIron.textureNormal.IsValid());
+  pContext->CreateTexture(pbrRustedIron.textureAO, TEXT("textures/pbr/rusted_iron/ao.png"));
+  assert(pbrRustedIron.textureAO.IsValid());
+
+
   // Create our floor
   const float fFloorSize = 100.0f;
   const float fTextureWidthWorldSpaceMeters = 1.0f;
@@ -1058,6 +1418,8 @@ bool cApplication::Create()
   CreateSquare(staticVertexBufferObjectSquare1, 1);
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectCube1);
   CreateCube(staticVertexBufferObjectCube1, 1);
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+  CreateSphere(staticVertexBufferObjectSphere1, 1, 0.5f * fRadius);
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
   CreateTeapot(staticVertexBufferObjectTeapot1, 1);
 
@@ -1089,6 +1451,9 @@ bool cApplication::Create()
   pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectSpotLight);
   CreateSphere(staticVertexBufferObjectSpotLight, 0, 0.3f);
 
+  pContext->CreateStaticVertexBufferObject(staticVertexBufferObjectSkybox);
+  util::CreateCube(staticVertexBufferObjectSkybox, 10.0f, 1);
+
   pContext->CreateStaticVertexBufferObject(parallaxNormalMap.vbo);
   CreateNormalMappedCube();
 
@@ -1113,6 +1478,8 @@ void cApplication::Destroy()
 
   pContext->DestroyStaticVertexBufferObject(parallaxNormalMap.vbo);
 
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSkybox);
+
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSpotLight);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPointLight);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectTeapot3);
@@ -1126,6 +1493,7 @@ void cApplication::Destroy()
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube2);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectPlane2);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+  pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSphere1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCube1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectSquare1);
   pContext->DestroyStaticVertexBufferObject(staticVertexBufferObjectCylinder1WithColours);
@@ -1211,6 +1579,45 @@ void cApplication::Destroy()
 
   testImages.clear();
 
+  // Destroy our flags
+  if (wavingFlagRenderable[0].texture.IsValid()) pContext->DestroyTexture(wavingFlagRenderable[0].texture);
+  pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[0].vbo);
+  if (wavingFlagRenderable[1].texture.IsValid()) pContext->DestroyTexture(wavingFlagRenderable[1].texture);
+  pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[1].vbo);
+  if (wavingFlagRenderable[2].texture.IsValid()) pContext->DestroyTexture(wavingFlagRenderable[2].texture);
+  pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[2].vbo);
+
+  // Destroy the bobble head parts
+  pContext->DestroyStaticVertexBufferObject(bobbleHead.bodyVBO);
+  pContext->DestroyStaticVertexBufferObject(bobbleHead.headVBO);
+
+  pbr.Destroy(*pContext);
+
+  if (pbrGold.textureAlbedo.IsValid()) pContext->DestroyTexture(pbrGold.textureAlbedo);
+  if (pbrGold.textureMetallic.IsValid()) pContext->DestroyTexture(pbrGold.textureMetallic);
+  if (pbrGold.textureRoughness.IsValid()) pContext->DestroyTexture(pbrGold.textureRoughness);
+  if (pbrGold.textureNormal.IsValid()) pContext->DestroyTexture(pbrGold.textureNormal);
+  if (pbrGold.textureAO.IsValid()) pContext->DestroyTexture(pbrGold.textureAO);
+
+  if (pbrPlastic.textureAlbedo.IsValid()) pContext->DestroyTexture(pbrPlastic.textureAlbedo);
+  if (pbrPlastic.textureMetallic.IsValid()) pContext->DestroyTexture(pbrPlastic.textureMetallic);
+  if (pbrPlastic.textureRoughness.IsValid()) pContext->DestroyTexture(pbrPlastic.textureRoughness);
+  if (pbrPlastic.textureNormal.IsValid()) pContext->DestroyTexture(pbrPlastic.textureNormal);
+  if (pbrPlastic.textureAO.IsValid()) pContext->DestroyTexture(pbrPlastic.textureAO);
+
+  if (pbrWall.textureAlbedo.IsValid()) pContext->DestroyTexture(pbrWall.textureAlbedo);
+  if (pbrWall.textureMetallic.IsValid()) pContext->DestroyTexture(pbrWall.textureMetallic);
+  if (pbrWall.textureRoughness.IsValid()) pContext->DestroyTexture(pbrWall.textureRoughness);
+  if (pbrWall.textureNormal.IsValid()) pContext->DestroyTexture(pbrWall.textureNormal);
+  if (pbrWall.textureAO.IsValid()) pContext->DestroyTexture(pbrWall.textureAO);
+
+  if (pbrRustedIron.textureAlbedo.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureAlbedo);
+  if (pbrRustedIron.textureMetallic.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureMetallic);
+  if (pbrRustedIron.textureRoughness.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureRoughness);
+  if (pbrRustedIron.textureNormal.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureNormal);
+  if (pbrRustedIron.textureAO.IsValid()) pContext->DestroyTexture(pbrRustedIron.textureAO);
+
+
   // Destroy our smoke
   if (smoke.texture.IsValid()) pContext->DestroyTexture(smoke.texture);
   pContext->DestroyStaticVertexBufferObject(smoke.vbo);
@@ -1255,6 +1662,9 @@ void cApplication::CreateShaders()
 
   pContext->CreateShader(shaderCubeMap, TEXT("shaders/cubemap.vert"), TEXT("shaders/cubemap.frag"));
   assert(shaderCubeMap.IsCompiledProgram());
+
+  pContext->CreateShader(shaderSkybox, TEXT("shaders/skybox.vert"), TEXT("shaders/skybox.frag"));
+  assert(shaderSkybox.IsCompiledProgram());
 
   pContext->CreateShader(shaderBRDF, TEXT("shaders/brdf.vert"), TEXT("shaders/brdf.frag"));
   assert(shaderBRDF.IsCompiledProgram());
@@ -1309,10 +1719,10 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderScreen2D, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2dnonrect.frag"));
   assert(shaderScreen2D.IsCompiledProgram());
 
-  pContext->CreateShader(shaderScreenRectVariableTextureSize, TEXT("shaders/debugpassthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
+  pContext->CreateShader(shaderScreenRectVariableTextureSize, TEXT("shaders/debugpassthrough2d.vert"), TEXT("shaders/passthrough2drectvariabletexturesize.frag"));
   assert(shaderScreenRectVariableTextureSize.IsCompiledProgram());
 
-  pContext->CreateShader(shaderScreenRect, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
+  pContext->CreateShader(shaderScreenRect, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2drect.frag"));
   assert(shaderScreenRect.IsCompiledProgram());
 
   pContext->CreateShader(shaderScreenRectDepthShadow, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/debugshadowmaptexture2d.frag"));
@@ -1360,11 +1770,36 @@ void cApplication::DestroyShaders()
   if (shaderBRDF.IsCompiledProgram()) pContext->DestroyShader(shaderBRDF);
   if (shaderCarPaint.IsCompiledProgram()) pContext->DestroyShader(shaderCarPaint);
   if (shaderCubeMap.IsCompiledProgram()) pContext->DestroyShader(shaderCubeMap);
+  if (shaderSkybox.IsCompiledProgram()) pContext->DestroyShader(shaderSkybox);
   if (shaderColour.IsCompiledProgram()) pContext->DestroyShader(shaderColour);
 
   if (shaderMetal.IsCompiledProgram()) pContext->DestroyShader(shaderMetal);
   if (shaderFog.IsCompiledProgram()) pContext->DestroyShader(shaderFog);
   if (shaderCrate.IsCompiledProgram()) pContext->DestroyShader(shaderCrate);
+}
+
+void cApplication::RenderDebugScreenSquare(float x, float y, const opengl::cTexture& texture)
+{
+  spitfire::math::cMat4 matModelView2D;
+  matModelView2D.SetTranslation(x, y, 0.0f);
+
+  pContext->BindShader(shaderScreen2D);
+
+  pContext->BindTexture(0, texture);
+
+  pContext->BindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+
+  {
+    pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView2D);
+
+    pContext->DrawStaticVertexBufferObjectTriangles2D(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+  }
+
+  pContext->UnBindStaticVertexBufferObject2D(staticVertexBufferObjectScreenRectDebugVariableTextureSize);
+
+  pContext->UnBindTexture(0, texture);
+
+  pContext->UnBindShader(shaderScreen2D);
 }
 
 void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, const opengl::cTexture& texture)
@@ -1373,8 +1808,6 @@ void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, cons
   matModelView2D.SetTranslation(x, y, 0.0f);
 
   pContext->BindShader(shaderScreenRectVariableTextureSize);
-
-  pContext->SetShaderConstant("textureSize", spitfire::math::cVec2(texture.GetWidth(), texture.GetHeight()));
 
   pContext->BindTexture(0, texture);
 
@@ -1815,6 +2248,7 @@ void cApplication::Run()
   assert(textureNormalMapHeight.IsValid());
   assert(textureNormalMapNormal.IsValid());
   assert(shaderColour.IsCompiledProgram());
+  assert(shaderSkybox.IsCompiledProgram());
   assert(shaderCubeMap.IsCompiledProgram());
   assert(shaderBRDF.IsCompiledProgram());
   assert(shaderCarPaint.IsCompiledProgram());
@@ -1867,6 +2301,7 @@ void cApplication::Run()
 
   assert(staticVertexBufferObjectSquare1.IsCompiled());
   assert(staticVertexBufferObjectCube1.IsCompiled());
+  assert(staticVertexBufferObjectSphere1.IsCompiled());
   assert(staticVertexBufferObjectTeapot1.IsCompiled());
 
   assert(staticVertexBufferObjectBox1WithColours.IsCompiled());
@@ -1887,6 +2322,8 @@ void cApplication::Run()
   assert(staticVertexBufferObjectPointLight.IsCompiled());
   assert(staticVertexBufferObjectSpotLight.IsCompiled());
 
+  assert(staticVertexBufferObjectSkybox.IsCompiled());
+
   assert(light.texture.IsValid());
   assert(light.vbo.IsCompiled());
 
@@ -1896,13 +2333,23 @@ void cApplication::Run()
   assert(fire.texture.IsValid());
   assert(fire.vbo.IsCompiled());
 
+  assert(wavingFlagRenderable[0].texture.IsValid());
+  assert(wavingFlagRenderable[0].vbo.IsCompiled());
+  assert(wavingFlagRenderable[1].texture.IsValid());
+  assert(wavingFlagRenderable[1].vbo.IsCompiled());
+  assert(wavingFlagRenderable[2].texture.IsValid());
+  assert(wavingFlagRenderable[2].vbo.IsCompiled());
+
+  assert(bobbleHead.bodyVBO.IsCompiled());
+  assert(bobbleHead.headVBO.IsCompiled());
+
   assert(parallaxNormalMap.vbo.IsCompiled());
 
   tronGlow.Init(*this, *pContext);
   tronGlow.Resize(*this, *pContext);
 
   heatHaze.Init(*this, *pContext);
-  heatHaze.Resize(*this, *pContext);
+  heatHaze.Resize(*pContext);
 
   dofBokeh.Init(*pContext);
   dofBokeh.Resize(*this, *pContext);
@@ -1913,7 +2360,7 @@ void cApplication::Run()
   lensFlareDirt.Init(*this, *pContext);
   lensFlareDirt.Resize(*pContext);
 
-  lensFlareAnamorphic.Init(*this, *pContext);
+  lensFlareAnamorphic.Init(*pContext);
   lensFlareAnamorphic.Resize(*pContext);
 
   shadowMapping.Init(*pContext);
@@ -2032,6 +2479,24 @@ void cApplication::Run()
   const spitfire::math::cVec3 positionFire(-12.0f * fSpacingX, 0.0f, (-1.0f * fSpacingZ));
   spitfire::math::cMat4 matTranslationFire;
   matTranslationFire.SetTranslation(positionFire);
+
+  // Flags
+  spitfire::math::cMat4 matTranslationFlags[3];
+  const spitfire::math::cVec3 positionFlag0(-12.0f * fSpacingX, 1.0f, fSpacingZ);
+  const spitfire::math::cVec3 positionFlag1(-14.0f * fSpacingX, 1.0f, fSpacingZ);
+  const spitfire::math::cVec3 positionFlag2(-16.0f * fSpacingX, 1.0f, fSpacingZ);
+  matTranslationFlags[0].SetTranslation(positionFlag0);
+  matTranslationFlags[1].SetTranslation(positionFlag1);
+  matTranslationFlags[2].SetTranslation(positionFlag2);
+
+  // Bull
+  spitfire::math::cMat4 matTranslationBullBody;
+  const spitfire::math::cVec3 positionBullBody(-20.0f * fSpacingX, 0.0f, fSpacingZ);
+  matTranslationBullBody.SetTranslation(positionBullBody);
+  spitfire::math::cMat4 matTranslationBullHeadOffset;
+  const spitfire::math::cVec3 positionBullHeadAttachment(positionBullBody);
+  matTranslationBullHeadOffset.SetTranslation(positionBullHeadAttachment);
+  spitfire::math::cMat4 matTranslationBullHeadSpringOffset;
 
   // Parallax normal mapping
   const spitfire::math::cVec3 parallaxNormalMapPosition(fSpacingX, 0.0f, (-1.0f * fSpacingZ));
@@ -2168,6 +2633,14 @@ void cApplication::Run()
         rotation.SetFromAxisAngle(spitfire::math::v3Up, fAngleRadians);
 
         matObjectRotation.SetRotation(rotation);
+
+        physicsWorld.Update();
+
+        UpdateFlags();
+
+        UpdateBobbleHead();
+
+        matTranslationBullHeadSpringOffset.SetTranslation(bobbleHead.topOfSpringPosition);
       }
 
       previousUpdateTime = currentTime;
@@ -2448,6 +2921,9 @@ void cApplication::Run()
 
       // Render the cube mapped teapot
       pContext->BindTextureCubeMap(0, textureCubeMap);
+      //pContext->BindTextureCubeMap(0, pbr.DebugGetEnvCubemap());
+      //pContext->BindTextureCubeMap(0, pbr.GetIrradianceMap());
+      //pContext->BindTextureCubeMap(0, pbr.GetPrefilterMap());
 
       pContext->BindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
@@ -2460,6 +2936,9 @@ void cApplication::Run()
       pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectLargeTeapot);
 
       pContext->UnBindTextureCubeMap(0, textureCubeMap);
+      //pContext->UnBindTextureCubeMap(0, pbr.DebugGetEnvCubemap());
+      //pContext->UnBindTextureCubeMap(0, pbr.GetIrradianceMap());
+      //pContext->UnBindTextureCubeMap(0, pbr.GetPrefilterMap());
 
       pContext->UnBindShader(shaderCubeMap);
 
@@ -3408,6 +3887,239 @@ void cApplication::Run()
         pContext->UnBindShader(shaderCrate);
       }
 
+      // Render the flags
+      {
+        pContext->DisableCulling();
+
+        for (size_t i = 0; i < 3; i++) {
+          pContext->BindShader(shaderPassThrough);
+
+          pContext->BindTexture(0, wavingFlagRenderable[i].texture);
+
+          pContext->BindStaticVertexBufferObject(wavingFlagRenderable[i].vbo);
+
+          pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView * matTranslationFlags[i]);
+
+          pContext->DrawStaticVertexBufferObjectTriangles(wavingFlagRenderable[i].vbo);
+
+          pContext->UnBindStaticVertexBufferObject(wavingFlagRenderable[i].vbo);
+
+          pContext->UnBindTexture(0, wavingFlagRenderable[i].texture);
+
+          pContext->UnBindShader(shaderPassThrough);
+        }
+
+        pContext->EnableCulling();
+      }
+
+      // Render the bobble head parts
+      {
+        pContext->BindShader(pbr.GetShader());
+
+        // https://google.github.io/filament/Filament.html
+        // TODO: Support car paint which is simulated with a layer of base colour paint and a layer of clear coat, the above link mentions it
+
+        pContext->SetShaderConstant("camPos", camera.GetPosition());
+
+        pContext->SetShaderConstant("lightPositions[0]", positionBullBody + spitfire::math::cVec3(3.0f, 0.5f, 0.0f));
+        pContext->SetShaderConstant("lightColors[0]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+        pContext->SetShaderConstant("lightPositions[1]", positionBullBody + spitfire::math::cVec3(-15.0f, 0.5f, 0.0f));
+        pContext->SetShaderConstant("lightColors[1]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+        pContext->SetShaderConstant("lightPositions[2]", positionBullBody + spitfire::math::cVec3(-20.0f, 0.5f, 0.0f));
+        pContext->SetShaderConstant("lightColors[2]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+        pContext->SetShaderConstant("lightPositions[3]", positionBullBody + spitfire::math::cVec3(-47.0f, 0.5f, 0.0f));
+        pContext->SetShaderConstant("lightColors[3]", spitfire::math::cVec3(1.0f, 1.0f, 1.0f));
+
+        pContext->SetShaderConstant("uExposure", 1.2f);
+        pContext->SetShaderConstant("uGamma", 2.2f);
+
+
+        // NOTE: THESE WERE FLIPPED!!!!!!!!
+        pContext->SetShaderConstant("albedoMap", 0);
+        pContext->SetShaderConstant("metallicMap", 1);
+        pContext->SetShaderConstant("roughnessMap", 2);
+        pContext->SetShaderConstant("normalMap", 3);
+        pContext->SetShaderConstant("aoMap", 4);
+        pContext->SetShaderConstant("irradianceMap", 5);
+        pContext->SetShaderConstant("prefilterMap", 6);
+        pContext->SetShaderConstant("brdfLUT", 7);
+
+        pContext->BindTextureCubeMap(5, pbr.GetIrradianceMap());
+        pContext->BindTextureCubeMap(6, pbr.GetPrefilterMap());
+        pContext->BindTexture(7, pbr.GetBRDFLUTTexture());
+
+
+
+        // Gold bull
+        pContext->BindTexture(0, pbrGold.textureAlbedo);
+        pContext->BindTexture(1, pbrGold.textureMetallic);
+        pContext->BindTexture(2, pbrGold.textureRoughness);
+        pContext->BindTexture(3, pbrGold.textureNormal);
+        pContext->BindTexture(4, pbrGold.textureAO);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.bodyVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullBody);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.bodyVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.bodyVBO);
+
+        pContext->BindStaticVertexBufferObject(bobbleHead.headVBO);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslationBullHeadOffset * matTranslationBullHeadSpringOffset);
+        pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.headVBO);
+        pContext->UnBindStaticVertexBufferObject(bobbleHead.headVBO);
+
+        const float fPBR_y = positionBullBody.y;
+        const float fPBR_z = positionBullBody.z;
+
+        // Gold
+        spitfire::math::cMat4 matTranslation2;
+        const spitfire::math::cVec3 position2(-23.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position2);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position3(-26.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position3);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position4(-29.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position4);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrGold.textureAO);
+        pContext->UnBindTexture(3, pbrGold.textureNormal);
+        pContext->UnBindTexture(2, pbrGold.textureRoughness);
+        pContext->UnBindTexture(1, pbrGold.textureMetallic);
+        pContext->UnBindTexture(0, pbrGold.textureAlbedo);
+
+        // Plastic
+        pContext->BindTexture(0, pbrPlastic.textureAlbedo);
+        pContext->BindTexture(1, pbrPlastic.textureMetallic);
+        pContext->BindTexture(2, pbrPlastic.textureRoughness);
+        pContext->BindTexture(3, pbrPlastic.textureNormal);
+        pContext->BindTexture(4, pbrPlastic.textureAO);
+
+        const spitfire::math::cVec3 position5(-32.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position5);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position6(-35.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position6);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position7(-38.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position7);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrPlastic.textureAO);
+        pContext->UnBindTexture(3, pbrPlastic.textureNormal);
+        pContext->UnBindTexture(2, pbrPlastic.textureRoughness);
+        pContext->UnBindTexture(1, pbrPlastic.textureMetallic);
+        pContext->UnBindTexture(0, pbrPlastic.textureAlbedo);
+
+        // Wall
+        pContext->BindTexture(0, pbrWall.textureAlbedo);
+        pContext->BindTexture(1, pbrWall.textureMetallic);
+        pContext->BindTexture(2, pbrWall.textureRoughness);
+        pContext->BindTexture(3, pbrWall.textureNormal);
+        pContext->BindTexture(4, pbrWall.textureAO);
+
+        const spitfire::math::cVec3 position8(-41.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position8);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position9(-44.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position9);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position10(-47.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position10);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(4, pbrWall.textureAO);
+        pContext->UnBindTexture(3, pbrWall.textureNormal);
+        pContext->UnBindTexture(2, pbrWall.textureRoughness);
+        pContext->UnBindTexture(1, pbrWall.textureMetallic);
+        pContext->UnBindTexture(0, pbrWall.textureAlbedo);
+
+        // Rusted Iron
+        pContext->BindTexture(0, pbrRustedIron.textureAlbedo);
+        pContext->BindTexture(1, pbrRustedIron.textureMetallic);
+        pContext->BindTexture(2, pbrRustedIron.textureRoughness);
+        pContext->BindTexture(3, pbrRustedIron.textureNormal);
+        pContext->BindTexture(4, pbrRustedIron.textureAO);
+
+        const spitfire::math::cVec3 position11(-50.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position11);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
+
+        const spitfire::math::cVec3 position12(-53.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position12);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
+
+        const spitfire::math::cVec3 position13(-57.0f * fSpacingX, fPBR_y, fPBR_z);
+        matTranslation2.SetTranslation(position13);
+
+        pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+        pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
+        pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectTeapot1);
+        pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
+
+        pContext->UnBindTexture(7, pbr.GetBRDFLUTTexture());
+        pContext->UnBindTextureCubeMap(6, pbr.GetPrefilterMap());
+        pContext->UnBindTextureCubeMap(5, pbr.GetIrradianceMap());
+
+        pContext->UnBindTexture(4, pbrRustedIron.textureAO);
+        pContext->UnBindTexture(3, pbrRustedIron.textureNormal);
+        pContext->UnBindTexture(2, pbrRustedIron.textureRoughness);
+        pContext->UnBindTexture(1, pbrRustedIron.textureMetallic);
+        pContext->UnBindTexture(0, pbrRustedIron.textureAlbedo);
+
+        pContext->UnBindShader(pbr.GetShader());
+      }
+
       // Render the test images
       {
         const size_t n = testImages.size();
@@ -3432,6 +4144,35 @@ void cApplication::Run()
         }
       }
 
+
+      // Render the skybox
+      glDepthFunc(GL_LEQUAL);
+      pContext->DisableDepthMasking();
+      pContext->DisableCulling();
+
+      pContext->BindShader(shaderSkybox);
+
+      pContext->BindTextureCubeMap(0, pbr.DebugGetEnvCubemap());
+      //pContext->BindTextureCubeMap(0, textureCubeMap);
+
+      //pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, spitfire::math::cMat4());
+      pContext->SetShaderConstant("matProjection", matProjection);
+
+      // Remove the translation part of the view matrix
+      const spitfire::math::cMat4 matViewAtCamera = spitfire::math::cMat4(spitfire::math::cMat3(matView));  
+      pContext->SetShaderConstant("matView", matViewAtCamera);
+
+      pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSkybox);
+      pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSkybox);
+      pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSkybox);
+
+      pContext->UnBindTextureCubeMap(0, pbr.DebugGetEnvCubemap());
+      //pContext->UnBindTextureCubeMap(0, textureCubeMap);
+
+      pContext->UnBindShader(shaderSkybox);
+
+      pContext->EnableCulling();
+      pContext->EnableDepthMasking();
 
       // Render some gui in 3d space
       /*{
@@ -3847,6 +4588,13 @@ void cApplication::Run()
       }
       #endif
 
+      #if 1
+      // Draw the PBR textures for debugging purposes
+      //RenderDebugScreenSquare(position.x, position.y, textureHDREquirectangularSpheremap); position.x += 0.25f;
+      RenderDebugScreenRectangleVariableSize(position.x, position.y, pbr.DebugGetTextureHDREquirectangularSpheremap()); position.x += 0.25f;
+      RenderDebugScreenSquare(position.x, position.y, pbr.GetBRDFLUTTexture()); position.x += 0.25f;
+      #endif
+
       #if 0
       // Draw the scene colour and depth buffer textures for debugging purposes
       float x = 0.125f;
@@ -3885,7 +4633,9 @@ void cApplication::Run()
       // Draw the particles depth texture
       RenderScreenRectangleDepthTexture(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectScreenColourAndDepth[inputFBO], shaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);
+      #endif
 
+      #if 1
       // Draw the teapot texture
       RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectTeapot, shaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);

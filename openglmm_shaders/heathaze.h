@@ -23,7 +23,7 @@ public:
   void Init(cApplication& application, opengl::cContext& context);
   void Destroy(opengl::cContext& context);
 
-  void Resize(cApplication& application, opengl::cContext& context);
+  void Resize(opengl::cContext& context);
 
   void ReloadShaders(opengl::cContext& context);
 

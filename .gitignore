@@ -13,7 +13,6 @@
 *.ilk
 *.lastbuildstate
 *.log
-*.obj
 *.pdb
 *.sdf
 *.sln

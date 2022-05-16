@@ -53,7 +53,7 @@ changelog:
 uniform sampler2DRect texUnit0; // Colour texture
 uniform sampler2DRect texUnit1; // Depth texture
 
-uniform vec2 textureSize;
+vec2 textureDimensions = textureSize(texUnit0);
 
 //uniform variables from external script
 
@@ -68,8 +68,8 @@ out vec4 fragmentColour;
 
 #define PI  3.14159265
 
-float width = textureSize.x; // texture width
-float height = textureSize.y; // texture height
+float width = textureDimensions.x; // texture width
+float height = textureDimensions.y; // texture height
 
 vec2 texel = vec2(1.0, 1.0);
 
@@ -241,7 +241,7 @@ float linearize(float depth)
 
 float vignette()
 {
-  float dist = distance(vertOutTexCoord / textureSize, vec2(0.5, 0.5));
+  float dist = distance(vertOutTexCoord / textureDimensions, vec2(0.5, 0.5));
   dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
   return clamp(dist, 0.0, 1.0);
 }
@@ -258,7 +258,7 @@ void main()
 
   float fDepth = focalDepth;
 
-  if (autofocus) fDepth = linearize(texture(texUnit1, focus * textureSize).x);
+  if (autofocus) fDepth = linearize(texture(texUnit1, focus * textureDimensions).x);
 
   //dof blur factor calculation
 

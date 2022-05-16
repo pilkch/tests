@@ -40,6 +40,7 @@
 #include <spitfire/util/log.h>
 
 // Breathe headers
+#include <breathe/physics/verlet.h>
 #include <breathe/render/model/cFileFormatOBJ.h>
 #include <breathe/render/model/cStatic.h>
 
@@ -60,6 +61,7 @@
 #include "hdr.h"
 #include "heathaze.h"
 #include "lensflaredirt.h"
+#include "pbr.h"
 #include "shadowmapping.h"
 #include "tronglow.h"
 #include "util.h"
@@ -131,16 +133,24 @@ private:
   void CreateNormalMappedCube();
 
   void CreateTeapotVBO();
-#ifdef BUILD_LARGE_STATUE_MODEL
-  void CreateStatueVBO();
-#endif
   void CreateScreenRectVariableTextureSizeVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateGuiRectangle(opengl::cStaticVertexBufferObject& staticVertexBufferObject, size_t nTextureWidth, size_t nTextureHeight);
 
+  bool CreateVBOFromObjFile(opengl::cStaticVertexBufferObject& vbo, const std::string& file_path, float fScale);
+
+  void InitWavingFlags();
+  void InitWavingFlag(breathe::physics::verlet::cGroup& group, float fWidthMeters, float fHeightMeters, size_t points_horizontal, size_t points_vertical);
+  void InitBobbleHead();
+
+  void UpdateWind();
+  void UpdateFlags();
+  void UpdateBobbleHead();
+
   void RenderScreenRectangleDepthTexture(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTextureFrameBufferObject& texture, opengl::cShader& shader);
   void RenderScreenRectangle(float x, float y, opengl::cStaticVertexBufferObject& vbo, const opengl::cTexture& texture, opengl::cShader& shader);
+  void RenderDebugScreenSquare(float x, float y, const opengl::cTexture& texture);
   void RenderDebugScreenRectangleVariableSize(float x, float y, const opengl::cTexture& texture);
 
   void _OnWindowEvent(const opengl::cWindowEvent& event);
@@ -257,6 +267,7 @@ private:
   opengl::cTexture textureFlare;
 
   opengl::cShader shaderColour;
+  opengl::cShader shaderSkybox;
   opengl::cShader shaderCubeMap;
   opengl::cShader shaderBRDF;
   opengl::cShader shaderCarPaint;
@@ -304,6 +315,7 @@ private:
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectSquare1;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectCube1;
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectSphere1;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectTeapot1;
 
   opengl::cStaticVertexBufferObject staticVertexBufferObjectBox1WithColours;
@@ -324,6 +336,8 @@ private:
   opengl::cStaticVertexBufferObject staticVertexBufferObjectPointLight;
   opengl::cStaticVertexBufferObject staticVertexBufferObjectSpotLight;
 
+  opengl::cStaticVertexBufferObject staticVertexBufferObjectSkybox;
+
   cShaderVBOPair parallaxNormalMap;
 
   cVBOShaderTexturePair light;
@@ -331,6 +345,37 @@ private:
   cTextureVBOPair fire;
 
   std::vector<cTextureVBOPair*> testImages;
+
+
+  breathe::physics::verlet::cWorld physicsWorld;
+
+  breathe::physics::verlet::cGroup wavingFlagPhysics[3];
+  cTextureVBOPair wavingFlagRenderable[3];
+
+  struct BobbleHead {
+    breathe::physics::verlet::cGroup physics;
+    opengl::cStaticVertexBufferObject bodyVBO;
+    opengl::cStaticVertexBufferObject headVBO;
+    spitfire::math::cVec3 topOfSpringPosition;
+    spitfire::math::cQuaternion topOfSpringRotation;
+  };
+  BobbleHead bobbleHead;
+
+
+  cPBR pbr;
+
+  struct PBRMaterial {
+    opengl::cTexture textureAlbedo;
+    opengl::cTexture textureMetallic;
+    opengl::cTexture textureRoughness;
+    opengl::cTexture textureNormal;
+    opengl::cTexture textureAO;
+  };
+  PBRMaterial pbrGold;
+  PBRMaterial pbrPlastic;
+  PBRMaterial pbrWall;
+  PBRMaterial pbrRustedIron;
+
 
   cTronGlow tronGlow;
   cHeatHaze heatHaze;

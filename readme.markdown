@@ -3,10 +3,6 @@ Chris Pilkington
 Copyright (C) 2005-2010  
 <http://chris.iluo.net/> 
 
-If you find this project helpful, please consider making a donation. 
-
-[<img alt="Make a donation via Pledgie" src="http://www.pledgie.com/campaigns/17973.png?skin_name=chrome" border="0" />][1]  
-
 ### License
 
 This program is free software; you can redistribute it and/or  
@@ -42,20 +38,31 @@ A collection of tests and small utilities:
 ### Usage
 
 Many of the tests have cmake projects which can be run like so:  
+```bash
 cd openglmm_gears  
 cmake .  
 make  
 ./openglmm_gears  
+```
 
 ### Getting a copy of the project on Linux (Fedora 14 used)
 
 Pull this project:  
+```bash
 yum install git  
+```
 OR  
+```bash
 sudo apt-get install git-core  
+```
+
+```bash
 git clone git@github.com:pilkch/tests.git  
+```
 OR  
+```bash
 git clone https://github.com/pilkch/git@github.com:pilkch/tests.git  
+```
 
 ### Building on Linux (Fedora 14 used)
 
@@ -79,9 +86,9 @@ All rights reserved
 Open Dynamics Engine  
 Copyright (C) 2001-2003 Russell L. Smith  
 All rights reserved  
-<http://www.q12.org/>  SDL - Simple DirectMedia Layer
+<http://www.q12.org/>
 
-  
+SDL - Simple DirectMedia Layer  
 Copyright (C) 1997-2006 Sam Lantinga  
 Sam Lantinga  
 <http://www.libsdl.org/>  FreeType Copyright 1996-2001, 2006 by
@@ -97,12 +104,3 @@ genjix@gmail.com
 
 MD5 RFC 1321 compliant MD5 implementation  
 Copyright (C) 2001-2003 Christophe Devine 
-
-Memory manager & tracking software  
-Paul Nettle  
-Copyright 2000, Fluid Studios  
-All rights reserved  
-<http://www.FluidStudios.com>
-
- [1]: http://www.pledgie.com/campaigns/17973
-
