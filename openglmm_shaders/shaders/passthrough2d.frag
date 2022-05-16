@@ -1,6 +1,6 @@
 #version 330 core
 
-uniform sampler2DRect texUnit0; // Diffuse texture
+uniform sampler2D texUnit0; // Diffuse texture
 
 smooth in vec2 vertOutTexCoord;
 

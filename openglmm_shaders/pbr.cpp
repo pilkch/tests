@@ -281,7 +281,7 @@ bool cPBR::Init(opengl::cContext& context)
 {
   Destroy(context);
 
-  context.CreateShader(shader, TEXT("shaders/pbr5.vert"), TEXT("shaders/pbr5.frag"));
+  context.CreateShader(shader, TEXT("shaders/pbr.vert"), TEXT("shaders/pbr.frag"));
   assert(shader.IsCompiledProgram());
 
   return LoadAndRenderEquirectangularToCubemap(context);

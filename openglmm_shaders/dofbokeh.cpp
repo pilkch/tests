@@ -121,14 +121,6 @@ void cDOFBokeh::Destroy(opengl::cContext& context)
 
 void cDOFBokeh::Resize(cApplication& application, opengl::cContext& context)
 {
-  const opengl::cResolution resolution = application.GetResolution();
-
-  context.BindShader(shaderScreenRectDOFBokeh);
-
-  // Set our shader constants
-  context.SetShaderConstant("textureSize", spitfire::math::cVec2(float(resolution.width), float(resolution.height)));
-
-  context.UnBindShader(shaderScreenRectDOFBokeh);
 }
 
 void cDOFBokeh::Render(cApplication& application, opengl::cContext& context, opengl::cTextureFrameBufferObject& input, opengl::cTextureFrameBufferObject& textureScreenDepth, opengl::cTextureFrameBufferObject& output)

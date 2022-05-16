@@ -1722,7 +1722,7 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderScreenRectVariableTextureSize, TEXT("shaders/debugpassthrough2d.vert"), TEXT("shaders/passthrough2drectvariabletexturesize.frag"));
   assert(shaderScreenRectVariableTextureSize.IsCompiledProgram());
 
-  pContext->CreateShader(shaderScreenRect, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
+  pContext->CreateShader(shaderScreenRect, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2drect.frag"));
   assert(shaderScreenRect.IsCompiledProgram());
 
   pContext->CreateShader(shaderScreenRectDepthShadow, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/debugshadowmaptexture2d.frag"));

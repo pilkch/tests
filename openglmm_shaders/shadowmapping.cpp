@@ -99,11 +99,11 @@ void cShadowMapping::CalculateMatrices(opengl::cContext& context, const spitfire
 #if 0
   matProjection.SetOrtho(-10, 10, -10, 10, -10, 20);
 
-  matView.LookAt(lightPosition, lightPosition + lightDirection, spitfire::math::v3Up);
+  matView.SetLookAt(lightPosition, lightPosition + lightDirection, spitfire::math::v3Up);
 #else
   matProjection = context.CalculateProjectionMatrix(90.0f);
 
-  matView.LookAt(lightPosition, lightPosition + lightDirection, spitfire::math::v3Up);
+  matView.SetLookAt(lightPosition, lightPosition + lightDirection, spitfire::math::v3Up);
 #endif
 }
 
