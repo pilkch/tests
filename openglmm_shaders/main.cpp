@@ -1719,7 +1719,7 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderScreen2D, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2dnonrect.frag"));
   assert(shaderScreen2D.IsCompiledProgram());
 
-  pContext->CreateShader(shaderScreenRectVariableTextureSize, TEXT("shaders/debugpassthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
+  pContext->CreateShader(shaderScreenRectVariableTextureSize, TEXT("shaders/debugpassthrough2d.vert"), TEXT("shaders/passthrough2drectvariabletexturesize.frag"));
   assert(shaderScreenRectVariableTextureSize.IsCompiledProgram());
 
   pContext->CreateShader(shaderScreenRect, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
@@ -1808,8 +1808,6 @@ void cApplication::RenderDebugScreenRectangleVariableSize(float x, float y, cons
   matModelView2D.SetTranslation(x, y, 0.0f);
 
   pContext->BindShader(shaderScreenRectVariableTextureSize);
-
-  pContext->SetShaderConstant("textureSize", spitfire::math::cVec2(texture.GetWidth(), texture.GetHeight()));
 
   pContext->BindTexture(0, texture);
 
