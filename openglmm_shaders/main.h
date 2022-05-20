@@ -177,6 +177,7 @@ private:
   bool bIsMovingLeft;
   bool bIsMovingRight;
   bool bIsMovingBackward;
+  bool bIsSprinting;
 
   KeyBoolPair moveLightForward;
   KeyBoolPair moveLightBack;

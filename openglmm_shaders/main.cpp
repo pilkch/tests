@@ -90,6 +90,7 @@ cApplication::cApplication() :
   bIsMovingLeft(false),
   bIsMovingRight(false),
   bIsMovingBackward(false),
+  bIsSprinting(false),
 
   moveLightForward(SDLK_t),
   moveLightBack(SDLK_g),
@@ -1976,6 +1977,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsMovingRight = true;
         break;
       }
+      case SDLK_LSHIFT: {
+        bIsSprinting = true;
+        break;
+      }
 
       case SDLK_v: {
         bIsFocalLengthDecrease = true;
@@ -2030,6 +2035,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
       }
       case SDLK_d: {
         bIsMovingRight = false;
+        break;
+      }
+      case SDLK_LSHIFT: {
+        bIsSprinting = false;
         break;
       }
 
@@ -2666,7 +2675,7 @@ void cApplication::Run()
 
     if ((currentTime - previousUpdateTime) > uiUpdateDelta) {
       // Update the camera
-      const float fDistance = 0.1f;
+      const float fDistance = (bIsSprinting ? 0.5f : 0.1f);
       if (bIsMovingForward) camera.MoveZ(fDistance);
       if (bIsMovingBackward) camera.MoveZ(-fDistance);
       if (bIsMovingLeft) camera.MoveX(-fDistance);
