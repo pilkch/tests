@@ -5,134 +5,6 @@
 #include "main.h"
 #include "piemenu.h"
 
-class cTextureAtlasEntry {
-public:
-  cTextureAtlasEntry();
-
-  size_t x;
-  size_t y;
-  size_t width;
-  size_t height;
-};
-
-class cTextureAtlas {
-public:
-  cTextureAtlas();
-
-  void Init(size_t width, size_t height, opengl::PIXELFORMAT pixelFormat);
-
-  bool AddImage(const std::string& textureFilePath);
-
-  size_t GetWidth() const { return textureAtlas.GetWidth(); }
-  size_t GetHeight() const { return textureAtlas.GetHeight(); }
-
-  const voodoo::cImage& GetImage() const { return textureAtlas; }
-
-  const std::vector<cTextureAtlasEntry>& GetTextureAtlasEntries() const { return textureAtlasEntries; }
-
-  voodoo::cImage textureAtlas;
-
-  std::vector<cTextureAtlasEntry> textureAtlasEntries;
-
-  size_t currentX;
-  size_t currentY;
-  size_t currentTallestInRow;
-};
-
-
-cTextureAtlasEntry::cTextureAtlasEntry() :
-  x(0),
-  y(0),
-  width(0),
-  height(0)
-{
-}
-
-
-cTextureAtlas::cTextureAtlas() :
-  currentX(0),
-  currentY(0),
-  currentTallestInRow(0)
-{
-}
-
-void cTextureAtlas::Init(size_t width, size_t height, opengl::PIXELFORMAT pixelFormat)
-{
-  textureAtlas.CreateEmptyImage(width, height, pixelFormat);
-}
-
-bool cTextureAtlas::AddImage(const std::string& textureFilePath)
-{
-  std::cout<<"cTextureAtlas::AddImage Loading image \""<<textureFilePath<<"\""<<std::endl;
-
-  voodoo::cImage image;
-  if (!image.LoadFromFile(textureFilePath)) {
-    std::cout<<"cTextureAtlas::AddImage Error loading texture from file \""<<textureFilePath<<"\""<<std::endl;
-    return false;
-  }
-
-  const size_t atlasWidth = textureAtlas.GetWidth();
-  const size_t atlasHeight = textureAtlas.GetHeight();
-
-  const size_t imageWidth = image.GetWidth();
-  const size_t imageHeight = image.GetHeight();
-  if ((imageWidth > atlasWidth) || (imageHeight > atlasHeight)) {
-    std::cout<<"cTextureAtlas::AddImage Error texture "<<imageWidth<<"x"<<imageHeight<<" is too large to fit in the atlas "<<atlasWidth<<"x"<<atlasHeight<<std::endl;
-    return false;
-  }
-
-  std::cout<<"cTextureAtlas::AddImage loaded texture"<<std::endl;
-  // Try to place the image on this row
-  if (imageWidth > (atlasWidth - currentX)) {
-    // Move to the next row
-    currentX = 0;
-    currentY += currentTallestInRow;
-    if (currentY > atlasHeight) currentY = atlasHeight;
-    currentTallestInRow = 0;
-  }
-
-  // Try to place the image again, if it doesn't fit now it is never going to fit
-  if ((imageWidth > (atlasWidth - currentX)) || (imageHeight > (atlasHeight - currentY))) {
-    std::cout<<"cTextureAtlas::AddImage Error no room left in texture atlas for texture \""<<textureFilePath<<"\""<<std::endl;
-    return false;
-  }
-
-  std::cout<<"cTextureAtlas::AddImage Adding entry"<<std::endl;
-  // We found a place for the texture, so add en entry for it
-  cTextureAtlasEntry entry;
-  entry.x = currentX;
-  entry.y = currentY;
-  entry.width = imageWidth;
-  entry.height = imageHeight;
-  textureAtlasEntries.push_back(entry);
-
-  std::cout<<"cTextureAtlas::AddImage Copying image "<<imageWidth<<"x"<<imageHeight<<" into texture atlas "<<atlasWidth<<"x"<<atlasHeight<<" at point "<<currentX<<","<<currentY<<std::endl;
-  
-  assert(image.GetPixelFormat() == textureAtlas.GetPixelFormat());
-  // Copy the image to the texture atlas
-  //uint8_t* pTextureAtlasBuffer = textureAtlas.GetPointerToBuffer() + (currentY * textureAtlas.GetBytesPerRow()) + (currentX * textureAtlas.GetBytesPerPixel());
-  uint8_t* pTextureAtlasBuffer = textureAtlas.GetPointerToBuffer();
-  assert(pTextureAtlasBuffer != nullptr);
-  uint8_t* pImageBuffer = image.GetPointerToBuffer();
-  assert(pImageBuffer != nullptr);
-  for (size_t y = 0; y < imageHeight; y++) {
-    //uint8_t* pDest = pTextureAtlasBuffer + (y * textureAtlas.GetBytesPerRow());
-    uint8_t* pDest = pTextureAtlasBuffer + (currentY * textureAtlas.GetBytesPerRow()) + (currentX * textureAtlas.GetBytesPerPixel()) + (y * textureAtlas.GetBytesPerRow());
-    const uint8_t* pSrc = pImageBuffer + (y * image.GetBytesPerRow());
-    memcpy(pDest, pSrc, image.GetBytesPerRow());
-  }
-
-  // Move to the next position
-  currentX += imageWidth;
-  if (imageHeight > currentTallestInRow) currentTallestInRow = imageHeight;
-
-  std::cout<<"cTextureAtlas::AddImage returning"<<std::endl;
-
-  return true;
-}
-
-
-
 // ** cPieMenu
 
 cPieMenu::cPieMenu() :
@@ -213,7 +85,7 @@ void cPieMenu::SetMenuItems(opengl::cContext& context, opengl::cFont& font, cons
     fMenuItemSegmentOuterArcDegrees = fMenuItemOuterArcDegrees / float(nMenuItemSegments);
   }
 
-  cTextureAtlas textureAtlas;
+  voodoo::cTextureAtlas textureAtlas;
 
   {
     // We know the icons are all 26x26 and we have 9 of them (3x3), we then round to the next power of 2
@@ -279,7 +151,7 @@ const PieMenuItem* cPieMenu::GetMenuItemUnderPoint(int x, int y) const
   return nullptr;
 }
 
-void cPieMenu::UpdateVertexBufferObjects(opengl::cContext& context, const cTextureAtlas& textureAtlas)
+void cPieMenu::UpdateVertexBufferObjects(opengl::cContext& context, const voodoo::cTextureAtlas& textureAtlas)
 {
   if (circleVBO.IsCompiled()) circleVBO.Destroy();
   if (menuItemVBO.IsCompiled()) menuItemVBO.Destroy();
@@ -359,7 +231,7 @@ void cPieMenu::UpdateVertexBufferObjects(opengl::cContext& context, const cTextu
 
     const size_t nMenuItems = menuItems.size();
 
-    const std::vector<cTextureAtlasEntry>& textureAtlasEntries = textureAtlas.GetTextureAtlasEntries();
+    const std::vector<voodoo::cTextureAtlasEntry>& textureAtlasEntries = textureAtlas.GetTextureAtlasEntries();
     assert(textureAtlasEntries.size() == nMenuItems);
 
     // Icon on the center menu item

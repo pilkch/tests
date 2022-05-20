@@ -9,6 +9,7 @@
 #include <libopenglmm/cFont.h>
 #include <libopenglmm/cShader.h>
 #include <libopenglmm/cTexture.h>
+#include <libvoodoomm/cTextureAtlas.h>
 #include <libopenglmm/cVertexBufferObject.h>
 
 // Application headers
@@ -44,7 +45,7 @@ public:
 private:
   const PieMenuItem* GetMenuItemUnderPoint(int x, int y) const;
 
-  void UpdateVertexBufferObjects(opengl::cContext& context, const cTextureAtlas& textureAtlas);
+  void UpdateVertexBufferObjects(opengl::cContext& context, const voodoo::cTextureAtlas& textureAtlas);
   void CreateText(opengl::cContext& context, opengl::cFont& font);
 
   opengl::cTexture textureIcons;
