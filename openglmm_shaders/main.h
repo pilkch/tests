@@ -58,6 +58,7 @@
 // Application headers
 #include "anamorphic_lens_flare.h"
 #include "dofbokeh.h"
+#include "gui.h"
 #include "hdr.h"
 #include "heathaze.h"
 #include "lensflaredirt.h"
