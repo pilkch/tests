@@ -1489,8 +1489,7 @@ void cApplication::Run()
 
       const spitfire::math::cVec3 target(0.0f, 0.0f, 0.0f);
       const spitfire::math::cVec3 eye(target + offset);
-      spitfire::math::cMat4 matModelView;
-      matModelView.LookAt(eye, target, up);
+      const spitfire::math::cMat4 matModelView = spitfire::math::cMat4::LookAt(eye, target, up);
 
 
       // Render terrain
@@ -1657,8 +1656,7 @@ void cApplication::Run()
 
       const spitfire::math::cVec3 target(0.0f, 0.0f, 0.0f);
       const spitfire::math::cVec3 eye(target + offset);
-      spitfire::math::cMat4 matModelView;
-      matModelView.LookAt(eye, target, up);
+      const spitfire::math::cMat4 matModelView = spitfire::math::cMat4::LookAt(eye, target, up);
 
 
       // Render terrain
