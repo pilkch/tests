@@ -58,9 +58,11 @@
 // Application headers
 #include "anamorphic_lens_flare.h"
 #include "dofbokeh.h"
+#include "gui.h"
 #include "hdr.h"
 #include "heathaze.h"
 #include "lensflaredirt.h"
+#include "piemenu.h"
 #include "pbr.h"
 #include "shadowmapping.h"
 #include "tronglow.h"
@@ -100,6 +102,8 @@ public:
   void Run();
 
   opengl::cResolution GetResolution() const;
+
+  void OnCommand(int idCommand);
 
 protected:
   // Called from cTronGlow, cHeatHaze, cHDR and cLensFlareDirt
@@ -173,6 +177,7 @@ private:
   bool bIsMovingLeft;
   bool bIsMovingRight;
   bool bIsMovingBackward;
+  bool bIsSprinting;
 
   KeyBoolPair moveLightForward;
   KeyBoolPair moveLightBack;
@@ -388,6 +393,8 @@ private:
   std::vector<cSimplePostRenderShader> simplePostRenderShaders;
   bool bSimplePostRenderDirty;
   opengl::cShader shaderScreenRectSimplePostRender;
+
+  cGUI gui;
 
   enum class COLOUR_BLIND_MODE {
     PROTANOPIA,

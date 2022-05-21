@@ -104,3 +104,9 @@ genjix@gmail.com
 
 MD5 RFC 1321 compliant MD5 implementation  
 Copyright (C) 2001-2003 Christophe Devine 
+
+Icons  
+Icons8  
+Copyright 2020, Icons8  
+All rights reserved  
+<https://blog.icons8.com/articles/download-huge-windows8-set/>

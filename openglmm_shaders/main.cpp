@@ -90,6 +90,7 @@ cApplication::cApplication() :
   bIsMovingLeft(false),
   bIsMovingRight(false),
   bIsMovingBackward(false),
+  bIsSprinting(false),
 
   moveLightForward(SDLK_t),
   moveLightBack(SDLK_g),
@@ -126,6 +127,8 @@ cApplication::cApplication() :
   pContext(nullptr),
 
   bSimplePostRenderDirty(false),
+
+  gui(*this),
 
   colourBlindMode(COLOUR_BLIND_MODE::PROTANOPIA)
 {
@@ -200,14 +203,12 @@ void cApplication::CreateText()
 
   // Add our lines of text
   const spitfire::math::cColour red(1.0f, 0.0f, 0.0f);
-  float y = 0.0f;
-  std::list<spitfire::string_t>::const_iterator iter(lines.begin());
-  const std::list<spitfire::string_t>::const_iterator iterEnd(lines.end());
-  while (iter != iterEnd) {
-    font.PushBack(builder, *iter, red, spitfire::math::cVec2(0.0f, y));
-    y += 0.04f;
-
-    iter++;
+  spitfire::math::cVec2 position(0.01f, 0.05f);
+  const float fRotationDegrees = 0.0f;
+  const spitfire::math::cVec2 scale(1.0f / float(pContext->GetHeight()), 1.0f / float(pContext->GetHeight()));
+  for (auto&& item : lines) {
+    font.PushBack(builder, item, red, opengl::cFont::FLAGS::HORIZONTAL_ALIGNMENT_LEFT_ALIGNED, position, fRotationDegrees, scale);
+    position.y += 0.04f;
   }
 
   textVBO.SetData(pGeometryDataPtr);
@@ -1160,6 +1161,21 @@ bool cApplication::Create()
 
   CreateShaders();
 
+
+  gui.Init(*pContext);
+
+  std::vector<PieMenuItem> menuItems;
+  menuItems.push_back({ 1, "Cancel", "textures/icons/cancel.png" });
+  menuItems.push_back({ 2, "Cloudy", "textures/icons/clouds.png" });
+  menuItems.push_back({ 3, "Sunny", "textures/icons/sun.png" });
+  menuItems.push_back({ 4, "Dog", "textures/icons/dog.png" });
+  menuItems.push_back({ 5, "Torch", "textures/icons/pocket_lantern.png" });
+  menuItems.push_back({ 6, "Running", "textures/icons/running.png" });
+  menuItems.push_back({ 7, "Rocket", "textures/icons/rocket.png" });
+
+  gui.SetPieMenuItems(*pContext, menuItems);
+
+
   // Create our text VBO
   pContext->CreateStaticVertexBufferObject(textVBO);
 
@@ -1646,6 +1662,7 @@ void cApplication::Destroy()
   dofBokeh.Destroy(*pContext);
   heatHaze.Destroy(*pContext);
   tronGlow.Destroy(*pContext);
+  gui.Destroy(*pContext);
 
   pContext = nullptr;
 
@@ -1920,9 +1937,9 @@ void cApplication::_OnMouseEvent(const opengl::cMouseEvent& event)
   // These are a little too numerous to log every single one
   //LOG("");
 
-  if (event.IsMouseMove()) {
-    //LOG("Mouse move");
-
+  if (gui.IsMenuOpen()) {
+    gui.OnMouseEvent(event);
+  } else if (event.IsMouseMove()) {
     if (fabs(event.GetX() - (pWindow->GetWidth() * 0.5f)) > 0.5f) {
       camera.RotateX(0.08f * (event.GetX() - (pWindow->GetWidth() * 0.5f)));
     }
@@ -1944,11 +1961,6 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
 
   if (event.IsKeyDown()) {
     switch (event.GetKeyCode()) {
-      case SDLK_ESCAPE: {
-        LOG("Escape key pressed, quiting");
-        bIsDone = true;
-        break;
-      }
       case SDLK_w: {
         bIsMovingForward = true;
         break;
@@ -1963,6 +1975,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
       }
       case SDLK_d: {
         bIsMovingRight = true;
+        break;
+      }
+      case SDLK_LSHIFT: {
+        bIsSprinting = true;
         break;
       }
 
@@ -1990,7 +2006,16 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
       }
     }
   } else if (event.IsKeyUp()) {
+    if (gui.OnKeyUp(event.GetKeyCode(), *pContext)) {
+      return;
+    }
+
     switch (event.GetKeyCode()) {
+      case SDLK_ESCAPE: {
+        LOG("Escape key pressed, quiting");
+        bIsDone = true;
+        break;
+      }
       case SDLK_SPACE: {
         LOG("spacebar up");
         bIsPhysicsRunning = true;
@@ -2010,6 +2035,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
       }
       case SDLK_d: {
         bIsMovingRight = false;
+        break;
+      }
+      case SDLK_LSHIFT: {
+        bIsSprinting = false;
         break;
       }
 
@@ -2133,6 +2162,40 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
   }
 }
 
+void cApplication::OnCommand(int idCommand)
+{
+  switch (idCommand) {
+    case 1: {
+      std::cout<<"Cancel"<<std::endl;
+      break;
+    }
+    case 2: {
+      std::cout<<"First"<<std::endl;
+      break;
+    }
+    case 3: {
+      std::cout<<"Second"<<std::endl;
+      break;
+    }
+    case 4: {
+      std::cout<<"Third"<<std::endl;
+      break;
+    }
+    case 5: {
+      std::cout<<"Fourth"<<std::endl;
+      break;
+    }
+    case 6: {
+      std::cout<<"Fifth"<<std::endl;
+      break;
+    }
+    case 7: {
+      std::cout<<"Sixth"<<std::endl;
+      break;
+    }
+  }
+}
+
 std::vector<std::string> cApplication::GetInputDescription() const
 {
   std::vector<std::string> description;
@@ -2140,6 +2203,7 @@ std::vector<std::string> cApplication::GetInputDescription() const
   description.push_back("A left");
   description.push_back("S backward");
   description.push_back("D right");
+  description.push_back("E show menu");
   description.push_back("Space pause rotation");
   description.push_back("F5 reload shaders");
   description.push_back("1 toggle wireframe");
@@ -2591,11 +2655,16 @@ void cApplication::Run()
       pWindow->ProcessEvents();
 
       if (pWindow->IsActive()) {
-        // Hide the cursor
-        pWindow->ShowCursor(false);
-
-        // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
-        pWindow->WarpCursorToMiddleOfScreen();
+        if (gui.IsMenuOpen()) {
+          // Show the cursor
+          pWindow->ShowCursor(true);
+        } else {
+          // Hide the cursor
+          pWindow->ShowCursor(false);
+ 
+          // Keep the cursor locked to the middle of the screen so that when the mouse moves, it is in relative pixels
+          pWindow->WarpCursorToMiddleOfScreen();
+        }
       } else {
         // Show the cursor
         pWindow->ShowCursor(true);
@@ -2606,7 +2675,7 @@ void cApplication::Run()
 
     if ((currentTime - previousUpdateTime) > uiUpdateDelta) {
       // Update the camera
-      const float fDistance = 0.1f;
+      const float fDistance = (bIsSprinting ? 0.5f : 0.1f);
       if (bIsMovingForward) camera.MoveZ(fDistance);
       if (bIsMovingBackward) camera.MoveZ(-fDistance);
       if (bIsMovingLeft) camera.MoveX(-fDistance);
@@ -4642,22 +4711,25 @@ void cApplication::Run()
       #endif
 
 
+      if (bIsWireframe) pContext->EnableWireframe();
+
+      // Render the gui
+      gui.Render2D(*pContext);
+
+      if (bIsWireframe) pContext->DisableWireframe();
+
+
       // Draw the text overlay
       {
         pContext->BindFont(font);
 
         // Rendering the font in the middle of the screen
         spitfire::math::cMat4 matModelView;
-        matModelView.SetTranslation(0.02f, 0.05f, 0.0f);
 
         pContext->SetShaderProjectionAndModelViewMatricesRenderMode2D(opengl::MODE2D_TYPE::Y_INCREASES_DOWN_SCREEN, matModelView);
 
         pContext->BindStaticVertexBufferObject2D(textVBO);
-
-        {
-          pContext->DrawStaticVertexBufferObjectTriangles2D(textVBO);
-        }
-
+        pContext->DrawStaticVertexBufferObjectTriangles2D(textVBO);
         pContext->UnBindStaticVertexBufferObject2D(textVBO);
 
         pContext->UnBindFont(font);
