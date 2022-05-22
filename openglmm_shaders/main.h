@@ -59,6 +59,7 @@
 #include "anamorphic_lens_flare.h"
 #include "dofbokeh.h"
 #include "gui.h"
+#include "grass.h"
 #include "hdr.h"
 #include "heathaze.h"
 #include "lensflaredirt.h"
@@ -381,6 +382,7 @@ private:
   PBRMaterial pbrWall;
   PBRMaterial pbrRustedIron;
 
+  cGrass grass;
 
   cTronGlow tronGlow;
   cHeatHaze heatHaze;

@@ -1404,6 +1404,11 @@ bool cApplication::Create()
   assert(pbrRustedIron.textureAO.IsValid());
 
 
+  assert(grass.Init(*pContext));
+
+  grass.Update(*pContext, 0);
+
+
   // Create our floor
   const float fFloorSize = 100.0f;
   const float fTextureWidthWorldSpaceMeters = 1.0f;
@@ -1606,6 +1611,8 @@ void cApplication::Destroy()
   // Destroy the bobble head parts
   pContext->DestroyStaticVertexBufferObject(bobbleHead.bodyVBO);
   pContext->DestroyStaticVertexBufferObject(bobbleHead.headVBO);
+
+  grass.Destroy(*pContext);
 
   pbr.Destroy(*pContext);
 
@@ -2710,6 +2717,8 @@ void cApplication::Run()
         UpdateBobbleHead();
 
         matTranslationBullHeadSpringOffset.SetTranslation(bobbleHead.topOfSpringPosition);
+
+        grass.Update(*pContext, currentTime);
       }
 
       previousUpdateTime = currentTime;
@@ -4187,6 +4196,20 @@ void cApplication::Run()
         pContext->UnBindTexture(0, pbrRustedIron.textureAlbedo);
 
         pContext->UnBindShader(pbr.GetShader());
+      }
+
+      // Render the grass
+      {
+        opengl::cStaticVertexBufferObject& vbo = grass.GetVBO();
+
+        pContext->BindShader(grass.GetShader());
+        pContext->BindTexture(0, grass.GetTexture());
+        pContext->BindStaticVertexBufferObject(vbo);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView);
+        pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+        pContext->UnBindStaticVertexBufferObject(vbo);
+        pContext->UnBindTexture(0, grass.GetTexture());
+        pContext->UnBindShader(grass.GetShader());
       }
 
       // Render the test images
