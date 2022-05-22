@@ -60,6 +60,14 @@ bool cGrass::Init(opengl::cContext& context)
   context.CreateShader(shader, TEXT("shaders/grass.vert"), TEXT("shaders/grass.frag"));
   context.CreateTexture(texture, TEXT("textures/grass.png"));
 
+  // We actually need to clamp to edge, otherwise the texture coordinates at the top of the grass wrap around and show pixels from the bottom of the texture
+  context.BindTexture(0, texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  context.UnBindTexture(0, texture);
+
 
   // Create the grass geometry
   const float fOneOver255 = 1.0f / 255.0f;
