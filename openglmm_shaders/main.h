@@ -66,6 +66,7 @@
 #include "piemenu.h"
 #include "pbr.h"
 #include "shadowmapping.h"
+#include "shrubs.h"
 #include "tronglow.h"
 #include "util.h"
 
@@ -382,6 +383,7 @@ private:
   PBRMaterial pbrWall;
   PBRMaterial pbrRustedIron;
 
+  cShrubs shrubs;
   cGrass grass;
 
   cTronGlow tronGlow;
