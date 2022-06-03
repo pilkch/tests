@@ -49,6 +49,10 @@
 #include "shrubs.h"
 #include "main.h"
 
+// TODO: There are a few wind improvements to look at here https://vulpinii.github.io/tutorials/grass-modelisation/en/
+//  We can use the vertex x,y position in the grid as a uv look up into a noise texture offset by the current time so that animates and each shrub gets a slightly different wind value
+//  We can also use the "global" physics wind and then just add the texture look up wind as an adjustment on top of that
+
 bool cShrubs::Init(opengl::cContext& context)
 {
   context.CreateShader(shader, TEXT("shaders/shrub.vert"), TEXT("shaders/shrub.frag"));
@@ -70,8 +74,6 @@ bool cShrubs::Init(opengl::cContext& context)
 
   opengl::cGeometryBuilder_v3_n3_t2_c4 builderShrub(*pShrubGeometryDataPtr);
 
-  const spitfire::math::cVec3 minShrub(-0.5f, 0.0f, 0.0f);
-  const spitfire::math::cVec3 maxShrub(0.5f, 1.0f, 0.0f);
   const spitfire::math::cVec3 normal(0.0f, 0.0f, 1.0f);
 
   const spitfire::math::cVec3 axisY(0.0f, 1.0f, 0.0f);
@@ -82,22 +84,31 @@ bool cShrubs::Init(opengl::cContext& context)
   // It's not the best, but is fast and simple
 
   // The scale of the grid
-  const spitfire::math::cVec2 gridScale(0.3f, 0.3f);
+  const spitfire::math::cVec2 gridScale(0.5f, 0.5f);
 
-  const size_t gridRows = 40;
-  const size_t gridColumns = 40;
+  const size_t gridRows = 20;
+  const size_t gridColumns = 20;
 
   // The middle of the shrubs field
   const spitfire::math::cVec3 center(spitfire::math::cVec3(20.0f, 0.0f, 20.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
 
   for (size_t y = 0; y < gridRows; y++) {
     for (size_t x = 0; x < gridColumns; x++) {
+      // Randomise the position
       const spitfire::math::cVec2 randomOffset2D(-0.5f + randomGenerator.GetRandomNumber0To1(), -0.5f +  + randomGenerator.GetRandomNumber0To1());
       const spitfire::math::cVec2 position2D(gridScale * (spitfire::math::cVec2(x, y) + randomOffset2D));
       const spitfire::math::cVec3 position = center + spitfire::math::cVec3(position2D.x, 0.0f, position2D.y);
 
+      // Randomise the size
+      const float fHalfWidth = 0.5f + (0.3f * randomGenerator.GetRandomNumber0To1());
+      const float fHeight = 1.0f + (0.3f * randomGenerator.GetRandomNumber0To1());
+      const spitfire::math::cVec3 minShrub(-fHalfWidth, 0.0f, 0.0f);
+      const spitfire::math::cVec3 maxShrub(fHalfWidth, fHeight, 0.0f);
+
+      // Randomise the rotation
       const float fRotationDegreesOfShrub = randomGenerator.GetRandomNumber0To1() * 360.0f;
 
+      // Randomise the colour
       const spitfire::math::cColour colourBase(54.0f * fOneOver255, 124.0f * fOneOver255, 65.0f * fOneOver255);
       const spitfire::math::cColour colour(colourBase.r + (-0.1f * (0.2f + randomGenerator.GetRandomNumber0To1())), colourBase.g + (-0.1f * (0.2f + randomGenerator.GetRandomNumber0To1())), colourBase.b + (-0.1f * (0.2f + randomGenerator.GetRandomNumber0To1())));
 

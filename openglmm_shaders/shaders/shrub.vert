@@ -7,9 +7,8 @@ uniform vec3 wind;
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
-// TODO: Swap these
-layout(location = 2) in vec4 colourAndWindInfluence; // NOTE: The rgb parts are the colour, the a value is how much the wind influences this point
-layout(location = 3) in vec2 texCoord0;
+layout(location = 2) in vec2 texCoord0;
+layout(location = 3) in vec4 colourAndWindInfluence; // NOTE: The rgb parts are the colour, the a value is how much the wind influences this point
 
 // Outputs for fragment program
 smooth out vec2 vertOutTexCoord0;

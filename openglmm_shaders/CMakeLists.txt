@@ -171,7 +171,7 @@ PREFIX_PATHS(${LIBRARY_SRC} ${LIBRARY_SOURCE_FILES})
 SET(OUTPUT_LIBRARY_SOURCE_FILES ${OUTPUT_FILES})
 #MESSAGE(final=${OUTPUT_LIBRARY_SOURCE_FILES})
 
-SET(PROJECT_SOURCE_FILES main.cpp anamorphic_lens_flare.cpp dofbokeh.cpp gaussian_blur.cpp grass.cpp gui.cpp hdr.cpp heathaze.cpp lensflaredirt.cpp piemenu.cpp pbr.cpp shadowmapping.cpp tronglow.cpp util.cpp)
+SET(PROJECT_SOURCE_FILES main.cpp anamorphic_lens_flare.cpp dofbokeh.cpp gaussian_blur.cpp grass.cpp gui.cpp hdr.cpp heathaze.cpp lensflaredirt.cpp piemenu.cpp pbr.cpp shadowmapping.cpp shrubs.cpp tronglow.cpp util.cpp)
 
 #list all source files here
 ADD_EXECUTABLE(${PROJECT_NAME} ${OUTPUT_LIBRARY_SOURCE_FILES} ${PROJECT_SOURCE_FILES})

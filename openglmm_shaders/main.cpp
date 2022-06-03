@@ -153,13 +153,15 @@ void cApplication::CreateText()
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  opengl::cGeometryBuilder_v2_c4_t2 builder(*pGeometryDataPtr);
+  opengl::cGeometryBuilder_v2_t2_c4 builder(*pGeometryDataPtr);
 
   std::list<spitfire::string_t> lines;
   lines.push_back(spitfire::string_t(TEXT("FPS: ")) + spitfire::string::ToString(int(fFPS)));
   lines.push_back(TEXT(""));
-
+  lines.push_back(spitfire::string_t(TEXT("Position: ")) + spitfire::string::ToString(camera.GetPosition().x) + TEXT(", ") + spitfire::string::ToString(camera.GetPosition().y) + TEXT(", ") + spitfire::string::ToString(camera.GetPosition().z));
   lines.push_back(spitfire::string_t(TEXT("Physics running: ")) + (bIsPhysicsRunning ? TEXT("On") : TEXT("Off")));
+  lines.push_back(spitfire::string_t(TEXT("Physics wind: ")) + spitfire::string::ToString(physicsWorld.GetWind().GetLength()));
+  lines.push_back(TEXT(""));
   lines.push_back(spitfire::string_t(TEXT("Wireframe: ")) + (bIsWireframe ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Direction light: ")) + (bIsDirectionalLightOn ? TEXT("On") : TEXT("Off")));
   lines.push_back(spitfire::string_t(TEXT("Point light: ")) + (bIsPointLightOn ? TEXT("On") : TEXT("Off")));
@@ -1404,9 +1406,11 @@ bool cApplication::Create()
   assert(pbrRustedIron.textureAO.IsValid());
 
 
-  assert(grass.Init(*pContext));
+  // Simple shrubs blowing the breeze based on the time
+  assert(shrubs.Init(*pContext));
 
-  grass.Update(*pContext, 0);
+  // Verlet grass that is interactive
+  assert(grass.Init(*pContext, physicsWorld));
 
 
   // Create our floor
@@ -1611,6 +1615,8 @@ void cApplication::Destroy()
   // Destroy the bobble head parts
   pContext->DestroyStaticVertexBufferObject(bobbleHead.bodyVBO);
   pContext->DestroyStaticVertexBufferObject(bobbleHead.headVBO);
+
+  shrubs.Destroy(*pContext);
 
   grass.Destroy(*pContext);
 
@@ -2718,7 +2724,7 @@ void cApplication::Run()
 
         matTranslationBullHeadSpringOffset.SetTranslation(bobbleHead.topOfSpringPosition);
 
-        grass.Update(*pContext, currentTime);
+        grass.Update(*pContext, camera.GetPosition(), physicsWorld);
       }
 
       previousUpdateTime = currentTime;
@@ -4198,8 +4204,35 @@ void cApplication::Run()
         pContext->UnBindShader(pbr.GetShader());
       }
 
+      // Render the shrubs
+      {
+        pContext->DisableCulling();
+
+        opengl::cStaticVertexBufferObject& vbo = shrubs.GetVBO();
+
+        pContext->BindShader(shrubs.GetShader());
+        // NOTE: This is a very basic shrub swaying in the wind:
+        //  It is not accurate at all
+        //  Only use two points, the top and bottom of the shrub, the top has 1.0 wind influence, the bottom has 0.0
+        //  All the shrubs move in the same direction at the same time
+        const float fStrength = 0.07f;
+        const float fSpeed = 0.005f;
+        pContext->SetShaderConstant("wind", spitfire::math::cVec3(fStrength * sinf(fSpeed * currentTime), 0.0f, fStrength * cosf(fSpeed * currentTime)));
+        pContext->BindTexture(0, shrubs.GetTexture());
+        pContext->BindStaticVertexBufferObject(vbo);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView);
+        pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+        pContext->UnBindStaticVertexBufferObject(vbo);
+        pContext->UnBindTexture(0, shrubs.GetTexture());
+        pContext->UnBindShader(shrubs.GetShader());
+
+        pContext->EnableCulling();
+      }
+
       // Render the grass
       {
+        pContext->DisableCulling();
+
         opengl::cStaticVertexBufferObject& vbo = grass.GetVBO();
 
         pContext->BindShader(grass.GetShader());
@@ -4210,6 +4243,8 @@ void cApplication::Run()
         pContext->UnBindStaticVertexBufferObject(vbo);
         pContext->UnBindTexture(0, grass.GetTexture());
         pContext->UnBindShader(grass.GetShader());
+
+        pContext->EnableCulling();
       }
 
       // Render the test images
