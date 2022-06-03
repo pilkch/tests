@@ -2055,7 +2055,7 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         break;
       }
 
-      case SDLK_r: {
+      case SDLK_j: {
         bIsCameraAtLightSource = !bIsCameraAtLightSource;
         break;
       }
