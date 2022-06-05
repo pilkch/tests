@@ -75,8 +75,8 @@
 namespace {
 
 // Our grid of grass blades
-const size_t gridRows = 4;
-const size_t gridColumns = 4;
+const size_t gridRows = 10;
+const size_t gridColumns = 10;
 
 const size_t points_vertical = 4;
 const size_t springs_vertical = 3;
@@ -91,7 +91,7 @@ bool cGrass::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
   // Create the particles and springs for each grass tuft
   // Each grass tuft is made up of 4 particles in a row with 3 springs between them
   const float segmentsHeight[3] = { 0.5f, 0.25f, 0.25f };
-  const float fSegmentStiffness = 0.4f;
+  const float fSegmentStiffness = 0.8f;
   //const float jointStiffness[2] = { 0.9f, 0.8f, 0.7f };
 
 
@@ -108,10 +108,10 @@ bool cGrass::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
   // It's not the best, but is fast and simple
 
   // The scale of the grid
-  const spitfire::math::cVec2 gridScale(0.3f, 0.3f);
+  const spitfire::math::cVec2 gridScale(0.5f, 0.5f);
 
   // The middle of the grass field
-  const spitfire::math::cVec3 center(spitfire::math::cVec3(20.0f + gridScale.x * gridRows, 0.0f, 20.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
+  const spitfire::math::cVec3 center(spitfire::math::cVec3(20.0f, 0.0f, 10.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
 
   for (size_t y = 0; y < gridRows; y++) {
     for (size_t x = 0; x < gridColumns; x++) {
@@ -121,7 +121,7 @@ bool cGrass::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
       const spitfire::math::cVec3 position = center + spitfire::math::cVec3(position2D.x, 0.0f, position2D.y);
 
       // Randomise the size
-      const float fWidth = 0.5f + (0.1f * randomGenerator.GetRandomNumber0To1());
+      const float fWidth = 0.3f + (0.1f * randomGenerator.GetRandomNumber0To1());
       const float fHeightScale = 1.0f + (0.3f * randomGenerator.GetRandomNumber0To1());
       const float fHalfWidth = 0.5f * fWidth;
       const float fTriangularDepth = fWidth * 0.86603f; // For an equilateral triangle the height down the middle from an edge to the opposite point is 0.86603
@@ -193,7 +193,6 @@ bool cGrass::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
       for (size_t i = 0; i < 3; i++) {
         physicsGroup.pins.push_back(&physicsGroup.particles[points_offset + i]);
       }
-
 
       // Link each layer of particles to each other particle in the triangle with springs and link all the layers
       for (size_t i = 0; i < points_vertical - 1; i++) {
@@ -278,15 +277,19 @@ void cGrass::Update(opengl::cContext& context, const spitfire::math::cVec3& came
   playerCapsule.SetBase(cameraPosition - spitfire::math::cVec3(0.0f, fPlayerHeight, 0.0f));
   playerCapsule.SetTip(cameraPosition);
   playerCapsule.SetRadius(fPlayerRadius);
+
+  // Collide the particles with the player
   breathe::physics::verlet::Collide(physicsGroup, playerCapsule);
+
+  // Collide the particles with the ground
+  breathe::physics::verlet::CollideGroundPlane(physicsGroup, 0.0f);
+
 
   // Discard and recreate our VBO
   if (vbo.IsCompiled()) context.DestroyStaticVertexBufferObject(vbo);
   context.CreateStaticVertexBufferObject(vbo);
 
-
   // Create the grass geometry
-  const float fOneOver255 = 1.0f / 255.0f;
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -296,12 +299,14 @@ void cGrass::Update(opengl::cContext& context, const spitfire::math::cVec3& came
 
   spitfire::math::cScopedPredictableRandom randomGenerator(4754);
 
+#if 1
+  const float fOneOver255 = 1.0f / 255.0f;
+
   const size_t nGrassBlades = gridRows * gridColumns;
 
   for (size_t i = 0; i < nGrassBlades; i++) {
     const size_t points_offset = i * (3 * points_vertical);
 
-#if 1
     const spitfire::math::cColour colourBase(54.0f * fOneOver255, 124.0f * fOneOver255, 65.0f * fOneOver255);
     const spitfire::math::cColour colour(colourBase.r + (-0.1f * (0.2f + randomGenerator.GetRandomNumber0To1())), colourBase.g + (-0.1f * (0.2f + randomGenerator.GetRandomNumber0To1())), colourBase.b + (-0.1f * (0.2f + randomGenerator.GetRandomNumber0To1())));
 
@@ -342,56 +347,19 @@ void cGrass::Update(opengl::cContext& context, const spitfire::math::cVec3& came
     builder.PushBack(p5, normal, colour);
     builder.PushBack(p4, normal, colour);
     builder.PushBack(tip, normal, colour);
-#else
-    // Debug wireframe of the verlet geometry
-    const spitfire::math::cVec3& p0 = physicsGroup.particles[points_offset + 0].pos;
-    const spitfire::math::cVec3& p1 = physicsGroup.particles[points_offset + 1].pos;
-    const spitfire::math::cVec3& p2 = physicsGroup.particles[points_offset + 2].pos;
-    const spitfire::math::cVec3& p3 = physicsGroup.particles[points_offset + 3].pos;
-    const spitfire::math::cVec3& p4 = physicsGroup.particles[points_offset + 4].pos;
-    const spitfire::math::cVec3& p5 = physicsGroup.particles[points_offset + 5].pos;
-    const spitfire::math::cVec3& p6 = physicsGroup.particles[points_offset + 6].pos;
-    const spitfire::math::cVec3& p7 = physicsGroup.particles[points_offset + 7].pos;
-    const spitfire::math::cVec3& p8 = physicsGroup.particles[points_offset + 8].pos;
-    const spitfire::math::cVec3& p9 = physicsGroup.particles[points_offset + 9].pos;
-    const spitfire::math::cVec3& p10 = physicsGroup.particles[points_offset + 10].pos;
-    const spitfire::math::cVec3& p11 = physicsGroup.particles[points_offset + 11].pos;
-
-    const spitfire::math::cVec3 normal(0.0f, 0.0f, 1.0f);
-
-    const spitfire::math::cColour colour(1.0f, 0.0f, 0.0f);
-
-    // Draw the triangles on each layer
-    builder.PushBack(p0, normal, colour); builder.PushBack(p1, normal, colour);
-    builder.PushBack(p1, normal, colour); builder.PushBack(p2, normal, colour);
-    builder.PushBack(p2, normal, colour); builder.PushBack(p0, normal, colour);
-
-    builder.PushBack(p3, normal, colour); builder.PushBack(p4, normal, colour);
-    builder.PushBack(p4, normal, colour); builder.PushBack(p5, normal, colour);
-    builder.PushBack(p5, normal, colour); builder.PushBack(p3, normal, colour);
-
-    builder.PushBack(p6, normal, colour); builder.PushBack(p7, normal, colour);
-    builder.PushBack(p7, normal, colour); builder.PushBack(p8, normal, colour);
-    builder.PushBack(p8, normal, colour); builder.PushBack(p6, normal, colour);
-
-    builder.PushBack(p9, normal, colour); builder.PushBack(p10, normal, colour);
-    builder.PushBack(p10, normal, colour); builder.PushBack(p11, normal, colour);
-    builder.PushBack(p11, normal, colour); builder.PushBack(p9, normal, colour);
-
-    // Draw the lines between each triangle layer
-    builder.PushBack(p0, normal, colour); builder.PushBack(p3, normal, colour);
-    builder.PushBack(p1, normal, colour); builder.PushBack(p4, normal, colour);
-    builder.PushBack(p2, normal, colour); builder.PushBack(p5, normal, colour);
-
-    builder.PushBack(p3, normal, colour); builder.PushBack(p6, normal, colour);
-    builder.PushBack(p4, normal, colour); builder.PushBack(p7, normal, colour);
-    builder.PushBack(p5, normal, colour); builder.PushBack(p8, normal, colour);
-
-    builder.PushBack(p6, normal, colour); builder.PushBack(p9, normal, colour);
-    builder.PushBack(p7, normal, colour); builder.PushBack(p10, normal, colour);
-    builder.PushBack(p8, normal, colour); builder.PushBack(p11, normal, colour);
-#endif
   }
+#else
+  const spitfire::math::cVec3 normal(0.0f, 0.0f, 1.0f);
+  const spitfire::math::cColour colour(1.0f, 0.0f, 0.0f);
+
+  // Debug wireframe of the verlet geometry
+  for (auto&& spring : physicsGroup.springs) {
+    const spitfire::math::cVec3 p0 = spring.a->pos;
+    const spitfire::math::cVec3 p1 = spring.b->pos;
+
+    builder.PushBack(p0, normal, colour); builder.PushBack(p1, normal, colour);
+  }
+#endif
 
 
   context.CreateStaticVertexBufferObject(vbo);
