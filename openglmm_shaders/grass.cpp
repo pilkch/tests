@@ -51,17 +51,17 @@
 
 // https://www.reddit.com/r/Unity3D/comments/pks6ys/i_learned_about_verlet_integration_thanks_to/hilra7c/?context=8&depth=9
 
-// We create "radio towers" of verlet particles joined by springs. The sides are made of squares, the cross section is a triangle
+// We create "radio towers" of verlet particles joined by springs. The sides are made of squares, the cross section is a triangle. I ended up having to reinforce them with diagonal supports because it keep collapsing when brushed even with stiff springs.
 //
 // From the front (The renderable geometry is created on one side of the "radio tower", the front faces only, the only difference between the verlet version and the renderable version is that
 //   the top points taper into a single point in the renderable geometry so that get a nice grass blade tip):
 //
 //   +---+
-//   |   |
+//   | X |
 //   +---+
-//   |   |
+//   | X |
 //   +---+
-//   |   |
+//   | X |
 //   +---+
 //
 // From above (The front faces are at the bottom of this diagram):
@@ -300,15 +300,17 @@ void cGrass::Update(opengl::cContext& context, const spitfire::math::cVec3& came
   spitfire::math::cScopedPredictableRandom randomGenerator(4754);
 
 #if 1
-  const float fOneOver255 = 1.0f / 255.0f;
-
   const size_t nGrassBlades = gridRows * gridColumns;
 
   for (size_t i = 0; i < nGrassBlades; i++) {
     const size_t points_offset = i * (3 * points_vertical);
 
-    const spitfire::math::cColour colourBase(54.0f * fOneOver255, 124.0f * fOneOver255, 65.0f * fOneOver255);
-    const spitfire::math::cColour colour(colourBase.r + (-0.1f * (0.2f + randomGenerator.GetRandomNumber0To1())), colourBase.g + (-0.1f * (0.2f + randomGenerator.GetRandomNumber0To1())), colourBase.b + (-0.1f * (0.2f + randomGenerator.GetRandomNumber0To1())));
+    spitfire::math::cColourHSL colourHSL;
+    colourHSL.fHue0To360 = randomGenerator.randomf(87.0f / 360.0f, 135.0f / 360.0f);
+    colourHSL.fSaturation0To1 = randomGenerator.randomf(0.8f, 0.9f);
+    colourHSL.fLuminance0To1 = randomGenerator.randomf(0.24f, 0.38f);
+
+    const spitfire::math::cColour colour(colourHSL.GetRGBA());
 
     const spitfire::math::cVec3& p0 = physicsGroup.particles[points_offset + 0].pos;
     const spitfire::math::cVec3& p1 = physicsGroup.particles[points_offset + 2].pos;
