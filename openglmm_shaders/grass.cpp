@@ -46,8 +46,6 @@
 
 // Application headers
 #include "grass.h"
-#include "main.h"
-
 
 // https://www.reddit.com/r/Unity3D/comments/pks6ys/i_learned_about_verlet_integration_thanks_to/hilra7c/?context=8&depth=9
 
@@ -374,8 +372,4 @@ void cGrass::Destroy(opengl::cContext& context)
 {
   context.DestroyStaticVertexBufferObject(vbo);
   context.DestroyShader(shader);
-}
-
-void cGrass::Resize(cApplication& application, opengl::cContext& context)
-{
 }
