@@ -58,6 +58,7 @@
 // Application headers
 #include "anamorphic_lens_flare.h"
 #include "dofbokeh.h"
+#include "ferns.h"
 #include "gui.h"
 #include "grass.h"
 #include "hdr.h"
@@ -385,6 +386,7 @@ private:
 
   cShrubs shrubs;
   cGrass grass;
+  cFerns ferns;
 
   cTronGlow tronGlow;
   cHeatHaze heatHaze;

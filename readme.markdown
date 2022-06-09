@@ -105,6 +105,11 @@ genjix@gmail.com
 MD5 RFC 1321 compliant MD5 implementation  
 Copyright (C) 2001-2003 Christophe Devine 
 
+Fern Textures
+Marsha Ramirez
+Copyright 2022, Marsha Ramirez
+<https://marsharamirez.wordpress.com/texture-maps/>
+
 Icons  
 Icons8  
 Copyright 2020, Icons8  

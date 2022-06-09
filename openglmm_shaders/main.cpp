@@ -1409,8 +1409,9 @@ bool cApplication::Create()
   // Simple shrubs blowing the breeze based on the time
   assert(shrubs.Init(*pContext));
 
-  // Verlet grass that is interactive
+  // Verlet grass and ferns that are interactive
   assert(grass.Init(*pContext, physicsWorld));
+  assert(ferns.Init(*pContext, physicsWorld));
 
 
   // Create our floor
@@ -1619,6 +1620,7 @@ void cApplication::Destroy()
   shrubs.Destroy(*pContext);
 
   grass.Destroy(*pContext);
+  ferns.Destroy(*pContext);
 
   pbr.Destroy(*pContext);
 
@@ -2725,6 +2727,7 @@ void cApplication::Run()
         matTranslationBullHeadSpringOffset.SetTranslation(bobbleHead.topOfSpringPosition);
 
         grass.Update(*pContext, camera.GetPosition(), physicsWorld);
+        ferns.Update(*pContext, camera.GetPosition(), physicsWorld);
       }
 
       previousUpdateTime = currentTime;
@@ -4236,13 +4239,30 @@ void cApplication::Run()
         opengl::cStaticVertexBufferObject& vbo = grass.GetVBO();
 
         pContext->BindShader(grass.GetShader());
-        pContext->BindTexture(0, grass.GetTexture());
         pContext->BindStaticVertexBufferObject(vbo);
         pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView);
         pContext->DrawStaticVertexBufferObjectTriangles(vbo);
         pContext->UnBindStaticVertexBufferObject(vbo);
-        pContext->UnBindTexture(0, grass.GetTexture());
         pContext->UnBindShader(grass.GetShader());
+
+        pContext->EnableCulling();
+      }
+
+      // Render the ferns
+      {
+        pContext->DisableCulling();
+
+        opengl::cStaticVertexBufferObject& vbo = ferns.GetVBO();
+
+        pContext->BindShader(ferns.GetShader());
+        pContext->BindTexture(0, ferns.GetTexture());
+        pContext->BindStaticVertexBufferObject(vbo);
+        pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView);
+        pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+        //pContext->DrawStaticVertexBufferObjectLines(vbo);
+        pContext->UnBindStaticVertexBufferObject(vbo);
+        pContext->UnBindTexture(0, ferns.GetTexture());
+        pContext->UnBindShader(ferns.GetShader());
 
         pContext->EnableCulling();
       }
