@@ -85,15 +85,15 @@ bool cGrass::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
 {
   context.CreateShader(shader, TEXT("shaders/grass.vert"), TEXT("shaders/grass.frag"));
 
+  context.CreateTexture(texture, TEXT("textures/grass.png"));
+  if (texture.GetPixelFormat() != voodoo::PIXELFORMAT::R8G8B8A8) {
+    return false;
+  }
 
   // Create the particles and springs for each grass tuft
   // Each grass tuft is made up of 4 particles in a row with 3 springs between them
   const float segmentsHeight[3] = { 0.5f, 0.25f, 0.25f };
-  const float fSegmentStiffness = 0.8f;
-  //const float jointStiffness[2] = { 0.9f, 0.8f, 0.7f };
-
-
-
+  const float jointStiffness[3] = { 0.98f, 0.85f, 0.8f };
 
 
   // Create the grass geometry
@@ -194,6 +194,8 @@ bool cGrass::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
 
       // Link each layer of particles to each other particle in the triangle with springs and link all the layers
       for (size_t i = 0; i < points_vertical - 1; i++) {
+        const float fSegmentStiffness = jointStiffness[i];
+
         const size_t points_layer_offset = points_offset + (i * 3);
         std::cout<<"Adding springs for this layer and next layer "<<points_layer_offset<<std::endl;
         // The current layer
@@ -239,6 +241,8 @@ bool cGrass::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
 
       // Link the last row
       for (size_t i = points_vertical - 1; i < points_vertical; i++) {
+        const float fSegmentStiffness = jointStiffness[2];
+
         const size_t points_layer_offset = points_offset + (i * 3);
         std::cout<<"Adding springs for layer "<<points_layer_offset<<std::endl;
         breathe::physics::verlet::Particle* a = &physicsGroup.particles[points_layer_offset];
@@ -291,7 +295,7 @@ void cGrass::Update(opengl::cContext& context, const spitfire::math::cVec3& came
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  opengl::cGeometryBuilder_v3_n3_c4 builder(*pGeometryDataPtr);
+  opengl::cGeometryBuilder_v3_n3_t2_c4 builder(*pGeometryDataPtr);
 
   const spitfire::math::cVec3 axisY(0.0f, 1.0f, 0.0f);
 
@@ -321,32 +325,43 @@ void cGrass::Update(opengl::cContext& context, const spitfire::math::cVec3& came
 
     // NOTE: We only create one side of the geometry but we render with culling disabled so that we render both sides
 
-    // The tip is a single point half way between the top two verlet particles
-    const spitfire::math::cVec3& tip = 0.5f * (p6 + p7);
+    const float fSegmentTextureHeight = 1.0f / float(springs_vertical);
+
+    const spitfire::math::cVec2 t0(0.0f, 3 * fSegmentTextureHeight);
+    const spitfire::math::cVec2 t1(1.0f, 3 * fSegmentTextureHeight);
+    const spitfire::math::cVec2 t2(0.0f, 2 * fSegmentTextureHeight);
+    const spitfire::math::cVec2 t3(1.0f, 2 * fSegmentTextureHeight);
+    const spitfire::math::cVec2 t4(0.0f, fSegmentTextureHeight);
+    const spitfire::math::cVec2 t5(1.0f, fSegmentTextureHeight);
+    const spitfire::math::cVec2 t6(0.0f, 0.0f);
+    const spitfire::math::cVec2 t7(1.0f, 0.0f);
 
     // TODO: I guess we can work out the normal from 3 surrounding vertices?
     const spitfire::math::cVec3 normal(0.0f, 0.0f, 1.0f);
 
     // Add a front facing quad
-    builder.PushBack(p1, normal, colour);
-    builder.PushBack(p3, normal, colour);
-    builder.PushBack(p2, normal, colour);
-    builder.PushBack(p1, normal, colour);
-    builder.PushBack(p2, normal, colour);
-    builder.PushBack(p0, normal, colour);
+    builder.PushBack(p1, normal, t1, colour);
+    builder.PushBack(p2, normal, t2, colour);
+    builder.PushBack(p3, normal, t3, colour);
+    builder.PushBack(p2, normal, t2, colour);
+    builder.PushBack(p1, normal, t1, colour);
+    builder.PushBack(p0, normal, t0, colour);
 
     // Add a front facing quad
-    builder.PushBack(p3, normal, colour);
-    builder.PushBack(p5, normal, colour);
-    builder.PushBack(p4, normal, colour);
-    builder.PushBack(p3, normal, colour);
-    builder.PushBack(p2, normal, colour);
-    builder.PushBack(p4, normal, colour);
+    builder.PushBack(p3, normal, t3, colour);
+    builder.PushBack(p4, normal, t4, colour);
+    builder.PushBack(p5, normal, t5, colour);
+    builder.PushBack(p3, normal, t3, colour);
+    builder.PushBack(p2, normal, t2, colour);
+    builder.PushBack(p4, normal, t4, colour);
 
-    // Add the tip
-    builder.PushBack(p5, normal, colour);
-    builder.PushBack(p4, normal, colour);
-    builder.PushBack(tip, normal, colour);
+    // Add a front facing quad
+    builder.PushBack(p5, normal, t5, colour);
+    builder.PushBack(p6, normal, t6, colour);
+    builder.PushBack(p7, normal, t7, colour);
+    builder.PushBack(p4, normal, t4, colour);
+    builder.PushBack(p6, normal, t6, colour);
+    builder.PushBack(p5, normal, t5, colour);
   }
 #else
   const spitfire::math::cVec3 normal(0.0f, 0.0f, 1.0f);
@@ -371,5 +386,6 @@ void cGrass::Update(opengl::cContext& context, const spitfire::math::cVec3& came
 void cGrass::Destroy(opengl::cContext& context)
 {
   context.DestroyStaticVertexBufferObject(vbo);
+  context.DestroyTexture(texture);
   context.DestroyShader(shader);
 }

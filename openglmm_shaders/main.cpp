@@ -4239,10 +4239,13 @@ void cApplication::Run()
         opengl::cStaticVertexBufferObject& vbo = grass.GetVBO();
 
         pContext->BindShader(grass.GetShader());
+        pContext->BindTexture(0, grass.GetTexture());
         pContext->BindStaticVertexBufferObject(vbo);
         pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView);
         pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+        //pContext->DrawStaticVertexBufferObjectLines(vbo);
         pContext->UnBindStaticVertexBufferObject(vbo);
+        pContext->UnBindTexture(0, grass.GetTexture());
         pContext->UnBindShader(grass.GetShader());
 
         pContext->EnableCulling();

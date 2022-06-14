@@ -71,10 +71,14 @@
 
 namespace {
 
-// Our grid of grass blades
+// Our grid of fern trees
 const size_t gridRows = 10;
 const size_t gridColumns = 10;
 
+// How many branches on each fern tree
+const size_t nFernBranches = 5;
+
+// How many points and springs on each fern branch
 const size_t points_vertical = 4;
 const size_t springs_vertical = 3;
 
@@ -86,23 +90,19 @@ bool cFerns::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
 
   voodoo::cImage imageDiffuse;
   if (!imageDiffuse.LoadFromFile("textures/fern_diffuse.png")) {
-    std::cout<<"a"<<std::endl;
     return false;
   }
 
   if (imageDiffuse.GetPixelFormat() != voodoo::PIXELFORMAT::R8G8B8) {
-    std::cout<<"b"<<std::endl;
     return false;
   }
 
   voodoo::cImage imageAlpha;
   if (!imageAlpha.LoadFromFile("textures/fern_alpha.png")) {
-    std::cout<<"c"<<std::endl;
     return false;
   }
 
   if (imageAlpha.GetPixelFormat() != voodoo::PIXELFORMAT::H8) {
-    std::cout<<"d"<<std::endl;
     return false;
   }
 
@@ -110,7 +110,6 @@ bool cFerns::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
     (imageAlpha.GetWidth() != imageDiffuse.GetWidth()) ||
     (imageAlpha.GetHeight() != imageDiffuse.GetHeight())
   ) {
-    std::cout<<"e"<<std::endl;
     return false;
   }
 
@@ -140,30 +139,25 @@ bool cFerns::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
   context.CreateTextureFromImage(texture, image);
 
 
-  // Create the particles and springs for each grass tuft
-  // Each grass tuft is made up of 4 particles in a row with 3 springs between them
+  // Create the particles and springs for each fern leaf
+  // Each fern leaf is made up of 4 particles in a row with 3 springs between them
   const float segmentsHeight[3] = { 0.5f, 0.25f, 0.25f };
-  const float fSegmentStiffness = 0.8f;
-  //const float jointStiffness[2] = { 0.9f, 0.8f, 0.7f };
+  const float fSegmentStiffness = 0.95f;
 
-
-  std::cout<<"g"<<std::endl;
-
-
-
-  // Create the grass geometry
+  // Create the fern geometry
   const spitfire::math::cVec3 normal(0.0f, 0.0f, 1.0f);
   const spitfire::math::cVec3 axisY(0.0f, 1.0f, 0.0f);
+  const spitfire::math::cVec3 axisX(1.0f, 0.0f, 0.0f);
 
   spitfire::math::cScopedPredictableRandom randomGenerator(4754);
 
-  // We create our geometry by creating a grid of grass at a set scale, then jittering the position of every bit of grass slightly -0.5..0.5
+  // We create our geometry by creating a grid of fern tree positions at a set scale, then jittering each position slightly -0.5..0.5 on the x and y axes
   // It's not the best, but is fast and simple
 
   // The scale of the grid
-  const spitfire::math::cVec2 gridScale(0.5f, 0.5f);
+  const spitfire::math::cVec2 gridScale(1.0f, 1.0f);
 
-  // The middle of the grass field
+  // The middle of the fern trees
   const spitfire::math::cVec3 center(spitfire::math::cVec3(20.0f, 0.0f, 0.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
 
   for (size_t y = 0; y < gridRows; y++) {
@@ -180,133 +174,151 @@ bool cFerns::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
       const float fTriangularDepth = fWidth * 0.86603f; // For an equilateral triangle the height down the middle from an edge to the opposite point is 0.86603
 
       // Randomise the rotation
-      const float fRotationDegreesOfGrass = randomGenerator.GetRandomNumber0To1() * 360.0f;
+      const float fRotationDegreesOfFern = randomGenerator.GetRandomNumber0To1() * 360.0f;
 
-      // The rotation for this billboard of grass
-      spitfire::math::cQuaternion rotationY;
-      rotationY.SetFromAxisAngleDegrees(axisY, fRotationDegreesOfGrass);
+      // Create our fern branches
+      for (size_t b = 0; b < nFernBranches; b++) {
+        //std::cout<<"Adding particles for branch "<<b<<std::endl;
 
-      spitfire::math::cMat4 matRotation;
-      matRotation.SetRotation(rotationY);
+        const float fRotationDegreesOfFernBranch = fRotationDegreesOfFern + (b * (360.0f / float(nFernBranches)));
 
-      const size_t points_offset = physicsGroup.particles.size();
-      std::cout<<"points_offset: "<<points_offset<<std::endl;
+        // The left and right rotation for this fern branch
+        spitfire::math::cQuaternion rotationY;
+        rotationY.SetFromAxisAngleDegrees(axisY, fRotationDegreesOfFernBranch);
 
-      // Create the points for this grass blade
-      float fY = 0.0f;
+        // The angle the fern branch "hangs" out from the fern tree at
+        const float fFernBranchHangAngle = -30.0f;
+        spitfire::math::cQuaternion rotationX;
+        rotationX.SetFromAxisAngleDegrees(axisX, fFernBranchHangAngle);
 
-      // Create a triangle for the ground layer
-      {
-        const spitfire::math::cVec3 trianglePoints[3] = {
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(-fHalfWidth, fY, 0.0f)),      // Front left
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, fY, fTriangularDepth)), // At the back at the center
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(fHalfWidth, fY, 0.0f)),       // Front right
-        };
+        spitfire::math::cMat4 matRotationY;
+        matRotationY.SetRotation(rotationY);
 
-        breathe::physics::verlet::Particle p0(trianglePoints[0]);
-        physicsGroup.particles.push_back(p0);
-        breathe::physics::verlet::Particle p1(trianglePoints[1]);
-        physicsGroup.particles.push_back(p1);
-        breathe::physics::verlet::Particle p2(trianglePoints[2]);
-        physicsGroup.particles.push_back(p2);
-      }
+        spitfire::math::cMat4 matRotationX;
+        matRotationX.SetRotation(rotationX);
 
-      // Now add a triangle for all the other layers
-      for (size_t i = 1; i < points_vertical; i++) {
-        fY += fHeightScale * segmentsHeight[i - 1];
+        spitfire::math::cMat4 matRotation = matRotationY * matRotationX;
 
-        // Create a triangle for this layer
-        const spitfire::math::cVec3 trianglePoints[3] = {
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(-fHalfWidth, fY, 0.0f)),      // Front left
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, fY, fTriangularDepth)), // At the back at the center
-          position + matRotation.GetRotatedVec3(spitfire::math::cVec3(fHalfWidth, fY, 0.0f)),       // Front right
-        };
+        // How far out from the center the branch starts
+        const spitfire::math::cVec3 offsetFromCenterOfFern(0.0f, 0.0f, 0.2f);
+        const spitfire::math::cVec3 centre = position + matRotationY.GetRotatedVec3(offsetFromCenterOfFern);
 
-        breathe::physics::verlet::Particle p0(trianglePoints[0]);
-        physicsGroup.particles.push_back(p0);
-        breathe::physics::verlet::Particle p1(trianglePoints[1]);
-        physicsGroup.particles.push_back(p1);
-        breathe::physics::verlet::Particle p2(trianglePoints[2]);
-        physicsGroup.particles.push_back(p2);
+        // Create the points for this fern branch
+        float fY = 0.0f;
+
+        // Create a triangle for the ground layer
+        {
+          const spitfire::math::cVec3 trianglePoints[3] = {
+            centre + matRotation.GetRotatedVec3(spitfire::math::cVec3(-fHalfWidth, fY, 0.0f)),      // Front left
+            centre + matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, fY, fTriangularDepth)), // At the back at the center
+            centre + matRotation.GetRotatedVec3(spitfire::math::cVec3(fHalfWidth, fY, 0.0f)),       // Front right
+          };
+
+          breathe::physics::verlet::Particle p0(trianglePoints[0]);
+          physicsGroup.particles.push_back(p0);
+          breathe::physics::verlet::Particle p1(trianglePoints[1]);
+          physicsGroup.particles.push_back(p1);
+          breathe::physics::verlet::Particle p2(trianglePoints[2]);
+          physicsGroup.particles.push_back(p2);
+        }
+
+        // Now add a triangle for all the other layers
+        for (size_t i = 1; i < points_vertical; i++) {
+          fY += fHeightScale * segmentsHeight[i - 1];
+
+          // Create a triangle for this layer
+          const spitfire::math::cVec3 trianglePoints[3] = {
+            centre + matRotation.GetRotatedVec3(spitfire::math::cVec3(-fHalfWidth, fY, 0.0f)),      // Front left
+            centre + matRotation.GetRotatedVec3(spitfire::math::cVec3(0.0f, fY, fTriangularDepth)), // At the back at the center
+            centre + matRotation.GetRotatedVec3(spitfire::math::cVec3(fHalfWidth, fY, 0.0f)),       // Front right
+          };
+
+          breathe::physics::verlet::Particle p0(trianglePoints[0]);
+          physicsGroup.particles.push_back(p0);
+          breathe::physics::verlet::Particle p1(trianglePoints[1]);
+          physicsGroup.particles.push_back(p1);
+          breathe::physics::verlet::Particle p2(trianglePoints[2]);
+          physicsGroup.particles.push_back(p2);
+        }
       }
     }
   }
 
-  for (size_t i = 0; i < 12; i++) {
-    const spitfire::math::cVec3 p = physicsGroup.particles[i].pos;
-    std::cout<<"particle["<<i<<"]: "<<p.x<<", "<<p.y<<", "<<p.z<<std::endl;
-  }
 
   for (size_t y = 0; y < gridRows; y++) {
     for (size_t x = 0; x < gridColumns; x++) {
-      const size_t points_offset = ((y * gridColumns) + x) * (3 * points_vertical);
-      std::cout<<"points_offset: "<<points_offset<<std::endl;
+      for (size_t b = 0; b < nFernBranches; b++) {
+        const size_t points_offset = ((((y * gridColumns) + x) * nFernBranches) + b) * (3 * points_vertical);
+        //std::cout<<"cFerns::Init points_offset: "<<points_offset<<std::endl;
 
-      // Pin the lower particles to the ground
-      for (size_t i = 0; i < 3; i++) {
-        physicsGroup.pins.push_back(&physicsGroup.particles[points_offset + i]);
-      }
+        // Pin the lower particles to the ground
+        for (size_t i = 0; i < 3; i++) {
+          physicsGroup.pins.push_back(&physicsGroup.particles[points_offset + i]);
+        }
 
-      // Link each layer of particles to each other particle in the triangle with springs and link all the layers
-      for (size_t i = 0; i < points_vertical - 1; i++) {
-        const size_t points_layer_offset = points_offset + (i * 3);
-        std::cout<<"Adding springs for this layer and next layer "<<points_layer_offset<<std::endl;
-        // The current layer
-        breathe::physics::verlet::Particle* a = &physicsGroup.particles[points_layer_offset];
-        breathe::physics::verlet::Particle* b = &physicsGroup.particles[points_layer_offset + 1];
-        breathe::physics::verlet::Particle* c = &physicsGroup.particles[points_layer_offset + 2];
+        // Link each layer of particles to each other particle in the triangle with springs and link all the layers
+        for (size_t i = 0; i < points_vertical - 1; i++) {
+          const size_t points_layer_offset = points_offset + (i * 3);
+          //std::cout<<"cFerns::Init Adding springs for this layer and next layer "<<points_layer_offset<<std::endl;
 
-        // The next layer above us
-        breathe::physics::verlet::Particle* d = &physicsGroup.particles[points_layer_offset + 3];
-        breathe::physics::verlet::Particle* e = &physicsGroup.particles[points_layer_offset + 4];
-        breathe::physics::verlet::Particle* f = &physicsGroup.particles[points_layer_offset + 5];
+          // The current layer
+          breathe::physics::verlet::Particle* a = &physicsGroup.particles[points_layer_offset];
+          breathe::physics::verlet::Particle* b = &physicsGroup.particles[points_layer_offset + 1];
+          breathe::physics::verlet::Particle* c = &physicsGroup.particles[points_layer_offset + 2];
 
-        // Link each layer of particles to each other particle in the triangle with springs
-        const float ab = (a->pos - b->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, b, ab, fSegmentStiffness));
-        const float bc = (b->pos - c->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, c, bc, fSegmentStiffness));
-        const float ca = (c->pos - a->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, a, ca, fSegmentStiffness));
+          // The next layer above us
+          breathe::physics::verlet::Particle* d = &physicsGroup.particles[points_layer_offset + 3];
+          breathe::physics::verlet::Particle* e = &physicsGroup.particles[points_layer_offset + 4];
+          breathe::physics::verlet::Particle* f = &physicsGroup.particles[points_layer_offset + 5];
 
-        // Link this layer to the particles in the layer above
-        const float ad = (a->pos - d->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, d, ad, fSegmentStiffness));
-        const float be = (b->pos - e->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, e, be, fSegmentStiffness));
-        const float cf = (c->pos - f->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, f, cf, fSegmentStiffness));
+          // Link each layer of particles to each other particle in the triangle with springs
+          const float ab = (a->pos - b->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, b, ab, fSegmentStiffness));
+          const float bc = (b->pos - c->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, c, bc, fSegmentStiffness));
+          const float ca = (c->pos - a->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, a, ca, fSegmentStiffness));
 
-        // The "radio towers" were falling over and collapsing, so we add a spring from each point on this triangle, diagonally up to each neighouring corner on the next layer
-        const float ae = (a->pos - e->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, e, ae, fSegmentStiffness));
-        const float bf = (b->pos - f->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, f, bf, fSegmentStiffness));
-        const float cd = (c->pos - d->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, d, cd, fSegmentStiffness));
-        const float af = (a->pos - f->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, f, af, fSegmentStiffness));
-        const float bd = (b->pos - d->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, d, bd, fSegmentStiffness));
-        const float ce = (c->pos - e->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, e, ce, fSegmentStiffness));
-      }
+          // Link this layer to the particles in the layer above
+          const float ad = (a->pos - d->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, d, ad, fSegmentStiffness));
+          const float be = (b->pos - e->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, e, be, fSegmentStiffness));
+          const float cf = (c->pos - f->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, f, cf, fSegmentStiffness));
 
-      // Link the last row
-      for (size_t i = points_vertical - 1; i < points_vertical; i++) {
-        const size_t points_layer_offset = points_offset + (i * 3);
-        std::cout<<"Adding springs for layer "<<points_layer_offset<<std::endl;
-        breathe::physics::verlet::Particle* a = &physicsGroup.particles[points_layer_offset];
-        breathe::physics::verlet::Particle* b = &physicsGroup.particles[points_layer_offset + 1];
-        breathe::physics::verlet::Particle* c = &physicsGroup.particles[points_layer_offset + 2];
+          // The "radio towers" were falling over and collapsing, so we add a spring from each point on this triangle, diagonally up to each neighouring corner on the next layer
+          const float ae = (a->pos - e->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, e, ae, fSegmentStiffness));
+          const float bf = (b->pos - f->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, f, bf, fSegmentStiffness));
+          const float cd = (c->pos - d->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, d, cd, fSegmentStiffness));
+          const float af = (a->pos - f->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, f, af, fSegmentStiffness));
+          const float bd = (b->pos - d->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, d, bd, fSegmentStiffness));
+          const float ce = (c->pos - e->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, e, ce, fSegmentStiffness));
+        }
 
-        // Link each layer of particles to each other particle in the triangle with springs
-        const float ab = (a->pos - b->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, b, ab, fSegmentStiffness));
-        const float bc = (b->pos - c->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, c, bc, fSegmentStiffness));
-        const float ca = (c->pos - a->pos).GetLength();
-        physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, a, ca, fSegmentStiffness));
+        // Link the last row
+        for (size_t i = points_vertical - 1; i < points_vertical; i++) {
+          const size_t points_layer_offset = points_offset + (i * 3);
+          //std::cout<<"cFerns::Init Adding springs for layer "<<points_layer_offset<<std::endl;
+
+          breathe::physics::verlet::Particle* a = &physicsGroup.particles[points_layer_offset];
+          breathe::physics::verlet::Particle* b = &physicsGroup.particles[points_layer_offset + 1];
+          breathe::physics::verlet::Particle* c = &physicsGroup.particles[points_layer_offset + 2];
+
+          // Link each layer of particles to each other particle in the triangle with springs
+          const float ab = (a->pos - b->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(a, b, ab, fSegmentStiffness));
+          const float bc = (b->pos - c->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(b, c, bc, fSegmentStiffness));
+          const float ca = (c->pos - a->pos).GetLength();
+          physicsGroup.springs.push_back(breathe::physics::verlet::Spring(c, a, ca, fSegmentStiffness));
+        }
       }
     }
   }
@@ -319,7 +331,7 @@ bool cFerns::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
 
 void cFerns::Update(opengl::cContext& context, const spitfire::math::cVec3& cameraPosition, breathe::physics::verlet::cWorld& physicsWorld)
 {
-  // Update the physics for the grass
+  // Update the physics for the ferns
   breathe::physics::verlet::Update(physicsWorld, physicsGroup);
 
   // Center the player capsule with the tip at the camera position
@@ -342,7 +354,7 @@ void cFerns::Update(opengl::cContext& context, const spitfire::math::cVec3& came
   if (vbo.IsCompiled()) context.DestroyStaticVertexBufferObject(vbo);
   context.CreateStaticVertexBufferObject(vbo);
 
-  // Create the grass geometry
+  // Create the fern geometry
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -353,9 +365,9 @@ void cFerns::Update(opengl::cContext& context, const spitfire::math::cVec3& came
   spitfire::math::cScopedPredictableRandom randomGenerator(4754);
 
 #if 1
-  const size_t nGrassBlades = gridRows * gridColumns;
+  const size_t nFernTreeBranches = gridRows * gridColumns * nFernBranches;
 
-  for (size_t i = 0; i < nGrassBlades; i++) {
+  for (size_t i = 0; i < nFernTreeBranches; i++) {
     const size_t points_offset = i * (3 * points_vertical);
 
     const spitfire::math::cVec3& p0 = physicsGroup.particles[points_offset + 0].pos;
@@ -385,38 +397,38 @@ void cFerns::Update(opengl::cContext& context, const spitfire::math::cVec3& came
 
     // Add a front facing quad
     builder.PushBack(p1, normal, t1);
+    builder.PushBack(p2, normal, t2);
     builder.PushBack(p3, normal, t3);
     builder.PushBack(p2, normal, t2);
     builder.PushBack(p1, normal, t1);
-    builder.PushBack(p2, normal, t2);
     builder.PushBack(p0, normal, t0);
 
     // Add a front facing quad
     builder.PushBack(p3, normal, t3);
-    builder.PushBack(p5, normal, t5);
     builder.PushBack(p4, normal, t4);
+    builder.PushBack(p5, normal, t5);
     builder.PushBack(p3, normal, t3);
     builder.PushBack(p2, normal, t2);
     builder.PushBack(p4, normal, t4);
 
     // Add a front facing quad
     builder.PushBack(p5, normal, t5);
-    builder.PushBack(p7, normal, t7);
     builder.PushBack(p6, normal, t6);
-    builder.PushBack(p5, normal, t5);
+    builder.PushBack(p7, normal, t7);
     builder.PushBack(p4, normal, t4);
     builder.PushBack(p6, normal, t6);
+    builder.PushBack(p5, normal, t5);
   }
 #else
   const spitfire::math::cVec3 normal(0.0f, 0.0f, 1.0f);
-  const spitfire::math::cColour colour(1.0f, 0.0f, 0.0f);
+  const spitfire::math::cVec2 textureCoord(0.0f, 0.0f);
 
   // Debug wireframe of the verlet geometry
   for (auto&& spring : physicsGroup.springs) {
     const spitfire::math::cVec3 p0 = spring.a->pos;
     const spitfire::math::cVec3 p1 = spring.b->pos;
 
-    builder.PushBack(p0, normal, colour); builder.PushBack(p1, normal, colour);
+    builder.PushBack(p0, normal, textureCoord); builder.PushBack(p1, normal, textureCoord);
   }
 #endif
 

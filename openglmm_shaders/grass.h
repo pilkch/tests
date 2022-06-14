@@ -20,6 +20,7 @@ public:
 
   void Update(opengl::cContext& context, const spitfire::math::cVec3& cameraPosition, breathe::physics::verlet::cWorld& physicsWorld);
 
+  opengl::cTexture& GetTexture() { return texture; }
   opengl::cShader& GetShader() { return shader; }
   opengl::cStaticVertexBufferObject& GetVBO() { return vbo; }
 
@@ -27,6 +28,7 @@ private:
   // NOTE: We could use a grid of say 4x4 physics groups and divide the grass blades up into them
   breathe::physics::verlet::cGroup physicsGroup;
 
+  opengl::cTexture texture;
   opengl::cShader shader;
   opengl::cStaticVertexBufferObject vbo;
 };
