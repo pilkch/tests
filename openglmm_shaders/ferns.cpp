@@ -155,10 +155,10 @@ bool cFerns::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
   // It's not the best, but is fast and simple
 
   // The scale of the grid
-  const spitfire::math::cVec2 gridScale(1.0f, 1.0f);
+  const spitfire::math::cVec2 gridScale(1.3f, 1.3f);
 
   // The middle of the fern trees
-  const spitfire::math::cVec3 center(spitfire::math::cVec3(20.0f, 0.0f, 0.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
+  const spitfire::math::cVec3 center(spitfire::math::cVec3(20.0f, 0.5f, 0.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
 
   for (size_t y = 0; y < gridRows; y++) {
     for (size_t x = 0; x < gridColumns; x++) {
@@ -168,8 +168,8 @@ bool cFerns::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
       const spitfire::math::cVec3 position = center + spitfire::math::cVec3(position2D.x, 0.0f, position2D.y);
 
       // Randomise the size
-      const float fWidth = 0.3f + (0.1f * randomGenerator.GetRandomNumber0To1());
-      const float fHeightScale = 1.0f + (0.3f * randomGenerator.GetRandomNumber0To1());
+      const float fWidth = 0.4f + (0.1f * randomGenerator.GetRandomNumber0To1());
+      const float fHeightScale = 1.2f + (0.3f * randomGenerator.GetRandomNumber0To1());
       const float fHalfWidth = 0.5f * fWidth;
       const float fTriangularDepth = fWidth * 0.86603f; // For an equilateral triangle the height down the middle from an edge to the opposite point is 0.86603
 
@@ -358,7 +358,7 @@ void cFerns::Update(opengl::cContext& context, const spitfire::math::cVec3& came
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  opengl::cGeometryBuilder_v3_n3_t2 builder(*pGeometryDataPtr);
+  opengl::cGeometryBuilder_v3_n3_t2_c4 builder(*pGeometryDataPtr);
 
   const spitfire::math::cVec3 axisY(0.0f, 1.0f, 0.0f);
 
@@ -369,6 +369,14 @@ void cFerns::Update(opengl::cContext& context, const spitfire::math::cVec3& came
 
   for (size_t i = 0; i < nFernTreeBranches; i++) {
     const size_t points_offset = i * (3 * points_vertical);
+
+    // Random colour tint
+    spitfire::math::cColourHSL colourHSL;
+    colourHSL.fHue0To360 = randomGenerator.randomf(87.0f / 360.0f, 135.0f / 360.0f);
+    colourHSL.fSaturation0To1 = randomGenerator.randomf(0.8f, 0.9f);
+    colourHSL.fLuminance0To1 = randomGenerator.randomf(0.55f, 0.65f);
+
+    const spitfire::math::cColour colour(colourHSL.GetRGBA());
 
     const spitfire::math::cVec3& p0 = physicsGroup.particles[points_offset + 0].pos;
     const spitfire::math::cVec3& p1 = physicsGroup.particles[points_offset + 2].pos;
@@ -396,28 +404,28 @@ void cFerns::Update(opengl::cContext& context, const spitfire::math::cVec3& came
     const spitfire::math::cVec3 normal(0.0f, 0.0f, 1.0f);
 
     // Add a front facing quad
-    builder.PushBack(p1, normal, t1);
-    builder.PushBack(p2, normal, t2);
-    builder.PushBack(p3, normal, t3);
-    builder.PushBack(p2, normal, t2);
-    builder.PushBack(p1, normal, t1);
-    builder.PushBack(p0, normal, t0);
+    builder.PushBack(p1, normal, t1, colour);
+    builder.PushBack(p2, normal, t2, colour);
+    builder.PushBack(p3, normal, t3, colour);
+    builder.PushBack(p2, normal, t2, colour);
+    builder.PushBack(p1, normal, t1, colour);
+    builder.PushBack(p0, normal, t0, colour);
 
     // Add a front facing quad
-    builder.PushBack(p3, normal, t3);
-    builder.PushBack(p4, normal, t4);
-    builder.PushBack(p5, normal, t5);
-    builder.PushBack(p3, normal, t3);
-    builder.PushBack(p2, normal, t2);
-    builder.PushBack(p4, normal, t4);
+    builder.PushBack(p3, normal, t3, colour);
+    builder.PushBack(p4, normal, t4, colour);
+    builder.PushBack(p5, normal, t5, colour);
+    builder.PushBack(p3, normal, t3, colour);
+    builder.PushBack(p2, normal, t2, colour);
+    builder.PushBack(p4, normal, t4, colour);
 
     // Add a front facing quad
-    builder.PushBack(p5, normal, t5);
-    builder.PushBack(p6, normal, t6);
-    builder.PushBack(p7, normal, t7);
-    builder.PushBack(p4, normal, t4);
-    builder.PushBack(p6, normal, t6);
-    builder.PushBack(p5, normal, t5);
+    builder.PushBack(p5, normal, t5, colour);
+    builder.PushBack(p6, normal, t6, colour);
+    builder.PushBack(p7, normal, t7, colour);
+    builder.PushBack(p4, normal, t4, colour);
+    builder.PushBack(p6, normal, t6, colour);
+    builder.PushBack(p5, normal, t5, colour);
   }
 #else
   const spitfire::math::cVec3 normal(0.0f, 0.0f, 1.0f);
