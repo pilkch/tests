@@ -4221,11 +4221,20 @@ void cApplication::Run()
         const float fStrength = 0.07f;
         const float fSpeed = 0.005f;
         pContext->SetShaderConstant("wind", spitfire::math::cVec3(fStrength * sinf(fSpeed * currentTime), 0.0f, fStrength * cosf(fSpeed * currentTime)));
+
+        pContext->SetShaderConstant("fCurrentTime", float(currentTime));
+
         pContext->BindTexture(0, shrubs.GetTexture());
+        pContext->BindTexture(1, shrubs.GetWindFlowMapTexture());
+
+        pContext->SetShaderConstant("windFlowMapTexture", 1);
+
         pContext->BindStaticVertexBufferObject(vbo);
         pContext->SetShaderProjectionAndModelViewMatrices(matProjection, matView);
         pContext->DrawStaticVertexBufferObjectTriangles(vbo);
         pContext->UnBindStaticVertexBufferObject(vbo);
+
+        pContext->UnBindTexture(1, shrubs.GetWindFlowMapTexture());
         pContext->UnBindTexture(0, shrubs.GetTexture());
         pContext->UnBindShader(shrubs.GetShader());
 

@@ -56,6 +56,7 @@
 bool cShrubs::Init(opengl::cContext& context)
 {
   context.CreateShader(shader, TEXT("shaders/shrub.vert"), TEXT("shaders/shrub.frag"));
+
   context.CreateTexture(texture, TEXT("textures/shrub.png"));
 
   // We actually need to clamp to edge, otherwise the texture coordinates at the top of the shrub wrap around and show pixels from the bottom of the texture
@@ -65,6 +66,8 @@ bool cShrubs::Init(opengl::cContext& context)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   context.UnBindTexture(0, texture);
+
+  context.CreateTexture(windFlowMapTexture, TEXT("textures/flowmap.png"));
 
 
   // Create the shrub geometry

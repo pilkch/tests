@@ -20,11 +20,13 @@ public:
   void Resize(cApplication& application, opengl::cContext& context);
 
   opengl::cTexture& GetTexture() { return texture; }
+  opengl::cTexture& GetWindFlowMapTexture() { return windFlowMapTexture; }
   opengl::cShader& GetShader() { return shader; }
   opengl::cStaticVertexBufferObject& GetVBO() { return vbo; }
 
 private:
   opengl::cTexture texture;
+  opengl::cTexture windFlowMapTexture;
   opengl::cShader shader;
   opengl::cStaticVertexBufferObject vbo;
 };
