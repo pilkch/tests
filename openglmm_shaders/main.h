@@ -58,13 +58,16 @@
 // Application headers
 #include "anamorphic_lens_flare.h"
 #include "dofbokeh.h"
+#include "ferns.h"
 #include "gui.h"
+#include "grass.h"
 #include "hdr.h"
 #include "heathaze.h"
 #include "lensflaredirt.h"
 #include "piemenu.h"
 #include "pbr.h"
 #include "shadowmapping.h"
+#include "shrubs.h"
 #include "tronglow.h"
 #include "util.h"
 
@@ -381,6 +384,9 @@ private:
   PBRMaterial pbrWall;
   PBRMaterial pbrRustedIron;
 
+  cShrubs shrubs;
+  cGrass grass;
+  cFerns ferns;
 
   cTronGlow tronGlow;
   cHeatHaze heatHaze;

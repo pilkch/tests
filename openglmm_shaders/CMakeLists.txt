@@ -135,7 +135,7 @@ SET(OUTPUT_LIBRARY_LIBXDGMM_SOURCE_FILES ${OUTPUT_FILES})
 SET(LIBRARY_SPITFIRE_SOURCE_DIRECTORY spitfire/)
 SET(LIBRARY_SPITFIRE_SOURCE_FILES
 spitfire.cpp
-math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat3.cpp math/cMat4.cpp math/cQuaternion.cpp math/math.cpp math/cColour.cpp
+math/cVec2.cpp math/cVec3.cpp math/cVec4.cpp math/cMat3.cpp math/cMat4.cpp math/cPlane.cpp math/cQuaternion.cpp math/geometry.cpp math/math.cpp math/cColour.cpp
 storage/file.cpp storage/filesystem.cpp
 util/datetime.cpp util/log.cpp util/string.cpp util/thread.cpp util/timer.cpp)
 
@@ -171,7 +171,7 @@ PREFIX_PATHS(${LIBRARY_SRC} ${LIBRARY_SOURCE_FILES})
 SET(OUTPUT_LIBRARY_SOURCE_FILES ${OUTPUT_FILES})
 #MESSAGE(final=${OUTPUT_LIBRARY_SOURCE_FILES})
 
-SET(PROJECT_SOURCE_FILES main.cpp anamorphic_lens_flare.cpp dofbokeh.cpp gaussian_blur.cpp gui.cpp hdr.cpp heathaze.cpp lensflaredirt.cpp piemenu.cpp pbr.cpp shadowmapping.cpp tronglow.cpp util.cpp)
+SET(PROJECT_SOURCE_FILES main.cpp anamorphic_lens_flare.cpp dofbokeh.cpp ferns.cpp gaussian_blur.cpp grass.cpp gui.cpp hdr.cpp heathaze.cpp lensflaredirt.cpp piemenu.cpp pbr.cpp sectors.cpp shadowmapping.cpp shrubs.cpp tronglow.cpp util.cpp)
 
 #list all source files here
 ADD_EXECUTABLE(${PROJECT_NAME} ${OUTPUT_LIBRARY_SOURCE_FILES} ${PROJECT_SOURCE_FILES})

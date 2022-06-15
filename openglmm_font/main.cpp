@@ -326,8 +326,7 @@ void cApplication::Run()
 
         const spitfire::math::cVec3 eye(position + spitfire::math::cVec3(0.0f, -2.5f, 1.0f));
         const spitfire::math::cVec3 target(position);
-        spitfire::math::cMat4 matModelView;
-        matModelView.LookAt(eye, target, spitfire::math::v3Up);
+        const spitfire::math::cMat4 matModelView = spitfire::math::cMat4::LookAt(eye, target, spitfire::math::v3Up);
 
         rotation.SetFromAxisAngle(axis, fAngleRadians);
 

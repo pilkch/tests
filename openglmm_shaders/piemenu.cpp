@@ -311,7 +311,7 @@ void cPieMenu::CreateText(opengl::cContext& context, opengl::cFont& font)
 
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
-  opengl::cGeometryBuilder_v2_c4_t2 builder(*pGeometryDataPtr);
+  opengl::cGeometryBuilder_v2_t2_c4 builder(*pGeometryDataPtr);
 
   const spitfire::math::cColour white(1.0f, 1.0f, 1.0f);
 
