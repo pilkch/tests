@@ -3,6 +3,7 @@
 // Spitfire headers
 #include <spitfire/spitfire.h>
 #include <spitfire/util/timer.h>
+#include <spitfire/math/geometry.h>
 
 // libopenglmm headers
 #include <libopenglmm/cShader.h>
@@ -18,6 +19,8 @@ public:
   void Destroy(opengl::cContext& context);
 
   void Resize(cApplication& application, opengl::cContext& context);
+
+  spitfire::math::cAABB3 GetBoundingBox() const;
 
   opengl::cTexture& GetTexture() { return texture; }
   opengl::cTexture& GetWindFlowMapTexture() { return windFlowMapTexture; }

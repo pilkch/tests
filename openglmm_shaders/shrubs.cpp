@@ -49,9 +49,28 @@
 #include "shrubs.h"
 #include "main.h"
 
+namespace {
+
+const size_t gridRows = 20;
+const size_t gridColumns = 20;
+
+}
+
 // TODO: There are a few wind improvements to look at here https://vulpinii.github.io/tutorials/grass-modelisation/en/
 //  We can use the vertex x,y position in the grid as a uv look up into a noise texture offset by the current time so that animates and each shrub gets a slightly different wind value
 //  We can also use the "global" physics wind and then just add the texture look up wind as an adjustment on top of that
+
+spitfire::math::cAABB3 cShrubs::GetBoundingBox() const
+{
+  const spitfire::math::cVec2 gridScale(0.5f, 0.5f);
+  const float fHalfWidth = 0.5f * gridScale.x * float(gridRows);
+  const float fHalfDepth = 0.5f * gridScale.y * float(gridColumns);
+  const float fHeight = 1.0f;
+  const spitfire::math::cVec3 center(20.0f, 0.0f, 20.0f);
+  spitfire::math::cAABB3 boundingBox;
+  boundingBox.SetMinMax(center - spitfire::math::cVec3(fHalfWidth, 0.0f, fHalfDepth), center + spitfire::math::cVec3(fHalfWidth, fHeight, fHalfDepth));
+  return boundingBox;
+}
 
 bool cShrubs::Init(opengl::cContext& context)
 {
@@ -89,18 +108,15 @@ bool cShrubs::Init(opengl::cContext& context)
   // The scale of the grid
   const spitfire::math::cVec2 gridScale(0.5f, 0.5f);
 
-  const size_t gridRows = 20;
-  const size_t gridColumns = 20;
-
   // The middle of the shrubs field
-  const spitfire::math::cVec3 center(spitfire::math::cVec3(20.0f, 0.0f, 20.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
+  const spitfire::math::cVec3 corner(spitfire::math::cVec3(20.0f, 0.0f, 20.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
 
   for (size_t y = 0; y < gridRows; y++) {
     for (size_t x = 0; x < gridColumns; x++) {
       // Randomise the position
       const spitfire::math::cVec2 randomOffset2D(-0.5f + randomGenerator.GetRandomNumber0To1(), -0.5f +  + randomGenerator.GetRandomNumber0To1());
       const spitfire::math::cVec2 position2D(gridScale * (spitfire::math::cVec2(x, y) + randomOffset2D));
-      const spitfire::math::cVec3 position = center + spitfire::math::cVec3(position2D.x, 0.0f, position2D.y);
+      const spitfire::math::cVec3 position = corner + spitfire::math::cVec3(position2D.x, 0.0f, position2D.y);
 
       // Randomise the size
       const float fHalfWidth = 0.5f + (0.3f * randomGenerator.GetRandomNumber0To1());
