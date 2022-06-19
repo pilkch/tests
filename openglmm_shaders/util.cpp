@@ -56,9 +56,18 @@
 
 // ** cFreeLookCamera
 
+namespace {
+
+const float DEFAULT_YAW = 90.0f;
+const float DEFAULT_PITCH = 0.0f;
+const float DEFAULT_ZOOM = 45.0f;
+
+}
+
 cFreeLookCamera::cFreeLookCamera() :
-fRotationRight(0.0f),
-fRotationUp(0.0f)
+  fRotationRight(DEFAULT_YAW),
+  fRotationUp(DEFAULT_PITCH),
+  fZoom(DEFAULT_ZOOM)
 {
 }
 
@@ -119,6 +128,13 @@ spitfire::math::cQuaternion cFreeLookCamera::GetRotation() const
   return (up * right);
 }
 
+spitfire::math::cMat4 cFreeLookCamera::CalculateProjectionMatrix(size_t width, size_t height) const
+{
+  // TODO: Calculate the FOV from a linear camera style zoom
+  const float fFOVDegrees = fZoom;
+  return spitfire::math::cMat4::Perspective(spitfire::math::DegreesToRadians(fFOVDegrees), float(width) / float(height), 0.1f, 1000.0f);
+}
+
 spitfire::math::cMat4 cFreeLookCamera::CalculateViewMatrix() const
 {
   spitfire::math::cMat4 matTranslation;
@@ -131,6 +147,34 @@ spitfire::math::cMat4 cFreeLookCamera::CalculateViewMatrix() const
   matTargetTranslation.TranslateMatrix(spitfire::math::cVec3(0.0f, 0.0f, 1.0f));
 
   return ((matTargetTranslation * matRotation) * matTranslation);
+}
+
+
+spitfire::math::cRay3 CreatePickingRayFromScreenPoint(int screenSpaceX, int screenSpaceY, int screenWidth, int screenHeight, const cFreeLookCamera& camera)
+{
+  // http://antongerdelan.net/opengl/raycasting.html
+
+  // Normalise device coordinates
+  float normalizedDeviceCoordinateX = (2.0f * float(screenSpaceX)) / float(screenWidth) - 1.0f;
+  float normalizedDeviceCoordinateY = (2.0f * float(screenSpaceY)) / float(screenHeight) - 1.0f;
+  // Homogeneous clip coordinates
+  spitfire::math::cVec4 clipSpaceRay = spitfire::math::cVec4(normalizedDeviceCoordinateX, normalizedDeviceCoordinateY, -1.0, 1.0);
+  // Eye coordinates
+  spitfire::math::cMat4 perspectiveProjectionMatrix = camera.CalculateProjectionMatrix(screenWidth, screenHeight);
+  spitfire::math::cVec4 cameraSpaceRay = perspectiveProjectionMatrix.GetInverse() * clipSpaceRay;
+  cameraSpaceRay = spitfire::math::cVec4(cameraSpaceRay.x, cameraSpaceRay.y, -1.0, 0.0);
+
+  // World coordinates
+  spitfire::math::cMat4 cameraTransformMatrix = camera.CalculateViewMatrix();
+  spitfire::math::cVec4 worldSpaceRay = cameraTransformMatrix.GetInverse() * cameraSpaceRay;
+
+  // Normalise
+  spitfire::math::cVec3 direction = spitfire::math::cVec3(worldSpaceRay.x, worldSpaceRay.y, worldSpaceRay.z).GetNormalised();
+
+  spitfire::math::cRay3 ray;
+  ray.SetOriginAndDirection(camera.GetPosition(), direction);
+
+  return ray;
 }
 
 

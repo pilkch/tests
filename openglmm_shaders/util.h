@@ -34,6 +34,7 @@
 #include <spitfire/math/cMat4.h>
 #include <spitfire/math/cQuaternion.h>
 #include <spitfire/math/cColour.h>
+#include <spitfire/math/geometry.h>
 
 #include <spitfire/storage/file.h>
 #include <spitfire/storage/filesystem.h>
@@ -73,6 +74,7 @@ public:
   void RotateX(float fDegrees);
   void RotateY(float fDegrees);
 
+  spitfire::math::cMat4 CalculateProjectionMatrix(size_t width, size_t height) const;
   spitfire::math::cMat4 CalculateViewMatrix() const;
 
 private:
@@ -81,7 +83,12 @@ private:
   spitfire::math::cVec3 position;
   float fRotationRight;
   float fRotationUp;
+
+  float fZoom;
 };
+
+
+spitfire::math::cRay3 CreatePickingRayFromScreenPoint(int screenSpaceX, int screenSpaceY, int screenWidth, int screenHeight, const cFreeLookCamera& camera);
 
 
 class cTextureVBOPair

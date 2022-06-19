@@ -84,6 +84,18 @@ const size_t springs_vertical = 3;
 
 }
 
+spitfire::math::cAABB3 cFerns::GetBoundingBox() const
+{
+  const spitfire::math::cVec2 gridScale(1.3f, 1.3f);
+  const float fHalfWidth = 0.5f * gridScale.x * float(gridRows);
+  const float fHalfDepth = 0.5f * gridScale.y * float(gridColumns);
+  const float fHeight = 1.5f;
+  const spitfire::math::cVec3 center(20.0f, 0.5f, 0.0f);
+  spitfire::math::cAABB3 boundingBox;
+  boundingBox.SetMinMax(center - spitfire::math::cVec3(fHalfWidth, 0.0f, fHalfDepth), center + spitfire::math::cVec3(fHalfWidth, fHeight, fHalfDepth));
+  return boundingBox;
+}
+
 bool cFerns::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& physicsWorld)
 {
   context.CreateShader(shader, TEXT("shaders/fern.vert"), TEXT("shaders/fern.frag"));
@@ -158,14 +170,14 @@ bool cFerns::Init(opengl::cContext& context, breathe::physics::verlet::cWorld& p
   const spitfire::math::cVec2 gridScale(1.3f, 1.3f);
 
   // The middle of the fern trees
-  const spitfire::math::cVec3 center(spitfire::math::cVec3(20.0f, 0.5f, 0.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
+  const spitfire::math::cVec3 corner(spitfire::math::cVec3(20.0f, 0.5f, 0.0f) + (-0.5f * spitfire::math::cVec3(gridScale.x * float(gridRows), 0.0f, gridScale.y * float(gridColumns))));
 
   for (size_t y = 0; y < gridRows; y++) {
     for (size_t x = 0; x < gridColumns; x++) {
       // Randomise the position
       const spitfire::math::cVec2 randomOffset2D(-0.5f + randomGenerator.GetRandomNumber0To1(), -0.5f +  + randomGenerator.GetRandomNumber0To1());
       const spitfire::math::cVec2 position2D(gridScale * (spitfire::math::cVec2(x, y) + randomOffset2D));
-      const spitfire::math::cVec3 position = center + spitfire::math::cVec3(position2D.x, 0.0f, position2D.y);
+      const spitfire::math::cVec3 position = corner + spitfire::math::cVec3(position2D.x, 0.0f, position2D.y);
 
       // Randomise the size
       const float fWidth = 0.4f + (0.1f * randomGenerator.GetRandomNumber0To1());

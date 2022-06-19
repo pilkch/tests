@@ -213,6 +213,14 @@ void cApplication::CreateText()
     position.y += 0.04f;
   }
 
+  // Add text in the bottom right for which feature we are looking at
+  if (!currentFeatureName.empty()) {
+    const spitfire::math::cColour white(1.0f, 1.0f, 1.0f);
+    position.Set(0.01f, 0.96f);
+    const spitfire::math::cVec2 scale(2.0f / float(pContext->GetHeight()), 2.0f / float(pContext->GetHeight()));
+    font.PushBack(builder, spitfire::string_t(TEXT("Feature: ")) + currentFeatureName, white, opengl::cFont::FLAGS::HORIZONTAL_ALIGNMENT_LEFT_ALIGNED, position, fRotationDegrees, scale);
+  }
+
   textVBO.SetData(pGeometryDataPtr);
 
   textVBO.Compile2D();
@@ -2451,8 +2459,6 @@ void cApplication::Run()
 
   // Set up the camera
   camera.SetPosition(spitfire::math::cVec3(-6.5f, 2.5f, 7.0f));
-  camera.RotateX(90.0f);
-  camera.RotateY(45.0f);
 
   // Set up the translation for our floor
   const spitfire::math::cVec3 floorPosition(0.0f, -1.0f, 0.0f);
@@ -2639,6 +2645,16 @@ void cApplication::Run()
   const float fLightSpotLightConeAngle = 40.0f;
   const float lightSpotConeCosineAngle = cosf(spitfire::math::DegreesToRadians(fLightSpotLightConeAngle));
 
+
+  // PBR
+  const spitfire::math::cVec3 pbrFirstPosition(-23.0f * fSpacingX, positionBullBody.y, positionBullBody.z);
+
+  spitfire::math::cVec3 pbrPosition[12];
+  for (size_t i = 0; i < 12; i++) {
+    pbrPosition[i] = pbrFirstPosition + spitfire::math::cVec3(float(i) * (-3.0f * fSpacingX), 0.0f, 0.0f);
+  }
+
+
   // Material
   const spitfire::math::cColour materialAmbientColour(1.0f, 1.0f, 1.0f);
   const spitfire::math::cColour materialDiffuseColour(1.0f, 1.0f, 1.0f);
@@ -2660,6 +2676,83 @@ void cApplication::Run()
   const uint32_t uiUpdateDelta = uint32_t(1000.0f / 60.0f);
 
   spitfire::durationms_t currentSimulationTime = 0;
+
+
+  // Add the names for each feature
+  features.AddSectorSphere("Cubemapping", positionCubeMappedTeapot, 1.5f);
+  features.AddSectorSphere("Car Paint", positionCarPaintTeapot, 1.5f);
+  features.AddSectorSphere("Glass", positionGlassTeapot, 1.5f);
+  features.AddSectorSphere("Stained Glass", positionStainedGlass, 1.0f);
+  features.AddSectorSphere("Stained Glass", positionStainedGlass2, 1.0f);
+  features.AddSectorSphere("Cel Shaded Teapot", positionCelShadedTeapot, 1.5f);
+  features.AddSectorSphere("Parallax Normal Mapping", parallaxNormalMapPosition, 1.0f);
+  features.AddSectorSphere("SciFi Glow", positionSciFi, 1.0f);
+  features.AddSectorSphere("Glow", positionCircuitTree, 1.0f);
+  features.AddSectorSphere("Heat Haze", positionHeatHazeCrate, 1.0f);
+  features.AddSectorSphere("Heat Haze", positionHeatHazeCrateRelativeHeatPosition, 1.0f);
+  features.AddSectorSphere("Heat Haze", positionHeatHazeTeapot, 1.5f);
+  features.AddSectorSphere("Smoke", positionSmoke, 2.0f);
+  features.AddSectorSphere("Fire", positionFire, 2.0f);
+  features.AddSectorSphere("Australian Flag (Verlet)", positionFlag0, 2.0f);
+  features.AddSectorSphere("Aboriginal Flag (Verlet)", positionFlag1, 2.0f);
+  features.AddSectorSphere("Torres Strait Islander Flag (Verlet)", positionFlag2, 2.0f);
+  features.AddSectorSphere("PBR Verlet Bull", positionBullBody, 3.0f);
+  features.AddSectorSphere("Light Directional", lightDirectionalPosition, 0.5f);
+  features.AddSectorSphere("Light Point Light", lightPointPosition, 0.5f);
+  features.AddSectorSphere("Light Spotlight", lightSpotPosition, 0.5f);
+
+  for (size_t i = 0; i < 5; i++) {
+    features.AddSectorSphere("Metal", positions[i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 5; i++) {
+    features.AddSectorSphere("Lightmapping", positions[5 + i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 5; i++) {
+    features.AddSectorSphere("Fog", positions[10 + i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 5; i++) {
+    features.AddSectorSphere("Cubemapping", positions[15 + i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 5; i++) {
+    features.AddSectorSphere("Lambert Shading", positions[20 + i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 5; i++) {
+    features.AddSectorSphere("Hemisphere Lit", positions[25 + i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 5; i++) {
+    features.AddSectorSphere("Rim Lighting", positions[30 + i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 15; i++) {
+    features.AddSectorSphere("Semi-Realistic Rendering", positions[35 + i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 3; i++) {
+    features.AddSectorSphere("PBR Gold", pbrPosition[i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 3; i++) {
+    features.AddSectorSphere("PBR Plastic", pbrPosition[3 + i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 3; i++) {
+    features.AddSectorSphere("PBR Brick", pbrPosition[6 + i], 0.8f);
+  }
+
+  for (size_t i = 0; i < 3; i++) {
+    features.AddSectorSphere("PBR Rusted Iron", pbrPosition[9 + i], 0.8f);
+  }
+
+  features.AddSectorBoundingBox("Shrubs", shrubs.GetBoundingBox());
+  features.AddSectorBoundingBox("Verlet Grass", grass.GetBoundingBox());
+  features.AddSectorBoundingBox("Verlet Ferns", ferns.GetBoundingBox());
+
 
   while (!bIsDone) {
     // Update state
@@ -2729,6 +2822,18 @@ void cApplication::Run()
         grass.Update(*pContext, camera.GetPosition(), physicsWorld);
         ferns.Update(*pContext, camera.GetPosition(), physicsWorld);
       }
+
+      // Work out which feature we are looking at
+      {
+        spitfire::math::cRay3 ray = CreatePickingRayFromScreenPoint(0.5f * pContext->GetWidth(), 0.5f * pContext->GetHeight(), pContext->GetWidth(), pContext->GetHeight(), camera);
+        ray.SetLength(100.0f);
+
+        lastFeatureName = currentFeatureName;
+        currentFeatureName = features.GetClosestSectorRaycast(ray);
+
+        if (currentFeatureName != lastFeatureName) std::cout<<"Feature changed: "<<currentFeatureName<<std::endl;
+      }
+
 
       previousUpdateTime = currentTime;
     }
@@ -2812,7 +2917,7 @@ void cApplication::Run()
     CreateText();
     assert(textVBO.IsCompiled());
 
-    const spitfire::math::cMat4 matProjection = pContext->CalculateProjectionMatrix();
+    const spitfire::math::cMat4 matProjection = camera.CalculateProjectionMatrix(pContext->GetWidth(), pContext->GetHeight());
 
     const spitfire::math::cMat4 matView = (bIsCameraAtLightSource ? shadowMapping.GetView() : camera.CalculateViewMatrix());
     const spitfire::math::cVec3 lightDirection(0.1f, -1.0f, 0.0f);
@@ -4021,7 +4126,6 @@ void cApplication::Run()
         pContext->SetShaderConstant("uGamma", 2.2f);
 
 
-        // NOTE: THESE WERE FLIPPED!!!!!!!!
         pContext->SetShaderConstant("albedoMap", 0);
         pContext->SetShaderConstant("metallicMap", 1);
         pContext->SetShaderConstant("roughnessMap", 2);
@@ -4054,29 +4158,24 @@ void cApplication::Run()
         pContext->DrawStaticVertexBufferObjectTriangles(bobbleHead.headVBO);
         pContext->UnBindStaticVertexBufferObject(bobbleHead.headVBO);
 
-        const float fPBR_y = positionBullBody.y;
-        const float fPBR_z = positionBullBody.z;
 
         // Gold
         spitfire::math::cMat4 matTranslation2;
-        const spitfire::math::cVec3 position2(-23.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position2);
+        matTranslation2.SetTranslation(pbrPosition[0]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
 
-        const spitfire::math::cVec3 position3(-26.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position3);
+        matTranslation2.SetTranslation(pbrPosition[1]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
 
-        const spitfire::math::cVec3 position4(-29.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position4);
+        matTranslation2.SetTranslation(pbrPosition[2]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
@@ -4096,24 +4195,21 @@ void cApplication::Run()
         pContext->BindTexture(3, pbrPlastic.textureNormal);
         pContext->BindTexture(4, pbrPlastic.textureAO);
 
-        const spitfire::math::cVec3 position5(-32.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position5);
+        matTranslation2.SetTranslation(pbrPosition[3]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
 
-        const spitfire::math::cVec3 position6(-35.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position6);
+        matTranslation2.SetTranslation(pbrPosition[4]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
 
-        const spitfire::math::cVec3 position7(-38.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position7);
+        matTranslation2.SetTranslation(pbrPosition[5]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
@@ -4133,24 +4229,21 @@ void cApplication::Run()
         pContext->BindTexture(3, pbrWall.textureNormal);
         pContext->BindTexture(4, pbrWall.textureAO);
 
-        const spitfire::math::cVec3 position8(-41.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position8);
+        matTranslation2.SetTranslation(pbrPosition[6]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
 
-        const spitfire::math::cVec3 position9(-44.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position9);
+        matTranslation2.SetTranslation(pbrPosition[7]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
 
-        const spitfire::math::cVec3 position10(-47.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position10);
+        matTranslation2.SetTranslation(pbrPosition[8]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
@@ -4170,24 +4263,21 @@ void cApplication::Run()
         pContext->BindTexture(3, pbrRustedIron.textureNormal);
         pContext->BindTexture(4, pbrRustedIron.textureAO);
 
-        const spitfire::math::cVec3 position11(-50.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position11);
+        matTranslation2.SetTranslation(pbrPosition[9]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSquare1);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSquare1);
 
-        const spitfire::math::cVec3 position12(-53.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position12);
+        matTranslation2.SetTranslation(pbrPosition[10]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);
         pContext->DrawStaticVertexBufferObjectTriangles(staticVertexBufferObjectSphere1);
         pContext->UnBindStaticVertexBufferObject(staticVertexBufferObjectSphere1);
 
-        const spitfire::math::cVec3 position13(-57.0f * fSpacingX, fPBR_y, fPBR_z);
-        matTranslation2.SetTranslation(position13);
+        matTranslation2.SetTranslation(pbrPosition[11]);
 
         pContext->BindStaticVertexBufferObject(staticVertexBufferObjectTeapot1);
         pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matTranslation2);

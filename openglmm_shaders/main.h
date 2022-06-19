@@ -66,6 +66,7 @@
 #include "lensflaredirt.h"
 #include "piemenu.h"
 #include "pbr.h"
+#include "sectors.h"
 #include "shadowmapping.h"
 #include "shrubs.h"
 #include "tronglow.h"
@@ -228,6 +229,10 @@ private:
   opengl::cContext* pContext;
 
   cFreeLookCamera camera;
+
+  cSectors features; // For showing the name of each test
+  std::string lastFeatureName;
+  std::string currentFeatureName;
 
   opengl::cFont font;
   opengl::cStaticVertexBufferObject textVBO;

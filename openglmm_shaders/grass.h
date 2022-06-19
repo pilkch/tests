@@ -3,6 +3,7 @@
 // Spitfire headers
 #include <spitfire/spitfire.h>
 #include <spitfire/util/timer.h>
+#include <spitfire/math/geometry.h>
 
 // libopenglmm headers
 #include <libopenglmm/cShader.h>
@@ -19,6 +20,8 @@ public:
   void Destroy(opengl::cContext& context);
 
   void Update(opengl::cContext& context, const spitfire::math::cVec3& cameraPosition, breathe::physics::verlet::cWorld& physicsWorld);
+
+  spitfire::math::cAABB3 GetBoundingBox() const;
 
   opengl::cTexture& GetTexture() { return texture; }
   opengl::cShader& GetShader() { return shader; }
