@@ -1749,14 +1749,13 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderPassThrough, TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(shaderPassThrough.IsCompiledProgram());
 
-  pContext->CreateShader(shaderPassThroughNonRect, TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough2dnonrect.frag"));
+  pContext->CreateShader(shaderPassThroughNonRect, TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(shaderPassThroughNonRect.IsCompiledProgram());
 
   pContext->CreateShader(shaderScreen1D, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough1d.frag"));
   assert(shaderScreen1D.IsCompiledProgram());
 
-  // TODO: Rename passthrough2d.frag and then rename passthrough2dnonrect.frag
-  pContext->CreateShader(shaderScreen2D, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2dnonrect.frag"));
+  pContext->CreateShader(shaderScreen2D, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(shaderScreen2D.IsCompiledProgram());
 
   pContext->CreateShader(shaderScreenRectVariableTextureSize, TEXT("shaders/debugpassthrough2d.vert"), TEXT("shaders/passthrough2drectvariabletexturesize.frag"));
