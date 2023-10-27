@@ -1077,7 +1077,7 @@ bool cApplication::Create()
   // Now we can continue loading the heightmap
 
   std::cout<<"cApplication::Create Creating frame buffer object"<<std::endl;
-  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(1024, 1024, opengl::PIXELFORMAT::R8G8B8A8);
+  pTextureFrameBufferObject = pContext->CreateTextureFrameBufferObject(1024, 1024, opengl::PIXELFORMAT::RGB16F);
   assert(pTextureFrameBufferObject != nullptr);
 
 

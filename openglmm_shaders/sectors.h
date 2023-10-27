@@ -11,6 +11,7 @@ class cSectors
 public:
   void AddSectorBoundingBox(const std::string& name, const spitfire::math::cAABB3& boundingBox);
   void AddSectorSphere(const std::string& name, const spitfire::math::cVec3 position, float fRadius);
+  void UpdateSectorSphere(const std::string& name, const spitfire::math::cVec3 position, float fRadius);
 
   std::string GetClosestSectorRaycast(const spitfire::math::cRay3& ray) const;
 

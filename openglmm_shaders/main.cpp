@@ -111,6 +111,7 @@ cApplication::cApplication() :
 
   bIsPhysicsRunning(true),
   bIsWireframe(false),
+  bIsDrawText(false),
 
   bIsTronGlow(true),
   bIsHeatHaze(true),
@@ -630,7 +631,7 @@ void cApplication::CreateTeapotVBO()
   staticVertexBufferObjectLargeTeapot.Compile();
 }
 
-bool cApplication::CreateVBOFromObjFile(opengl::cStaticVertexBufferObject& vbo, const std::string& file_path, float fScale)
+bool cApplication::CreateVBOFromObjFile(opengl::cStaticVertexBufferObject& vbo, const std::string& file_path, float fScale, const spitfire::math::cVec3& translation)
 {
   opengl::cGeometryDataPtr pGeometryDataPtr = opengl::CreateGeometryData();
 
@@ -650,7 +651,7 @@ bool cApplication::CreateVBOFromObjFile(opengl::cStaticVertexBufferObject& vbo, 
     const size_t nVertices = model.mesh[iMesh]->vertices.size() / 3;
     for (size_t iVertex = 0; iVertex < nVertices; iVertex++) {
       builder.PushBack(
-        fScale * spitfire::math::cVec3(model.mesh[iMesh]->vertices[(3 * iVertex)], model.mesh[iMesh]->vertices[(3 * iVertex) + 1], model.mesh[iMesh]->vertices[(3 * iVertex) + 2]),
+        translation + (fScale * spitfire::math::cVec3(model.mesh[iMesh]->vertices[(3 * iVertex)], model.mesh[iMesh]->vertices[(3 * iVertex) + 1], model.mesh[iMesh]->vertices[(3 * iVertex) + 2])),
         spitfire::math::cVec3(model.mesh[iMesh]->normals[(3 * iVertex)], model.mesh[iMesh]->normals[(3 * iVertex) + 1], model.mesh[iMesh]->normals[(3 * iVertex) + 2]),
         spitfire::math::cVec2(model.mesh[iMesh]->textureCoordinates[(2 * iVertex)], model.mesh[iMesh]->textureCoordinates[(2 * iVertex) + 1])
       );
@@ -1343,6 +1344,17 @@ bool cApplication::Create()
   }
 
 
+  const float fGravity = -9.8f;
+
+  breathe::physics::verlet::cWindProperties windProperties;
+  windProperties.generalWindForce.Set(0.3f, 0.0f, 0.3f);
+  windProperties.fMaxHorizontalForce = 0.1f;
+  windProperties.fMaxVerticalForce = 0.1f;
+
+  physicsWorld.Init(fGravity, windProperties);
+  physicsWorld.Update();
+
+
   pContext->CreateTexture(wavingFlagRenderable[0].texture, TEXT("textures/flags/australian.png"));
   assert(wavingFlagRenderable[0].texture.IsValid());
   pContext->CreateTexture(wavingFlagRenderable[1].texture, TEXT("textures/flags/aboriginal.png"));
@@ -1351,9 +1363,6 @@ bool cApplication::Create()
   assert(wavingFlagRenderable[2].texture.IsValid());
 
   InitWavingFlags();
-
-  physicsWorld.Update();
-
   UpdateFlags();
 
 
@@ -1365,6 +1374,9 @@ bool cApplication::Create()
   InitBobbleHead();
 
   UpdateBobbleHead();
+
+
+  hotAirBalloon.Init(*this, *pContext);
 
 
   assert(pbr.Init(*pContext));
@@ -1613,6 +1625,10 @@ void cApplication::Destroy()
 
   testImages.clear();
 
+
+  hotAirBalloon.Destroy(*pContext);
+
+
   // Destroy our flags
   if (wavingFlagRenderable[0].texture.IsValid()) pContext->DestroyTexture(wavingFlagRenderable[0].texture);
   pContext->DestroyStaticVertexBufferObject(wavingFlagRenderable[0].vbo);
@@ -1624,6 +1640,7 @@ void cApplication::Destroy()
   // Destroy the bobble head parts
   pContext->DestroyStaticVertexBufferObject(bobbleHead.bodyVBO);
   pContext->DestroyStaticVertexBufferObject(bobbleHead.headVBO);
+
 
   shrubs.Destroy(*pContext);
 
@@ -1749,14 +1766,13 @@ void cApplication::CreateShaders()
   pContext->CreateShader(shaderPassThrough, TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough.frag"));
   assert(shaderPassThrough.IsCompiledProgram());
 
-  pContext->CreateShader(shaderPassThroughNonRect, TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough2dnonrect.frag"));
+  pContext->CreateShader(shaderPassThroughNonRect, TEXT("shaders/passthrough.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(shaderPassThroughNonRect.IsCompiledProgram());
 
   pContext->CreateShader(shaderScreen1D, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough1d.frag"));
   assert(shaderScreen1D.IsCompiledProgram());
 
-  // TODO: Rename passthrough2d.frag and then rename passthrough2dnonrect.frag
-  pContext->CreateShader(shaderScreen2D, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2dnonrect.frag"));
+  pContext->CreateShader(shaderScreen2D, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
   assert(shaderScreen2D.IsCompiledProgram());
 
   pContext->CreateShader(shaderScreenRectVariableTextureSize, TEXT("shaders/debugpassthrough2d.vert"), TEXT("shaders/passthrough2drectvariabletexturesize.frag"));
@@ -2021,6 +2037,14 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
         bIsFStopIncrease = true;
         break;
       }
+      case SDLK_k: {
+        hotAirBalloon.DecreaseLift();
+        break;
+      }
+      case SDLK_l: {
+        hotAirBalloon.IncreaseLift();
+        break;
+      }
 
       case SDLK_SPACE: {
         //LOG("spacebar down");
@@ -2179,6 +2203,10 @@ void cApplication::_OnKeyboardEvent(const opengl::cKeyboardEvent& event)
       }
       case SDLK_MINUS: {
         bIsSplitScreenSimplePostEffectShaders = !bIsSplitScreenSimplePostEffectShaders;
+        break;
+      }
+      case SDLK_SEMICOLON: {
+        hotAirBalloon.ToggleDebug();
         break;
       }
     }
@@ -2429,6 +2457,13 @@ void cApplication::Run()
 
   assert(bobbleHead.bodyVBO.IsCompiled());
   assert(bobbleHead.headVBO.IsCompiled());
+
+  assert(hotAirBalloon.GetBalloonTexture().IsValid());
+  assert(hotAirBalloon.GetBasketTexture().IsValid());
+  assert(hotAirBalloon.GetRopeTexture().IsValid());
+  assert(hotAirBalloon.GetBalloonVBO().IsCompiled());
+  assert(hotAirBalloon.GetBasketVBO().IsCompiled());
+  assert(hotAirBalloon.GetRopeVBO().IsCompiled());
 
   assert(parallaxNormalMap.vbo.IsCompiled());
 
@@ -2753,6 +2788,9 @@ void cApplication::Run()
   features.AddSectorBoundingBox("Verlet Grass", grass.GetBoundingBox());
   features.AddSectorBoundingBox("Verlet Ferns", ferns.GetBoundingBox());
 
+  const spitfire::math::cSphere hotAirBalloonBoundingSphere(hotAirBalloon.GetBoundingSphere());
+  features.AddSectorSphere("Verlet Hot Air Balloon", hotAirBalloonBoundingSphere.position, hotAirBalloonBoundingSphere.fRadius);
+
 
   while (!bIsDone) {
     // Update state
@@ -2818,6 +2856,12 @@ void cApplication::Run()
         UpdateBobbleHead();
 
         matTranslationBullHeadSpringOffset.SetTranslation(bobbleHead.topOfSpringPosition);
+
+        hotAirBalloon.Update(*pContext);
+
+        // Update the sector sphere for the hot air balloon sector
+        const spitfire::math::cSphere hotAirBalloonBoundingSphere(hotAirBalloon.GetBoundingSphere());
+        features.UpdateSectorSphere("Verlet Hot Air Balloon", hotAirBalloonBoundingSphere.position, hotAirBalloonBoundingSphere.fRadius);
 
         grass.Update(*pContext, camera.GetPosition(), physicsWorld);
         ferns.Update(*pContext, camera.GetPosition(), physicsWorld);
@@ -4104,6 +4148,71 @@ void cApplication::Run()
         pContext->EnableCulling();
       }
 
+      // Render the hot air balloon
+      {
+        pContext->BindShader(shaderPassThroughNonRect);
+
+        // Render the balloon part
+        {
+          pContext->BindTexture(0, hotAirBalloon.GetBalloonTexture());
+
+          spitfire::math::cMat4 matTranslation;
+          spitfire::math::cMat4 matRotation;
+          // TODO: This is a bit of a hack, if we are debugging the balloon then we it is in world coordinates so we don't need to apply the translation and rotation
+          if (!hotAirBalloon.IsDebug()) {
+            matTranslation.SetTranslation(hotAirBalloon.GetBalloonCentrePoint());
+            matRotation = hotAirBalloon.GetBalloonRotation();
+          }
+          const spitfire::math::cMat4 matModel = matTranslation * matRotation;
+
+          opengl::cStaticVertexBufferObject& vbo = hotAirBalloon.GetBalloonVBO();
+          pContext->BindStaticVertexBufferObject(vbo);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matModel);
+          pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+          pContext->UnBindStaticVertexBufferObject(vbo);
+
+          pContext->UnBindTexture(0, hotAirBalloon.GetBalloonTexture());
+        }
+
+        // Render the basket part
+        {
+          pContext->BindTexture(0, hotAirBalloon.GetBasketTexture());
+
+          // The VBO is in world space
+          const spitfire::math::cMat4 matModel;
+
+          opengl::cStaticVertexBufferObject& vbo = hotAirBalloon.GetBasketVBO();
+          pContext->BindStaticVertexBufferObject(vbo);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matModel);
+          pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+          pContext->UnBindStaticVertexBufferObject(vbo);
+
+          pContext->UnBindTexture(0, hotAirBalloon.GetBasketTexture());
+        }
+
+        // Render the rope part
+        {
+          pContext->DisableCulling();
+
+          pContext->BindTexture(0, hotAirBalloon.GetRopeTexture());
+
+          // The VBO is in world space
+          const spitfire::math::cMat4 matModel;
+
+          opengl::cStaticVertexBufferObject& vbo = hotAirBalloon.GetRopeVBO();
+          pContext->BindStaticVertexBufferObject(vbo);
+          pContext->SetShaderProjectionAndViewAndModelMatrices(matProjection, matView, matModel);
+          pContext->DrawStaticVertexBufferObjectTriangles(vbo);
+          pContext->UnBindStaticVertexBufferObject(vbo);
+
+          pContext->UnBindTexture(0, hotAirBalloon.GetRopeTexture());
+
+          pContext->EnableCulling();
+        }
+
+        pContext->UnBindShader(shaderPassThroughNonRect);
+      }
+
       // Render the bobble head parts
       {
         pContext->BindShader(pbr.GetShader());
@@ -4837,7 +4946,7 @@ void cApplication::Run()
       }
       #endif
 
-      #if 1
+      #if 0
       // Draw the PBR textures for debugging purposes
       //RenderDebugScreenSquare(position.x, position.y, textureHDREquirectangularSpheremap); position.x += 0.25f;
       RenderDebugScreenRectangleVariableSize(position.x, position.y, pbr.DebugGetTextureHDREquirectangularSpheremap()); position.x += 0.25f;
@@ -4884,7 +4993,7 @@ void cApplication::Run()
       position += spitfire::math::cVec2(0.25f, 0.0f);
       #endif
 
-      #if 1
+      #if 0
       // Draw the teapot texture
       RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectTeapot, shaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);
@@ -4900,7 +5009,7 @@ void cApplication::Run()
 
 
       // Draw the text overlay
-      {
+      if (bIsDrawText) {
         pContext->BindFont(font);
 
         // Rendering the font in the middle of the screen

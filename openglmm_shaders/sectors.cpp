@@ -26,6 +26,20 @@ void cSectors::AddSectorSphere(const std::string& name, const spitfire::math::cV
   sphereSectors.push_back(sector);
 }
 
+void cSectors::UpdateSectorSphere(const std::string& name, const spitfire::math::cVec3 position, float fRadius)
+{
+  for (auto&& sector : sphereSectors) {
+    if (sector.name == name) {
+      sector.boundingSphere.SetPosition(position);
+      sector.boundingSphere.SetRadius(fRadius);
+      return;
+    }
+  }
+
+  // We didn't find it, so add a new one
+  AddSectorSphere(name, position, fRadius);
+}
+
 std::string cSectors::GetClosestSectorRaycast(const spitfire::math::cRay3& ray) const
 {
   struct Closest {

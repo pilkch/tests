@@ -66,7 +66,7 @@ cHDR::cHDR() :
 
 void cHDR::Init(opengl::cContext& context)
 {
-  context.CreateShader(shaderPassThrough, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2d.frag"));
+  context.CreateShader(shaderPassThrough, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/passthrough2drect.frag"));
   context.CreateShader(shaderLuminance, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/luminance.frag"));
   context.CreateShader(shaderMinification, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/minification.frag"));
   context.CreateShader(shaderToneMapping, TEXT("shaders/passthrough2d.vert"), TEXT("shaders/hdr/tone_mapping.frag"));
@@ -126,7 +126,8 @@ void cHDR::Resize(cApplication& application, opengl::cContext& context)
   const size_t Width = context.GetWidth();
   const size_t Height = context.GetHeight();
 
-  context.CreateTextureFrameBufferObject(fboLuminanceBuffer, Width, Height, opengl::PIXELFORMAT::R8G8B8A8); // Float 16 RGBA
+  // TODO: Should these be the default RGB16F?
+  context.CreateTextureFrameBufferObject(fboLuminanceBuffer, Width, Height, opengl::PIXELFORMAT::RGB16F); // Float 16 RGBA
 
   int i = 0, x = int(Width), y = int(Height);
 

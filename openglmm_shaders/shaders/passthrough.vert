@@ -2,12 +2,9 @@
 
 uniform mat4 matModelViewProjection;
 
-#define POSITION 0
-#define NORMAL 1
-#define TEXCOORD0 2
-layout(location = POSITION) in vec3 position;
-layout(location = NORMAL) in vec3 normal;
-layout(location = TEXCOORD0) in vec2 texCoord0;
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec2 texCoord0;
 
 // Color to fragment program
 smooth out vec2 vertOutTexCoord;

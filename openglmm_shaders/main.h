@@ -63,6 +63,7 @@
 #include "grass.h"
 #include "hdr.h"
 #include "heathaze.h"
+#include "hotairballoon.h"
 #include "lensflaredirt.h"
 #include "piemenu.h"
 #include "pbr.h"
@@ -99,6 +100,7 @@ public:
   friend class cHDR;
   friend class cLensFlareDirt;
   friend class cShadowMapping;
+  friend class cHotAirBalloon;
 
   bool Create();
   void Destroy();
@@ -116,6 +118,9 @@ protected:
   void RenderScreenRectangle(opengl::cTexture& texture, opengl::cShader& shader, opengl::cStaticVertexBufferObject& staticVertexBufferObject);
   void RenderScreenRectangleShaderAndTextureAlreadySet(opengl::cStaticVertexBufferObject& staticVertexBufferObject);
   void RenderScreenRectangleShaderAndTextureAlreadySet();
+
+  // Called from cHotAirBalloon
+  bool CreateVBOFromObjFile(opengl::cStaticVertexBufferObject& vbo, const std::string& file_path, float fScale, const spitfire::math::cVec3& translation = spitfire::math::cVec3());
 
 private:
   void CreateShaders();
@@ -145,8 +150,6 @@ private:
   void CreateScreenRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateScreenHalfRectVBO(opengl::cStaticVertexBufferObject& staticVertexBufferObject, float_t fWidth, float_t fHeight);
   void CreateGuiRectangle(opengl::cStaticVertexBufferObject& staticVertexBufferObject, size_t nTextureWidth, size_t nTextureHeight);
-
-  bool CreateVBOFromObjFile(opengl::cStaticVertexBufferObject& vbo, const std::string& file_path, float fScale);
 
   void InitWavingFlags();
   void InitWavingFlag(breathe::physics::verlet::cGroup& group, float fWidthMeters, float fHeightMeters, size_t points_horizontal, size_t points_vertical);
@@ -202,6 +205,7 @@ private:
 
   bool bIsPhysicsRunning;
   bool bIsWireframe;
+  bool bIsDrawText;
 
   enum class LENS_FLARE {
     NONE,
@@ -392,6 +396,9 @@ private:
   cShrubs shrubs;
   cGrass grass;
   cFerns ferns;
+
+  cHotAirBalloon hotAirBalloon;
+
 
   cTronGlow tronGlow;
   cHeatHaze heatHaze;
