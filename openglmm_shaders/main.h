@@ -205,6 +205,7 @@ private:
 
   bool bIsPhysicsRunning;
   bool bIsWireframe;
+  bool bIsDrawText;
 
   enum class LENS_FLARE {
     NONE,

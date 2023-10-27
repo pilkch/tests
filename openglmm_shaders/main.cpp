@@ -111,6 +111,7 @@ cApplication::cApplication() :
 
   bIsPhysicsRunning(true),
   bIsWireframe(false),
+  bIsDrawText(false),
 
   bIsTronGlow(true),
   bIsHeatHaze(true),
@@ -4945,7 +4946,7 @@ void cApplication::Run()
       }
       #endif
 
-      #if 1
+      #if 0
       // Draw the PBR textures for debugging purposes
       //RenderDebugScreenSquare(position.x, position.y, textureHDREquirectangularSpheremap); position.x += 0.25f;
       RenderDebugScreenRectangleVariableSize(position.x, position.y, pbr.DebugGetTextureHDREquirectangularSpheremap()); position.x += 0.25f;
@@ -4992,7 +4993,7 @@ void cApplication::Run()
       position += spitfire::math::cVec2(0.25f, 0.0f);
       #endif
 
-      #if 1
+      #if 0
       // Draw the teapot texture
       RenderScreenRectangle(position.x, position.y, staticVertexBufferObjectScreenRectTeapot, textureFrameBufferObjectTeapot, shaderScreenRect);
       position += spitfire::math::cVec2(0.25f, 0.0f);
@@ -5008,7 +5009,7 @@ void cApplication::Run()
 
 
       // Draw the text overlay
-      {
+      if (bIsDrawText) {
         pContext->BindFont(font);
 
         // Rendering the font in the middle of the screen
