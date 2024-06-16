@@ -205,7 +205,7 @@ void cHDR::RenderBloom(cApplication& application, spitfire::durationms_t current
 {
   const size_t Width = context.GetWidth();
   const size_t Height = context.GetHeight();
-  static spitfire::durationms_t lastDurationTime = currentTime;
+  //static spitfire::durationms_t lastDurationTime = currentTime;
   const float FrameTime = 0.0000001f; //(currentTime - lastDurationTime) * 0.001f;
 
   opengl::cTextureFrameBufferObject& HDRColorBuffer = input;

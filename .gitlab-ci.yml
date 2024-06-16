@@ -1,0 +1,53 @@
+stages:
+  - build
+
+default:
+  before_script:
+    - dnf install -y gnutls-devel libxdg-basedir-devel
+      SDL2-devel SDL2_image-devel SDL2_mixer-devel SDL2_net-devel SDL2_ttf-devel
+      mesa-libGL-devel mesa-libGLU-devel GLee-devel
+      freetype-devel git
+    # json-c-devel libxml2-devel gnutls-devel
+    # Fix the Gcc 13 C++ headers
+    - sed -i "/const error_category& socket_category() noexcept/c\  inline const error_category& socket_category() noexcept" /usr/include/c++/13/experimental/socket
+    - sed -i "/const error_category& stream_category() noexcept/c\  inline const error_category& stream_category() noexcept" /usr/include/c++/13/experimental/buffer
+    # NOTE: This is pretty gross, we turn off SSL certificate verification because the server is using self signed certificates
+    - |
+      if [ ! -e ../library ]; then
+        git -c http.sslVerify=false clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.network.home:2443/dev/public/library.git ../library
+      fi
+
+# NOTE: These projects don't build:
+# openglmm_fadein - Can't be bothered getting the X11 headers (Or whatever newer library is prefered) working with it again
+build-openglmm:
+  stage: build
+  tags:
+    - linux
+    - cpp
+    - make
+  script:
+    - cd ${PROJECT} && cmake . && make -j
+  parallel:
+    matrix:
+      - PROJECT: [openglmm_font, openglmm_gears, openglmm_heightmap, openglmm_shaders]
+  artifacts:
+    untracked: true
+
+build-everything-else:
+  stage: build
+  tags:
+    - linux
+    - cpp
+    - make
+  script:
+    - cd discomboluator && cmake . && make -j
+    - cd permutations && cmake . && make -j
+    - cd size_test && cmake . && make -j
+    - cd source_cleaner && cmake . && make -j
+    - cd stopwatch && cmake . && make -j
+    - cd translator && cmake . && make -j
+    - cd xdgmm && cmake . && make -j
+  artifacts:
+    untracked: true
+
+# NOTE: We are just proving that we can build, we don't have any unit tests yet

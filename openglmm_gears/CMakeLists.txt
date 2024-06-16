@@ -68,7 +68,7 @@ ENDMACRO(PREFIX_PATHS)
 
 SET(LIBRARY_LIBVOODOOMM_SOURCE_DIRECTORY libvoodoomm/)
 SET(LIBRARY_LIBVOODOOMM_SOURCE_FILES
-libvoodoomm.cpp cImage.cpp
+libvoodoomm.cpp cImage.cpp hdr.cpp
 )
 
 IF(WIN32)
