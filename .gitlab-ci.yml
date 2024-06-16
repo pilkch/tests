@@ -1,0 +1,87 @@
+stages:
+  - build
+
+default:
+  before_script:
+    - dnf install -y gnutls-devel libxdg-basedir-devel
+      SDL2-devel SDL2_image-devel SDL2_mixer-devel SDL2_net-devel SDL2_ttf-devel
+      mesa-libGL-devel mesa-libGLU-devel GLee-devel
+      freetype-devel
+    # json-c-devel libxml2-devel gnutls-devel
+    # Fix the Gcc 13 C++ headers
+    - sed -i "/const error_category& socket_category() noexcept/c\  inline const error_category& socket_category() noexcept" /usr/include/c++/13/experimental/socket
+    - sed -i "/const error_category& stream_category() noexcept/c\  inline const error_category& stream_category() noexcept" /usr/include/c++/13/experimental/buffer
+
+build-openglmm-fadein:
+  stage: build
+  tags:
+    - linux
+    - cpp
+    - make
+  script:
+    - cd openglmm_fadein && cmake . && make -j
+  artifacts:
+    untracked: true
+
+build-openglmm-font:
+  stage: build
+  tags:
+    - linux
+    - cpp
+    - make
+  script:
+    - cd openglmm_font && cmake . && make -j
+  artifacts:
+    untracked: true
+
+build-openglmm-gears:
+  stage: build
+  tags:
+    - linux
+    - cpp
+    - make
+  script:
+    - cd openglmm_gears && cmake . && make -j
+  artifacts:
+    untracked: true
+
+build-openglmm-heightmap:
+  stage: build
+  tags:
+    - linux
+    - cpp
+    - make
+  script:
+    - cd openglmm_heightmap && cmake . && make -j
+  artifacts:
+    untracked: true
+
+build:
+  stage: build
+  tags:
+    - linux
+    - cpp
+    - make
+  script:
+    - cd openglmm_shaders && cmake . && make -j
+  artifacts:
+    untracked: true
+
+build-everything-else:
+  stage: build
+  tags:
+    - linux
+    - cpp
+    - make
+  script:
+    - cd discomboluator && cmake . && make -j
+    - cd permutations && cmake . && make -j
+    - cd size_test && cmake . && make -j
+    - cd source_cleaner && cmake . && make -j
+    - cd stopwatch && cmake . && make -j
+    - cd translator && cmake . && make -j
+    - cd xdgmm && cmake . && make -j
+  artifacts:
+    untracked: true
+
+# NOTE: We are just proving that we can build, we don't have any unit tests yet
