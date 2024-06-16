@@ -12,58 +12,17 @@ default:
     - sed -i "/const error_category& socket_category() noexcept/c\  inline const error_category& socket_category() noexcept" /usr/include/c++/13/experimental/socket
     - sed -i "/const error_category& stream_category() noexcept/c\  inline const error_category& stream_category() noexcept" /usr/include/c++/13/experimental/buffer
 
-build-openglmm-fadein:
+build-openglmm:
   stage: build
   tags:
     - linux
     - cpp
     - make
   script:
-    - cd openglmm_fadein && cmake . && make -j
-  artifacts:
-    untracked: true
-
-build-openglmm-font:
-  stage: build
-  tags:
-    - linux
-    - cpp
-    - make
-  script:
-    - cd openglmm_font && cmake . && make -j
-  artifacts:
-    untracked: true
-
-build-openglmm-gears:
-  stage: build
-  tags:
-    - linux
-    - cpp
-    - make
-  script:
-    - cd openglmm_gears && cmake . && make -j
-  artifacts:
-    untracked: true
-
-build-openglmm-heightmap:
-  stage: build
-  tags:
-    - linux
-    - cpp
-    - make
-  script:
-    - cd openglmm_heightmap && cmake . && make -j
-  artifacts:
-    untracked: true
-
-build:
-  stage: build
-  tags:
-    - linux
-    - cpp
-    - make
-  script:
-    - cd openglmm_shaders && cmake . && make -j
+    - cd ${PROJECT} && cmake . && make -j
+  parallel:
+    matrix:
+      - PROJECT: [openglmm_fadein, openglmm_font, openglmm_gears, openglmm_heightmap, openglmm_shaders]
   artifacts:
     untracked: true
 
